@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <div class="rowline">
+    <h2 style="margin:0;">Boşta / Çalışmada ({{ start.year }} - {{ start.isocalendar().week }}. Hafta)</h2>
+    <div class="rowline">
+      <a class="btn ghost" href="{{ url_for('availability_page', date=prev_week) }}">← Önceki</a>
+      <a class="btn ghost" href="{{ url_for('availability_page', date=next_week) }}">Sonraki →</a>
+    </div>
+  </div>
+
+  <form method="get" class="filters">
+    <label>Hafta (Pzt)
+      <input type="date" name="date" value="{{ selected_week }}">
+    </label>
+    <button class="btn secondary">Getir</button>
+  </form>
+
+  <div class="tablewrap">
+    <table class="simple">
+      <thead>
+        <tr>
+          <th>Personel</th>
+          {% for d in days %}
+            <th>{{ d.strftime("%d.%m") }}<br><span class="muted">{{ tr_days[loop.index0] }}</span></th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in people %}
+          <tr>
+            <td style="font-weight:800">{{ p.full_name }}</td>
+            {% for d in days %}
+              {% set k = d.strftime("%Y-%m-%d") %}
+              {% set x = grid.get(p.id, {}).get(k) %}
+              <td class="{% if x %}busyCell{% else %}freeCell{% endif %}">
+                {% if x %}
+                  <div style="font-weight:800;">Çalışmada</div>
+                  <div class="muted">{{ x.text }}</div>
+                {% else %}
+                  <div style="font-weight:800;">Boşta</div>
+                {% endif %}
+              </td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

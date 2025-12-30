@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+  <h1 style="font-size: 24px; font-weight: 900; margin-bottom: 20px;">Kullanıcı Düzenle: {{ user.full_name or user.email }}</h1>
+  <form method="POST" style="max-width: 500px;">
+    <div style="margin-bottom: 20px;">
+      <label for="full_name" style="display: block; font-weight: 700; margin-bottom: 8px;">Ad Soyad</label>
+      <input type="text" id="full_name" name="full_name" value="{{ user.full_name or '' }}" placeholder="Ad Soyad">
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+      <label for="email" style="display: block; font-weight: 700; margin-bottom: 8px;">Email <span style="color: #ef4444;">*</span></label>
+      <input type="email" id="email" name="email" value="{{ user.email or '' }}" required placeholder="email@netmon.com.tr">
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+      <label for="role" style="display: block; font-weight: 700; margin-bottom: 8px;">Rol</label>
+      <select id="role" name="role" required>
+        <option value="user" {% if user.role == 'user' %}selected{% endif %}>Kullanıcı</option>
+        <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+        <option value="gözlemci" {% if user.role == 'gözlemci' %}selected{% endif %}>Gözlemci</option>
+      </select>
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+        <input type="checkbox" name="is_admin" value="1" {% if user.is_admin %}checked{% endif %}>
+        <span style="font-weight: 700;">Admin Yetkisi</span>
+      </label>
+      <div class="hint">Admin yetkisi olan kullanıcılar tüm kullanıcıları yönetebilir.</div>
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+      <label for="is_active" style="display: block; font-weight: 700; margin-bottom: 8px;">Durum</label>
+      <select id="is_active" name="is_active" required>
+        <option value="1" {% if user.is_active %}selected{% endif %}>Aktif</option>
+        <option value="0" {% if not user.is_active %}selected{% endif %}>Pasif</option>
+      </select>
+      <div class="hint">Pasif kullanıcılar "Sorumlu" seçimlerinde görünmez.</div>
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+      <label for="password" style="display: block; font-weight: 700; margin-bottom: 8px;">Yeni Şifre (Opsiyonel)</label>
+      <input type="password" id="password" name="password" placeholder="Değiştirmek istemiyorsanız boş bırakın">
+      <div class="hint">Şifreyi değiştirmek istemiyorsanız boş bırakın.</div>
+    </div>
+    
+    <div style="display: flex; gap: 10px;">
+      <button type="submit" class="btn">Kaydet</button>
+      <a href="{{ url_for('admin_users') }}" class="btn secondary">İptal</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+

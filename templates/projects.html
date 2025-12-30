@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h2>Projeler</h2>
+
+  {% if session.get('role') != 'gözlemci' %}
+  <form method="post" class="filters" style="align-items: flex-end;">
+    <label>Proje Kodu <input name="project_code" placeholder="9025-006" required></label>
+    <label>Proje Adı <input name="project_name" placeholder="ZTEE..." required></label>
+    <label>Sorumlu
+      <select name="responsible" required>
+        <option value="">-- Seçiniz --</option>
+        {% for u in users %}
+        <option value="{{ u.full_name or u.username }}">{{ u.full_name or u.username }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Karşı Firma Sorumlusu <input name="karsi_firma_sorumlusu"></label>
+    <label>Durum
+      <select name="is_active">
+        <option value="1" selected>Aktif</option>
+        <option value="0">Pasif</option>
+      </select>
+    </label>
+    <button class="btn" type="submit" style="height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Ekle</button>
+  </form>
+  {% endif %}
+
+  <div class="tablewrap" style="border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <table class="simple">
+      <thead>
+        <tr>
+          <th>Kod</th>
+          <th>Ad</th>
+          <th>Sorumlu</th>
+          <th>Karşı Firma Sorumlusu</th>
+          <th>Durum</th>
+          <th style="text-align: center;">İşlem</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in projects %}
+          <tr>
+            <td><strong>{{ p.project_code }}</strong></td>
+            <td>{{ p.project_name }}</td>
+            <td>{{ p.responsible }}</td>
+            <td>{{ p.karsi_firma_sorumlusu or "-" }}</td>
+            <td>
+              {% if p.is_active %}
+                <span style="background: #10b981; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Aktif</span>
+              {% else %}
+                <span style="background: #64748b; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Pasif</span>
+              {% endif %}
+            </td>
+            <td style="text-align: center;">
+              {% if session.get('role') != 'gözlemci' %}
+              <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
+                <a class="btn tiny" href="{{ url_for('project_edit', project_id=p.id) }}" style="background-color: #3b82f6; color: white; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-weight: 500; font-size: 12px;">Düzenle</a>
+                <form method="post" action="{{ url_for('project_delete', project_id=p.id) }}"
+                      onsubmit="return confirm('Proje silinsin mi?')" style="margin: 0; display: inline;">
+                  <button class="btn danger tiny" type="submit" style="padding: 6px 12px; border-radius: 6px; font-size: 12px;">Sil</button>
+                </form>
+              </div>
+              {% else %}
+              <span style="color: #94a3b8; font-size: 12px;">-</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        {% if not projects %}
+          <tr>
+            <td colspan="6" style="padding: 40px; text-align: center; color: #64748b; font-size: 14px;">Henüz proje eklenmemiş.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

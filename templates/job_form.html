@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>İş Ekle</h2>
+
+<form method="post">
+  Şehir <input name="city"><br>
+  Proje <input name="project"><br>
+  Detay <textarea name="detail"></textarea><br>
+  Sorumlu <input name="responsible"><br>
+  Tarih <input type="date" name="work_date"><br>
+  Vardiya
+  <select name="shift">
+    <option>Gündüz</option>
+    <option>Gece</option>
+    <option>Gündüz Yol</option>
+  </select><br>
+  Ekip <input name="team"><br>
+
+  <b>Personeller</b><br>
+  {% for p in people %}
+    <input type="checkbox" name="people" value="{{p.id}}"> {{p.name}}<br>
+  {% endfor %}
+
+  <button>Kaydet</button>
+</form>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h2>Personel Düzenle</h2>
+
+  <form method="post" class="filters" style="align-items: flex-end;">
+    <label>Ad Soyad <input name="full_name" value="{{ p.full_name }}" required></label>
+    <label>TC <input name="tc_no" value="{{ p.tc_no or '' }}" placeholder="11111111111"></label>
+    <label>Görev <input name="role" value="{{ p.role or '' }}"></label>
+    <label>Telefon <input name="phone" value="{{ p.phone or '' }}"></label>
+    <label>Email <input name="email" value="{{ p.email or '' }}" placeholder="ornek@firma.com"></label>
+    <label>Durum
+      <select name="durum">
+        <option value="Aktif" {% if p.durum == "Aktif" %}selected{% endif %}>Aktif</option>
+        <option value="Pasif" {% if p.durum == "Pasif" %}selected{% endif %}>Pasif</option>
+      </select>
+    </label>
+    <label>Firma
+      <select name="firma_id" required>
+        <option value="">-- Seçiniz --</option>
+        {% for f in firmalar %}
+        <option value="{{ f.id }}" {% if p.firma_id == f.id %}selected{% endif %}>{{ f.name }}</option>
+        {% endfor %}
+        {% if not firmalar %}
+        <option value="1" {% if p.firma_id == 1 %}selected{% endif %}>Netmon</option>
+        <option value="2" {% if p.firma_id == 2 %}selected{% endif %}>Finans</option>
+        <option value="3" {% if p.firma_id == 3 %}selected{% endif %}>Hytech</option>
+        {% endif %}
+      </select>
+    </label>
+    <label>Seviye
+      <select name="seviye_id">
+        <option value="">-- Seçiniz --</option>
+        {% for s in seviyeler %}
+        <option value="{{ s.id }}" {% if p.seviye_id == s.id %}selected{% endif %}>{{ s.name }}</option>
+        {% endfor %}
+        {% if not seviyeler %}
+        <option value="1" {% if p.seviye_id == 1 %}selected{% endif %}>Ana kadro</option>
+        <option value="2" {% if p.seviye_id == 2 %}selected{% endif %}>Yardımcı</option>
+        <option value="3" {% if p.seviye_id == 3 %}selected{% endif %}>Alt yüklenici</option>
+        {% endif %}
+      </select>
+    </label>
+    <div style="display: flex; gap: 10px; align-items: center; width: 100%; margin-top: 10px;">
+      <button class="btn" type="submit" style="height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Kaydet</button>
+      <a class="btn secondary" href="{{ url_for('people_page') }}" style="height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">Geri</a>
+    </div>
+  </form>
+</section>
+{% endblock %}
+

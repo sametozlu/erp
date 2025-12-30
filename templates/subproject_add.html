@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h2>Alt Proje Ekle</h2>
+  <p style="color: #64748b; margin-bottom: 20px; font-size: 14px;">
+    Proje: <strong>{{ parent_project.project_code }} - {{ parent_project.project_name }}</strong>
+  </p>
+
+  <form method="post" class="filters" style="align-items: flex-end;">
+    <label>Şehir (İl)
+      <select name="region" required>
+        <option value="">-- Şehir Seçiniz --</option>
+        {% for city in cities %}
+        <option value="{{ city }}">{{ city }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Proje Kodu <input name="project_code" value="{{ parent_project.project_code }}" readonly style="background-color: #f1f5f9; cursor: not-allowed;"></label>
+    <label>Proje Adı <input name="project_name" value="{{ parent_project.project_name }}" required></label>
+    <label>Sorumlu
+      <select name="responsible" required>
+        <option value="">-- Seçiniz --</option>
+        {% for u in users %}
+        <option value="{{ u.full_name or u.username }}" {% if (u.full_name or u.username) == parent_project.responsible %}selected{% endif %}>{{ u.full_name or u.username }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Karşı Firma Sorumlusu <input name="karsi_firma_sorumlusu" value="{{ parent_project.karsi_firma_sorumlusu or '' }}"></label>
+    <label>Durum
+      <select name="is_active">
+        <option value="1" selected>Aktif</option>
+        <option value="0">Pasif</option>
+      </select>
+    </label>
+    <div style="display: flex; gap: 10px; align-items: center; width: 100%; margin-top: 10px;">
+      <button class="btn" type="submit" style="height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Kaydet</button>
+      <a class="btn secondary" href="{{ url_for('project_edit', project_id=parent_project.id) }}" style="height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">Geri</a>
+    </div>
+  </form>
+
+  {% if subprojects %}
+  <div style="margin-top: 30px;">
+    <h3 style="font-size: 16px; font-weight: 600; color: #0f172a; margin-bottom: 15px;">Mevcut Alt Projeler</h3>
+    <div class="tablewrap" style="border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+      <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+          <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+            <th style="padding: 12px; text-align: left; font-weight: 600; color: #0f172a; font-size: 13px;">Şehir</th>
+            <th style="padding: 12px; text-align: left; font-weight: 600; color: #0f172a; font-size: 13px;">Proje Kodu</th>
+            <th style="padding: 12px; text-align: left; font-weight: 600; color: #0f172a; font-size: 13px;">Proje Adı</th>
+            <th style="padding: 12px; text-align: left; font-weight: 600; color: #0f172a; font-size: 13px;">Sorumlu</th>
+            <th style="padding: 12px; text-align: left; font-weight: 600; color: #0f172a; font-size: 13px;">Durum</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sp in subprojects %}
+          <tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="padding: 12px; color: #0f172a; font-size: 14px;">{{ sp.region }}</td>
+            <td style="padding: 12px; color: #0f172a; font-size: 14px;">{{ sp.project_code }}</td>
+            <td style="padding: 12px; color: #0f172a; font-size: 14px;">{{ sp.project_name }}</td>
+            <td style="padding: 12px; color: #0f172a; font-size: 14px;">{{ sp.responsible }}</td>
+            <td style="padding: 12px; color: #0f172a; font-size: 14px;">
+              <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; {% if sp.is_active %}background: #d1fae5; color: #065f46;{% else %}background: #fee2e2; color: #991b1b;{% endif %}">
+                {% if sp.is_active %}Aktif{% else %}Pasif{% endif %}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
+

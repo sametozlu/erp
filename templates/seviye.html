@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h2>Seviye Tanımları</h2>
+
+  <form method="post" class="filters" style="align-items: flex-end;">
+    <label>Seviye Adı <input name="name" required></label>
+    <label>Durum
+      <select name="is_active">
+        <option value="1" selected>Aktif</option>
+        <option value="0">Pasif</option>
+      </select>
+    </label>
+    <button class="btn" type="submit" style="height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Ekle</button>
+  </form>
+  {% endif %}
+
+  <div class="tablewrap" style="border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <table class="simple">
+      <thead>
+        <tr>
+          <th>Seviye Adı</th>
+          <th>Durum</th>
+          <th style="text-align: center;">İşlem</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in seviyeler %}
+          <tr>
+            <td><strong>{{s.name}}</strong></td>
+            <td>
+              {% if s.is_active %}
+                <span style="background: #10b981; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Aktif</span>
+              {% else %}
+                <span style="background: #64748b; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Pasif</span>
+              {% endif %}
+            </td>
+            <td style="text-align: center;">
+              {% if session.get('role') != 'gözlemci' %}
+              <form method="post" action="{{ url_for('seviye_delete', seviye_id=s.id) }}"
+                    onsubmit="return confirm('Seviye silinsin mi?')" style="margin: 0; display: inline;">
+                <button class="btn danger tiny" type="submit" style="padding: 6px 12px; border-radius: 6px; font-size: 12px;">Sil</button>
+              </form>
+              {% else %}
+              <span style="color: #94a3b8; font-size: 12px;">-</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        {% if not seviyeler %}
+          <tr>
+            <td colspan="3" style="padding: 40px; text-align: center; color: #64748b; font-size: 14px;">Henüz seviye eklenmemiş.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}
+

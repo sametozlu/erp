@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <h1 style="font-size: 28px; font-weight: 900; margin: 0; color: #0f172a;">Kullanıcı Yönetimi</h1>
+    {% if is_kivanc %}
+    <a href="{{ url_for('admin_user_add') }}" class="btn" style="background-color: #3b82f6; color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+      <span>+</span> Kullanıcı Ekle
+    </a>
+    {% endif %}
+  </div>
+  
+  <div class="tablewrap" style="border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <table class="simple">
+      <thead>
+        <tr>
+          <th>Ad Soyad</th>
+          <th>Email</th>
+          <th>Rol</th>
+          <th>Admin</th>
+          <th>Durum</th>
+          <th>Oluşturulma</th>
+          <th style="text-align: center;">İşlem</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        <tr>
+          <td><strong>{{ user.full_name or user.email }}</strong></td>
+          <td>{{ user.email or "-" }}</td>
+          <td>
+            {% if user.role == 'admin' %}
+              <span style="background: #6366f1; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">{{ user.role|title }}</span>
+            {% elif user.role == 'gözlemci' %}
+              <span style="background: #8b5cf6; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">{{ user.role|title }}</span>
+            {% else %}
+              <span style="background: #3b82f6; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">{{ user.role|title }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if user.is_admin %}
+              <span style="background: #10b981; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Admin</span>
+            {% else %}
+              <span style="background: #64748b; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Kullanıcı</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if user.is_active %}
+              <span style="background: #10b981; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Aktif</span>
+            {% else %}
+              <span style="background: #ef4444; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Pasif</span>
+            {% endif %}
+          </td>
+          <td style="color: #64748b; font-size: 14px;">{{ user.created_at.strftime('%d.%m.%Y') if user.created_at else '-' }}</td>
+          <td style="text-align: center;">
+            <a href="{{ url_for('admin_user_edit', user_id=user.id) }}" class="btn tiny" style="background-color: #3b82f6; color: white; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-weight: 500; font-size: 12px;">
+              Düzenle
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+        {% if not users %}
+        <tr>
+          <td colspan="7" style="padding: 40px; text-align: center; color: #64748b; font-size: 14px;">
+            Henüz kullanıcı eklenmemiş.
+          </td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

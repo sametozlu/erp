@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="grid">
+  <section class="card">
+    <h2>İş Ekle</h2>
+    <form method="post" class="form">
+      <label>Şehir* <input name="city" required></label>
+      <label>Proje Kodu* <input name="project_code" required></label>
+      <label>Proje Sorumlusu* <input name="project_responsible" required></label>
+      <label>Çalışma Detayı* <textarea name="detail" required rows="4"></textarea></label>
+
+      <label>Çalışma Tarihi* <input name="work_date" type="date" required></label>
+
+      <label>Çalışma Zamanı*
+        <select name="shift" required>
+          <option value="Gündüz">Gündüz</option>
+          <option value="Gece">Gece</option>
+          <option value="Gündüz Yol">Gündüz Yol</option>
+        </select>
+      </label>
+
+      <label>Ekip Bilgisi* <input name="team_name" required placeholder="Ekip-1"></label>
+      <label>Araç Bilgisi <input name="vehicle_info"></label>
+
+      <label>Personeller (çoklu seç)
+        <select name="people_ids" multiple size="10">
+          {% for p in people %}
+            <option value="{{p.id}}">{{p.full_name}}{% if p.team %} • {{p.team}}{% endif %}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <div class="two">
+        <label>Enlem (opsiyonel) <input name="lat"></label>
+        <label>Boylam (opsiyonel) <input name="lon"></label>
+      </div>
+
+      <small class="hint">Enlem/Boylam girmezsen şehir adına göre otomatik bulmayı dener (internet gerekir).</small>
+      <button class="btn" type="submit">Kaydet</button>
+      <a class="btn ghost" href="{{ url_for('week_view') }}">Haftalığa Dön</a>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>İş Listesi</h2>
+    <form method="get" class="filters">
+      <label>Başlangıç <input type="date" name="from" value="{{filter_from}}"></label>
+      <label>Bitiş <input type="date" name="to" value="{{filter_to}}"></label>
+      <button class="btn secondary">Getir</button>
+    </form>
+
+    <div class="table">
+      <div class="row head">
+        <div>Tarih</div><div>Vardiya</div><div>Şehir</div><div>Proje</div><div>Ekip</div><div></div>
+      </div>
+      {% for j in jobs %}
+      <div class="row">
+        <div>{{j.work_date.strftime("%Y-%m-%d")}}</div>
+        <div>{{j.shift}}</div>
+        <div>{{j.city}}</div>
+        <div>{{j.project_code}}</div>
+        <div data-team-name="{{ j.team_name }}">{{j.team_name}}</div>
+        <div class="actions">
+          <a class="btn tiny" href="{{ url_for('edit_job', job_id=j.id) }}">Düzenle</a>
+        </div>
+      </div>
+      <div class="row detail">
+        <div>
+          <span class="pill">Sorumlu: {{j.project_responsible}}</span>
+          {% if assigned_map.get(j.id) %}
+            <span class="pill">Personel: {{ assigned_map[j.id]|join(", ") }}</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

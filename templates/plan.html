@@ -1,0 +1,938 @@
+{% extends "base.html" %}
+{% block header_content %}
+ 
+{% endblock %}
+{% block content %}
+
+<section class="card" style="padding: 0; background: transparent; box-shadow: none;">
+  <!-- Clean Selection Bar -->
+  <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 7px 24px; margin-bottom: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; width: 100%;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <strong style="color: #0f172a; font-size: 15px; font-weight: 600;">Seçili iş:</strong>
+        <span id="selectedLabel" style="color: #475569; font-size: 15px; font-weight: 500; padding: 6px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;">-</span>
+      </div>
+    <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+    <h2 style="margin: 0; color: #1e40af; font-size: 22px; font-weight: 700; letter-spacing: -0.3px;">
+      {{ start.year }} - {{ start.isocalendar().week }}. HAFTA
+    </h2>
+  </div>  
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+        {% if session.get('role') != 'gözlemci' %}
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-left: 0;">
+          <button type="button" class="btn" onclick="addBlankJobRow()" style="background: #0f172a; color: white; font-weight: 500; padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">+ İş Ekle</button>
+          <button type="button" class="btn" id="topJobCancel" style="display:none; background: #f1f5f9; color: #475569; font-weight: 500; padding: 8px 16px; border-radius: 6px; border: 1px solid #e2e8f0; cursor: pointer; font-size: 13px; height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;" onclick="cancelNewJobRow()">İptal</button>
+          <button type="button" class="btn" id="topJobSave" style="display:none; background: #0f172a; color: white; font-weight: 500; padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;" onclick="saveNewJobRow()">Kaydet</button>
+          <button type="button" class="btn" id="topJobEdit" style="display:none; background: #0f172a; color: white; font-weight: 500; padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;" onclick="editSelectedJobRow()">Düzenle</button>
+          <button type="button" class="btn" id="topJobDelete" style="display:none; background: #dc2626; color: white; font-weight: 500; padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;" onclick="deleteSelectedJobRow()">Sil</button>
+    </div>
+
+        {% endif %}
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-left: 8px; padding-left: 8px; border-left: 1px solid #e2e8f0;">
+          <form method="get" style="display: flex; align-items: center; gap: 8px; margin: 0;">
+            <input type="date" name="date" value="{{ selected_week }}" style="padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; background: #ffffff; height: 36px; box-sizing: border-box;" id="weekStartInput">
+          <input type="hidden" name="week_start" value="{{ week_start_iso }}" id="weekStartHidden">
+            <button class="btn" type="submit" style="background: #0f172a; color: white; font-weight: 500; padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Getir</button>
+            <a class="btn" href="{{ url_for('plan_week', date=today_iso) }}" style="background: #f1f5f9; color: #475569; font-weight: 500; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 13px; height: 36px; border: 1px solid #e2e8f0; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Bugün</a>
+      </form>
+    </div>
+        <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-left: 8px; padding-left: 8px; border-left: 1px solid #e2e8f0;">
+          <a class="btn" href="{{ url_for('plan_week', date=prev_week) }}" style="background: #f1f5f9; color: #475569; font-weight: 500; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 13px; height: 36px; border: 1px solid #e2e8f0; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">&lt; Önceki</a>
+          <a class="btn" href="{{ url_for('plan_week', date=next_week) }}" style="background: #f1f5f9; color: #475569; font-weight: 500; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 13px; height: 36px; border: 1px solid #e2e8f0; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Sonraki &gt;</a>
+          <button class="btn" type="button" onclick="toggleFit()" style="background: #f1f5f9; color: #475569; font-weight: 500; padding: 8px 16px; border-radius: 6px; border: 1px solid #e2e8f0; cursor: pointer; font-size: 13px; height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Ekrana Sığdır</button>
+          {% if session.get('role') != 'gözlemci' %}
+          <button class="btn" type="button" onclick="copyWeekFromPrevious('{{ week_start_iso }}')" style="background: #f1f5f9; color: #475569; font-weight: 500; padding: 8px 16px; border-radius: 6px; border: 1px solid #e2e8f0; cursor: pointer; font-size: 13px; height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Haftayı Kopyala</button>
+          {% endif %}
+  </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Personel Durum Özeti -->
+  <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 24px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <h3 onclick="togglePersonnelSummary()" style="margin: 0 0 16px 0; color: #0f172a; font-size: 16px; font-weight: 600; cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;">
+      <span>Personel Durum Özeti</span>
+      <span id="personnelSummaryToggle" style="font-size: 12px; color: #64748b;">▶</span>
+    </h3>
+    <div id="personnelSummaryContent" style="display: none; flex-wrap: wrap; gap: 16px;">
+      {% for d in days %}
+        {% set day_iso = d.strftime("%Y-%m-%d") %}
+        {% set summary = personnel_summary.get(day_iso) or {"total":0,"ana_kadro":0,"yardimci":0,"alt_yuklenici":0,"total_names":[],"ana_kadro_names":[],"yardimci_names":[],"alt_yuklenici_names":[],"firm_available":{},"leave":0,"leave_names":[],"leave_by_firm":{}} %}
+        <div class="personnel-summary-card" data-day="{{ day_iso }}" data-day-label="{{ d.strftime('%d.%m') }} {{ tr_days[loop.index0] }}" data-summary='{{ summary|tojson|safe }}' onclick="toggleSummaryTooltip(this, event)" style="flex: 1; min-width: 150px; padding: 12px 14px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; cursor: pointer; transition: box-shadow 0.15s, transform 0.15s;">
+          <div style="font-weight: 700; color: #0f172a; font-size: 14px; margin-bottom: 8px;">{{ d.strftime("%d.%m") }} {{ tr_days[loop.index0] }}</div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 12px; color: #64748b;">Toplam Boşta:</span>
+              <span style="font-weight: 700; color: #0f172a; cursor: pointer;" title="{{ summary.total_names|join(', ') }}">{{ summary.total }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 12px; color: #64748b;">Ana Kadro:</span>
+              <span style="font-weight: 600; color: #0f172a; cursor: pointer;" title="{{ summary.ana_kadro_names|join(', ') }}">{{ summary.ana_kadro }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 12px; color: #64748b;">Yardımcı:</span>
+              <span style="font-weight: 600; color: #0f172a; cursor: pointer;" title="{{ summary.yardimci_names|join(', ') }}">{{ summary.yardimci }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 12px; color: #64748b;">Alt Yüklenici:</span>
+              <span style="font-weight: 600; color: #0f172a; cursor: pointer;" title="{{ summary.alt_yuklenici_names|join(', ') }}">{{ summary.alt_yuklenici }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 12px; color: #be123c;">İzinli:</span>
+              <span style="font-weight: 700; color: #be123c; cursor: pointer;" title="{{ summary.leave_names|join(', ') }}">{{ summary.leave }}</span>
+            </div>
+            <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;">Detay için üzerine gel.</div>
+          </div>
+        </div>
+{% endfor %}
+    </div>
+  </div>
+
+  <div id="summaryTooltip" class="cell-tooltip">
+    <div class="cell-tooltip-title" id="summaryTooltipTitle">Personel Özeti</div>
+    <div class="cell-tooltip-item">
+      <span class="cell-tooltip-label">Boşta:</span>
+      <div class="cell-tooltip-value" id="summaryTooltipAvailable">-</div>
+    </div>
+    <div class="cell-tooltip-item">
+      <span class="cell-tooltip-label">Boşta Ana Kadro:</span>
+      <div class="cell-tooltip-value" id="summaryTooltipAna">-</div>
+    </div>
+    <div class="cell-tooltip-item">
+      <span class="cell-tooltip-label">Boşta Yardımcı:</span>
+      <div class="cell-tooltip-value" id="summaryTooltipYardimci">-</div>
+    </div>
+    <div class="cell-tooltip-item">
+      <span class="cell-tooltip-label">Boşta Alt Yüklenici:</span>
+      <div class="cell-tooltip-value" id="summaryTooltipAlt">-</div>
+    </div>
+    <div class="cell-tooltip-item">
+      <span class="cell-tooltip-label">İzinli:</span>
+      <div class="cell-tooltip-value" id="summaryTooltipLeaves">-</div>
+    </div>
+  </div>
+
+<script>
+  let summaryTooltipTimer = null;
+
+  function toggleSummaryTooltip(el, event) {
+    if (event) {
+      event.stopPropagation();
+    }
+    const tooltip = document.getElementById('summaryTooltip');
+    const isOpen = tooltip && tooltip.classList.contains('show') && tooltip._ownerEl === el;
+    if (isOpen) {
+      hideSummaryTooltip();
+    } else {
+      showSummaryTooltip(el, event, true);
+    }
+  }
+
+  function showSummaryTooltip(el, event, immediate) {
+    if (!el) return;
+    if (summaryTooltipTimer) {
+      clearTimeout(summaryTooltipTimer);
+      summaryTooltipTimer = null;
+    }
+
+    const dataStr = el.getAttribute('data-summary') || '';
+    let data = {};
+    try {
+      data = dataStr ? JSON.parse(dataStr) : {};
+    } catch (e) {
+      data = {};
+    }
+
+    const dayLabel = el.getAttribute('data-day-label') || el.getAttribute('data-day') || 'Personel Özeti';
+
+    summaryTooltipTimer = setTimeout(() => {
+      const tooltip = document.getElementById('summaryTooltip');
+      if (!tooltip) return;
+      tooltip._ownerEl = el;
+
+      const titleEl = document.getElementById('summaryTooltipTitle');
+      if (titleEl) {
+        titleEl.textContent = dayLabel;
+      }
+
+      const availEl = document.getElementById('summaryTooltipAvailable');
+      if (availEl) {
+        availEl.innerHTML = renderSummaryList(data.total_names, 'Boşta personel yok.', true);
+      }
+
+      const anaEl = document.getElementById('summaryTooltipAna');
+      if (anaEl) {
+        anaEl.innerHTML = renderSummaryList(data.ana_kadro_names, 'Boşta ana kadro yok.', true);
+      }
+
+      const yardEl = document.getElementById('summaryTooltipYardimci');
+      if (yardEl) {
+        yardEl.innerHTML = renderSummaryList(data.yardimci_names, 'Boşta yardımcı yok.', true);
+      }
+
+      const altEl = document.getElementById('summaryTooltipAlt');
+      if (altEl) {
+        altEl.innerHTML = renderSummaryList(data.alt_yuklenici_names, 'Boşta alt yüklenici yok.', true);
+      }
+
+      const leaveEl = document.getElementById('summaryTooltipLeaves');
+      if (leaveEl) {
+        leaveEl.innerHTML = renderSummaryList(data.leave_names, 'İzinli yok.');
+      }
+
+      const rect = el.getBoundingClientRect();
+      const tooltipRect = tooltip.getBoundingClientRect();
+      let left = rect.left;
+      let top = rect.bottom + 8;
+
+      if (left + tooltipRect.width > window.innerWidth) {
+        left = window.innerWidth - tooltipRect.width - 10;
+      }
+      if (top + tooltipRect.height > window.innerHeight) {
+        top = rect.top - tooltipRect.height - 8;
+      }
+
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = top + 'px';
+      tooltip.classList.add('show');
+    }, immediate ? 0 : 200);
+  }
+
+  function hideSummaryTooltip() {
+    if (summaryTooltipTimer) {
+      clearTimeout(summaryTooltipTimer);
+      summaryTooltipTimer = null;
+    }
+    const tooltip = document.getElementById('summaryTooltip');
+    if (tooltip) {
+      tooltip.classList.remove('show');
+      tooltip._ownerEl = null;
+    }
+  }
+
+  function renderSummaryList(list, emptyText, showCount) {
+    if (!list || list.length === 0) {
+      return `<div class="cell-tooltip-empty">${escapeHtml(emptyText)}</div>`;
+    }
+    const parts = [];
+    if (showCount) {
+      parts.push(`<div><strong>${list.length}</strong></div>`);
+    }
+    parts.push(list.map(function(name) {
+      return `<div>${escapeHtml(name)}</div>`;
+    }).join(''));
+    return parts.join('');
+  }
+
+  window.showSummaryTooltip = showSummaryTooltip;
+  window.hideSummaryTooltip = hideSummaryTooltip;
+  window.toggleSummaryTooltip = toggleSummaryTooltip;
+
+  document.addEventListener('click', function(e) {
+    const tooltip = document.getElementById('summaryTooltip');
+    if (!tooltip || !tooltip.classList.contains('show')) return;
+    const owner = tooltip._ownerEl;
+    if (tooltip.contains(e.target)) return;
+    if (owner && owner.contains(e.target)) return;
+    hideSummaryTooltip();
+  });
+</script>
+
+<script>
+  // Hücre arkaplanlarını data-bg-color üzerinden uygula
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('td.proj[data-bg-color]').forEach(function (td) {
+      if (!td) return;
+      td.style.background = td.dataset.bgColor || '#fef3c7';
+    });
+  });
+</script>
+
+  <div class="gridPlan">
+    <!-- SOL: TABLO -->
+    <div class="tablewrap" style="border-radius: 12px; overflow: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 2px solid #cbd5e1;">
+      <table class="plan" style="border-collapse: separate; border-spacing: 0;">
+        <thead>
+          <tr style="background: #f8fafc;">
+            <th class="st st1" style="font-weight: 600; color: #0f172a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.3px; padding: 14px 12px; border-bottom: 2px solid #94a3b8; border-right: 2px solid #94a3b8;">İl</th>
+            <th class="st st2" style="font-weight: 600; color: #0f172a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.3px; padding: 14px 12px; border-bottom: 2px solid #94a3b8; border-right: 2px solid #94a3b8;">Proje</th>
+            <th class="st st3" style="font-weight: 600; color: #0f172a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.3px; padding: 14px 12px; border-bottom: 2px solid #94a3b8; border-right: 2px solid #94a3b8;">Proje Sorumlusu</th>
+
+            {% for d in days %}
+              {% set k = d.strftime("%Y-%m-%d") %}
+              <th class="daycol {% if k == today_iso %}todayHead{% endif %}" data-date="{{ k }}" style="font-weight: 600; color: #0f172a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.3px; padding: 14px 12px; border-bottom: 2px solid #94a3b8; border-right: 2px solid #94a3b8;">
+                {{ d.strftime("%d.%m.%Y") }}<br><span style="color: #64748b; font-size: 12px; font-weight: 400; text-transform: none;">{{ tr_days[loop.index0] }}</span>
+              </th>
+            {% endfor %}
+
+            <th class="vehcol" style="font-weight: 600; color: #0f172a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.3px; padding: 14px 12px; border-bottom: 2px solid #94a3b8;">Araç</th>
+          </tr>
+        </thead>
+
+        <tbody id="planTbody">
+          {% for p in projects %}
+            <tr data-project-id="{{ p.id }}" class="planRow" style="transition: background-color 0.15s;">
+              <td class="st st1 region" onclick="selectRowByProjectId('{{ p.id }}')" style="cursor: pointer; font-weight: 600; color: #166534; background: #f0fdf4; padding: 12px; border-right: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">{{ p.region }}</td>
+              <td class="st st2 proj" data-bg-color="{{ code_colors.get(p.project_code, '#fef3c7') }}" style="padding: 12px; border-right: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">
+                <div style="font-weight: 600; font-size: 14px; color: #0f172a;">{{ p.project_code }} <span style="font-weight: 400; font-size: 12px; color: #64748b;">{{ p.project_name }}</span></div>
+              </td>
+
+              <td class="st st3 resp" style="font-weight: 500; color: #92400e; background: #fffbeb; padding: 12px; border-right: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8;">{{ p.responsible }}</td>
+
+              {% for d in days %}
+                {% set k = d.strftime("%Y-%m-%d") %}
+                {% set cell = cell_by_key.get((p.id, k)) %}
+                {% set filled = (cell and (cell.shift or cell.note or ass_map.get(cell.id) or cell.vehicle_info)) %}
+                {% set has_personnel = (cell and ass_map.get(cell.id)) %}
+
+                <td class="cell daycol {% if filled %}filled{% endif %} {% if has_personnel %}filled-personnel{% endif %} {% if k == today_iso %}todayCell{% endif %} {% if cell and cell.important_note %}has-important-note{% endif %} {% if cell_grey.get((p.id, k)) %}grey-cell{% endif %}"
+                    draggable="true"
+                    data-project-id="{{p.id}}"
+                    data-date="{{k}}"
+                    data-city="{{p.region}}"
+                    data-project-code="{{p.project_code}}"
+                    data-has-attach="{{ 1 if cell and (cell.lld_hhd_files or cell.lld_hhd_path or cell.tutanak_files or cell.tutanak_path) else 0 }}"
+                    {% if cell and cell.important_note %}data-important-note="{{ cell.important_note|e }}"{% endif %}
+                    onclick="selectCell(this, '{{ week_start_iso }}')" ondblclick="openCellEditor(this, '{{ week_start_iso }}')"
+                    onmouseenter="showCellTooltip(this, event)" onmouseleave="hideCellTooltip()"
+                    ondragstart="cellDragStart(event)"
+                    ondragend="cellDragEnd(event)"
+                    ondragover="cellDragOver(event)"
+                    ondragleave="cellDragLeave(event)"
+                    ondrop="cellDrop(event)"
+                    style="padding: 12px; min-height: 160px; transition: all 0.15s; border-right: 2px solid #94a3b8; border-bottom: 2px solid #94a3b8; position: relative;">
+
+                  {% if not cell or (not cell.shift and not ass_map.get(cell.id)) %}
+                    <div class="cell-time" style="text-align: center; color: #cbd5e1; font-size: 13px; font-weight: 400;">-</div>
+                    <div class="cell-people" style="display: none;"></div>
+                  {% else %}
+                    {% if cell and cell.shift and not ass_map.get(cell.id) %}
+                      <div class="cell-time" style="font-weight: 600; color: #0f172a; font-size: 13px; margin-bottom: 6px;">{% if cell.shift %}{{ cell.shift }}{% else %}<span style="color: #94a3b8;">Çalışma seç</span>{% endif %}</div>
+                      <div class="cell-people" style="color: #94a3b8; font-size: 12px;">
+                        <span>Personel seç</span>
+                      </div>
+                    {% else %}
+                      <div class="cell-time" style="font-weight: 600; color: #0f172a; font-size: 13px; margin-bottom: 6px;">{% if cell and cell.shift %}{{ cell.shift }}{% else %}<span style="color: #94a3b8;">Çalışma seç</span>{% endif %}</div>
+                      <div class="cell-people" style="color: #475569; font-size: 12px; font-weight: 400; line-height: 1.5; overflow: hidden; text-overflow: ellipsis;">
+                        {% if cell and ass_map.get(cell.id) %}
+                          {% set people_list = ass_map[cell.id] %}
+                          {% if people_list|length > 2 %}
+                            {{ people_list[:2] | join("<br>") | safe }}<br><span style="color: #94a3b8;">...</span>
+                          {% else %}
+                            {{ people_list | join("<br>") | safe }}
+                          {% endif %}
+                        {% else %}
+                          <span style="color: #94a3b8;">Personel seç</span>
+                        {% endif %}
+                      </div>
+                    {% endif %}
+                  {% endif %}
+                </td>
+              {% endfor %}
+
+              <td class="vehcol" data-project-id="{{ p.id }}" style="padding: 12px; background: #f8fafc; border-bottom: 2px solid #94a3b8;">
+                {% set veh = "" %}
+                {% for d in days %}
+                  {% if not veh %}
+                  {% set kk = d.strftime("%Y-%m-%d") %}
+                  {% set c = cell_by_key.get((p.id, kk)) %}
+                  {% if c and c.vehicle_info %}
+                      {% set veh = c.vehicle_info.split(' ')[0] if c.vehicle_info else '' %}
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+                <div class="cell-vehicle-display" style="color: #475569; font-weight: 500; font-size: 13px; text-align: center;">{{ veh if veh else "-" }}</div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+    </div>
+</div>
+</section>
+
+  <div class="action-bar" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px 20px; margin-top: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: center;">
+    {% if session.get('role') != 'gözlemci' %}
+    <button class="btn" type="button" onclick="copyMondayToWeek('{{ week_start_iso }}')" style="background: #f1f5f9; color: #475569; font-weight: 500; padding: 8px 16px; border-radius: 6px; border: 1px solid #e2e8f0; cursor: pointer; font-size: 13px; height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Pzt' Kopyala</button>
+    <button class="btn" type="button" onclick="copyCurrentAsTemplate()" style="background: #f1f5f9; color: #475569; font-weight: 500; padding: 8px 16px; border-radius: 6px; border: 1px solid #e2e8f0; cursor: pointer; font-size: 13px; height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Hücreyi Kopyala</button>
+    <button class="btn" type="button" onclick="togglePasteMode()" style="background: #f1f5f9; color: #475569; font-weight: 500; padding: 8px 16px; border-radius: 6px; border: 1px solid #e2e8f0; cursor: pointer; font-size: 13px; height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Yapıştır Modu</button>
+    {% endif %}
+    <button class="btn" type="button" onclick="openTeamModal()" style="background: #f1f5f9; color: #475569; font-weight: 500; padding: 8px 16px; border-radius: 6px; border: 1px solid #e2e8f0; cursor: pointer; font-size: 13px; height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Ekip</button>
+    {% if session.get('role') != 'gözlemci' %}
+    <button class="btn" type="button" onclick="openStatusModal()" style="background: #f1f5f9; color: #475569; font-weight: 500; padding: 8px 16px; border-radius: 6px; border: 1px solid #e2e8f0; cursor: pointer; font-size: 13px; height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Durum</button>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- MODAL: Hücre Detayı -->
+<div class="modal" id="cellModal">
+  <div class="modalCard" style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid #e2e8f0;">
+    <div class="rowline" style="border-bottom: 1px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 20px;">
+      <h3 style="margin:0; color: #0f172a; font-size: 20px; font-weight: 600;">İş Detayı</h3>
+      <div class="rowline" style="gap:8px;">
+        {% if session.get('role') != 'gözlemci' %}
+        <button class="btn" type="button" onclick="clearCell()" style="background: #dc2626; color: white; font-weight: 500; padding: 8px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px;">Sil</button>
+        {% endif %}
+        <button class="btn" type="button" onclick="closeCellModal()" style="background: #f1f5f9; color: #475569; font-weight: 500; padding: 8px 14px; border-radius: 6px; border: 1px solid #e2e8f0; cursor: pointer; font-size: 13px;">Kapat</button>
+        {% if session.get('role') != 'gözlemci' %}
+        <button class="btn" type="button" onclick="saveCell()" style="background: #0f172a; color: white; font-weight: 500; padding: 8px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px;">Kaydet</button>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="cellModalLayout">
+      <div class="cellFormStack">
+        <div style="padding: 10px 14px; background: #f8fafc; border-radius: 6px; margin-bottom: 20px; color: #475569; font-size: 13px; font-weight: 400; border: 1px solid #e2e8f0;" id="editorInfo">Hücre seçilmedi.</div>
+
+        <div class="etopGrid" style="margin-top:4px; gap: 4px;">
+          <label style="display: flex; align-items: center; gap: 6px; font-weight: 500; color: #0f172a; font-size: 14px;">
+            <span style="min-width: 120px;">Çalışma Saati</span>
+            <select id="mShift" onchange="loadAvailability()" style="flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; background: #ffffff;" {% if session.get('role') == 'gözlemci' %}disabled{% endif %}>
+              <option value="">(boş)</option>
+              <option value="08:30-18:00">08:30-18:00</option>
+              <option value="08:30-18:00 YOL">08:30-18:00 YOL</option>
+              <option value="00:00-06:00">00:00-06:00</option>
+              <option value="08:30 - 12:00">08:30 - 12:00</option>
+              <option value="13:00 - 18:00">13:00 - 18:00</option>
+            </select>
+          </label>
+
+          <label style="display: flex; align-items: center; gap: 6px; font-weight: 500; color: #0f172a; font-size: 14px;">
+            <span style="min-width: 120px;">Araç</span>
+            <select id="mVehicle" style="flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; background: #ffffff;" {% if session.get('role') == 'gözlemci' %}disabled{% endif %}>
+              <option value="">-- Araç seç --</option>
+              {% for vehicle in vehicles %}
+              <option value="{{ vehicle.plate }}">{{ vehicle.plate }}</option>
+              {% endfor %}
+            </select>
+          </label>
+
+          <label style="display: flex; align-items: center; gap: 6px; font-weight: 500; color: #0f172a; font-size: 14px;">
+            <span style="min-width: 120px;">Ekip Adı (otomatik)</span>
+            <input id="mTeamName" placeholder="Otomatik oluşacak" readonly style="flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; background: #f8fafc;">
+          </label>
+        </div>
+
+        <div style="margin-top:4px;">
+        </div>
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:4px; margin-top:4px;">
+          <label style="display: flex; align-items: center; gap: 6px; font-weight: 500; color: #0f172a; font-size: 14px;">
+            <span style="min-width: 120px;">ISDP Bilgisi</span>
+            <input id="mISDP" placeholder="Örn: ISDP / DUID / Ticket no" style="flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; background: #ffffff;" {% if session.get('role') == 'gözlemci' %}readonly{% endif %}>
+          </label>
+
+          <label style="display: flex; align-items: center; gap: 6px; font-weight: 500; color: #0f172a; font-size: 14px;">
+            <span style="min-width: 120px;">PO Bilgisi</span>
+            <input id="mPO" placeholder="Örn: PO No / Malzeme durumu" style="flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; background: #ffffff;" {% if session.get('role') == 'gözlemci' %}readonly{% endif %}>
+          </label>
+        </div>
+
+        <div style="margin-top:4px;">
+          <label style="display: flex; align-items: flex-start; gap: 6px; font-weight: 500; color: #0f172a; font-size: 14px;">
+            <span style="min-width: 120px; padding-top: 10px;">Detay</span>
+            <textarea id="mNote" rows="3" placeholder="Örn: kabin kurulum, test..." style="flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; resize: vertical; background: #ffffff;" {% if session.get('role') == 'gözlemci' %}readonly{% endif %}></textarea>
+          </label>
+        </div>
+
+        <div style="margin-top:4px;">
+          <label style="display: flex; align-items: flex-start; gap: 6px; font-weight: 500; color: #0f172a; font-size: 14px;">
+            <span style="min-width: 120px; padding-top: 10px;">İş Detay Maili</span>
+            <textarea id="mJobMailBody" rows="3" placeholder="Mail metni (personellere gidecek)" style="flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; resize: vertical; background: #ffffff;" {% if session.get('role') == 'gözlemci' %}readonly{% endif %}></textarea>
+          </label>
+        </div>
+
+        <div style="margin-top:4px;">
+          <label style="display: flex; align-items: flex-start; gap: 6px; font-weight: 500; color: #0f172a; font-size: 14px;">
+            <span style="min-width: 120px; padding-top: 10px;">Önemli Not</span>
+            <textarea id="mImportantNote" rows="2" placeholder="Önemli bir not ekleyin..." style="flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; resize: vertical; background: #ffffff;" {% if session.get('role') == 'gözlemci' %}readonly{% endif %}></textarea>
+          </label>
+        </div>
+
+        <div style="margin-top:16px; display:grid; grid-template-columns: 1fr 1fr; gap:14px;">
+          <div class="attach-block">
+            <label style="font-weight: 600; color: #0f172a; font-size: 14px;">LLD / HHD (PDF/DOC)
+              <input id="mLLDFile" type="file" accept=".pdf,.doc,.docx" multiple style="margin-top: 6px; width: 100%;" {% if session.get('role') == 'gözlemci' %}disabled{% endif %}>
+            </label>
+            <div class="attach-title">Yüklü dosyalar</div>
+            <div id="mLLDFileName" class="attach-list"></div>
+          </div>
+          <div class="attach-block">
+            <label style="font-weight: 600; color: #0f172a; font-size: 14px;">Tutanak (Excel)
+              <input id="mTutanakFile" type="file" accept=".xls,.xlsx" multiple style="margin-top: 6px; width: 100%;" {% if session.get('role') == 'gözlemci' %}disabled{% endif %}>
+            </label>
+            <div class="attach-title">Yüklü dosyalar</div>
+            <div id="mTutanakFileName" class="attach-list"></div>
+          </div>
+        </div>
+
+        <hr class="sep" style="margin: 20px 0; border: none; border-top: 1px solid #e2e8f0;">
+      </div>
+
+      <aside class="personnelPanel">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom:8px;">
+          <div style="font-weight: 600; font-size: 15px; color: #0f172a; margin:0;">Personel Bilgisi</div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; margin:0;">
+              <input type="checkbox" id="firmaFilterNetmon" onchange="renderPeopleComboBox()" style="width: 16px; height: 16px; cursor: pointer; margin: 0;">
+              <span style="font-weight: 500; font-size: 13px; color: #475569;">Netmon</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; margin:0;">
+              <input type="checkbox" id="showAssignedPeople" onchange="renderPeopleComboBox()" style="width: 16px; height: 16px; cursor: pointer; margin: 0;">
+              <span style="font-weight: 500; font-size: 13px; color: #475569;">Başka işte olanları göster</span>
+            </label>
+          </div>
+        </div>
+        <div style="position: relative;">
+          <input class="input" id="peopleSearch" placeholder="Personel ara..." oninput="filterPeopleComboBox()" onfocus="showPeopleDropdown()" style="width: 100%; padding: 10px 14px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; background: #ffffff;">
+          <select id="peopleSelect" multiple style="display: none;"></select>
+          <div id="peopleDropdown" class="peopleList" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 6px; max-height: 300px; overflow-y: auto; z-index: 1000; display: block; margin-top: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></div>
+        </div>
+        <div id="selectedPeopleList" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px;"></div>
+        <div style="margin-top:8px; color: #94a3b8; font-size: 12px; font-weight: 400;">Arama yapın ve seçin + ekle/çıkar.</div>
+      </aside>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Ekip Bilgisi -->
+<div class="modal" id="teamModal">
+  <div class="modalCard" style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid #e2e8f0;">
+    <div class="rowline" style="border-bottom: 1px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 20px;">
+      <h3 style="margin:0; color: #0f172a; font-size: 20px; font-weight: 600;">Ekip Bilgisi</h3>
+      <button class="btn" type="button" onclick="closeTeamModal()" style="background: #f1f5f9; color: #475569; font-weight: 500; padding: 8px 14px; border-radius: 6px; border: 1px solid #e2e8f0; cursor: pointer; font-size: 13px;">Kapat</button>
+    </div>
+    <div style="padding: 10px 14px; background: #fffbeb; border-radius: 6px; margin-bottom: 20px; color: #92400e; font-size: 13px; font-weight: 400; border: 1px solid #fde68a;" id="teamMeta">-</div>
+    <div class="rowline" style="margin-top:10px; gap:8px; flex-wrap:wrap;">
+      <button class="btn" type="button" onclick="copyTeamReportTSV()" style="background: #f1f5f9; color: #475569; font-weight: 500; padding: 8px 14px; border-radius: 6px; border: 1px solid #e2e8f0; cursor: pointer; font-size: 13px;">Excel'e Kopyala</button>
+      <button class="btn" type="button" onclick="copyTeamReportText()" style="background: #f1f5f9; color: #475569; font-weight: 500; padding: 8px 14px; border-radius: 6px; border: 1px solid #e2e8f0; cursor: pointer; font-size: 13px;">Metin Kopyala</button>
+      <button class="btn" type="button" onclick="downloadTeamReportImage()" style="background: #0f172a; color: white; font-weight: 500; padding: 8px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px;">Görsel (PNG)</button>
+    </div>
+    <div style="margin-top:8px; color: #94a3b8; font-size: 12px; font-weight: 400;" id="teamCopyHint"></div>
+
+    <div class="tablewrap" style="max-height:360px; margin-top:10px; border-radius: 6px; overflow: hidden; border: 1px solid #e2e8f0;">
+      <table class="simple" style="background: white;">
+        <thead>
+          <tr style="background: #f8fafc;">
+            <th style="font-weight: 600; color: #0f172a; padding: 12px 16px; border-bottom: 1px solid #e2e8f0;">Ad Soyad</th>
+            <th style="font-weight: 600; color: #0f172a; padding: 12px 16px; border-bottom: 1px solid #e2e8f0;">Telefon</th>
+            <th style="font-weight: 600; color: #0f172a; padding: 12px 16px; border-bottom: 1px solid #e2e8f0;">TC</th>
+          </tr>
+        </thead>
+        <tbody id="teamTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Personel Durumu (İzin/Ofis/Üretim) -->
+<div class="modal" id="statusModal">
+  <div class="modalCard" style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid #e2e8f0;">
+    <div class="rowline" style="border-bottom: 1px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 20px;">
+      <h3 style="margin:0; color: #0f172a; font-size: 20px; font-weight: 600;">Personel Durumu</h3>
+      <button class="btn" type="button" onclick="closeStatusModal()" style="background: #f1f5f9; color: #475569; font-weight: 500; padding: 8px 14px; border-radius: 6px; border: 1px solid #e2e8f0; cursor: pointer; font-size: 13px;">Kapat</button>
+    </div>
+
+    <div style="padding: 10px 14px; background: #fffbeb; border-radius: 6px; margin-bottom: 20px; color: #92400e; font-size: 13px; font-weight: 400; border: 1px solid #fde68a;">
+      Seçili hücrenin günü için işlenir. Personel listesinden kişiyi seç -> burada işaretle.
+    </div>
+
+    <div class="rowline" style="margin-top:10px; gap:8px; flex-wrap:wrap;">
+      <div style="font-weight: 500; color: #0f172a; font-size: 14px;"><strong>Seçili Gün:</strong> <span id="statusDayLabel" style="color: #475569;">-</span></div>
+      <div style="font-weight: 500; color: #0f172a; font-size: 14px;"><strong>Seçili Personel:</strong> <span id="statusPeopleLabel" style="color: #475569;">0</span></div>
+    </div>
+
+    <div class="rowline" style="margin-top:12px; gap:8px; flex-wrap:wrap;">
+      <button class="btn" type="button" onclick="setStatusBulk('leave')" style="background: #f1f5f9; color: #475569; font-weight: 500; padding: 8px 14px; border-radius: 6px; border: 1px solid #e2e8f0; cursor: pointer; font-size: 13px;">İzinli</button>
+      <button class="btn" type="button" onclick="setStatusBulk('office')" style="background: #f1f5f9; color: #475569; font-weight: 500; padding: 8px 14px; border-radius: 6px; border: 1px solid #e2e8f0; cursor: pointer; font-size: 13px;">Ofis</button>
+      <button class="btn" type="button" onclick="setStatusBulk('production')" style="background: #f1f5f9; color: #475569; font-weight: 500; padding: 8px 14px; border-radius: 6px; border: 1px solid #e2e8f0; cursor: pointer; font-size: 13px;">Üretimde</button>
+      <button class="btn" type="button" onclick="setStatusBulk('available')" style="background: #dc2626; color: white; font-weight: 500; padding: 8px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px;">Durumu Temizle</button>
+    </div>
+
+
+    <input id="statusSearch" placeholder="Personel ara..." style="margin-top:10px; padding: 10px 14px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; width: 100%; background: #ffffff;" oninput="renderStatusPeopleList()">
+    <div id="statusPeopleList" class="statusGrid"></div>
+
+    <div style="margin-top:10px; color: #94a3b8; font-size: 12px; font-weight: 400;">
+      Not: "Ofis" için backend'de izinli/üretim gibi kilit uygulanır.
+    </div>
+      <div class="rowline" style="margin-top:14px; justify-content:flex-end;">
+      <button class="btn" type="button" onclick="closeStatusModal()" style="background: #0f172a; color: white; font-weight: 500; padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px;">Tamam</button>
+    </div>
+  </div>
+</div>
+
+<!-- JSON verilerini ayrı script tag'inde tanımla -->
+<script type="application/json" id="people-data-json">{{ people_json|tojson | safe }}</script>
+<script type="text/javascript">
+  /* eslint-disable */
+  (function() {
+    try {
+      var peopleEl = document.getElementById('people-data-json');
+      if (peopleEl) {
+        var peopleJson = peopleEl.textContent.trim();
+        window.ALL_PEOPLE = JSON.parse(peopleJson);
+        console.log('Loaded ALL_PEOPLE:', window.ALL_PEOPLE);
+      } else {
+        console.error('people-data-json element not found');
+        window.ALL_PEOPLE = [];
+      }
+    } catch(e) {
+      console.error('Error loading people data:', e);
+      window.ALL_PEOPLE = [];
+    }
+  })();
+  /* eslint-enable */
+</script>
+
+
+<!-- MODAL: Personel Görsel -->
+<div class="modal" id="personShotModal">
+  <div class="modalCard" style="max-width:720px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid #e2e8f0;">
+    <div class="rowline" style="border-bottom: 1px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 20px;">
+      <h3 style="margin:0; color: #0f172a; font-size: 20px; font-weight: 600;">Personel Plan Görseli</h3>
+      <button class="btn" type="button" onclick="closePersonShot()" style="background: #f1f5f9; color: #475569; font-weight: 500; padding: 8px 14px; border-radius: 6px; border: 1px solid #e2e8f0; cursor: pointer; font-size: 13px;">Kapat</button>
+    </div>
+    <div class="rowline" style="margin-top:10px; gap:8px; flex-wrap:wrap;">
+      <label class="lbl" style="font-weight: 500; color: #0f172a; font-size: 14px;">Personel
+        <select id="personShotSelect" style="margin-top: 6px; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; background: #ffffff;"></select>
+      </label>
+      <button class="btn" type="button" onclick="loadPersonShot()" style="background: #0f172a; color: white; font-weight: 500; padding: 8px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px;">Getir</button>
+      <button class="btn" type="button" onclick="downloadPersonShotImage()" style="background: #0f172a; color: white; font-weight: 500; padding: 8px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px;">Görsel (PNG)</button>
+    </div>
+    <div style="margin-top:8px; color: #94a3b8; font-size: 12px; font-weight: 400;">Not: Bu görseli indirip WhatsApp / mail ile gönderebilirsin.</div>
+    <div id="personShotCard" class="shotCard" style="margin-top:12px;"></div>
+  </div>
+</div>
+
+<!-- İş Ekle Modal -->
+<div class="modal" id="addJobModal" style="display:none;">
+  <div class="modalBox" style="max-width:520px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid #e2e8f0;">
+    <div class="modalHead" style="border-bottom: 1px solid #e2e8f0; padding-bottom: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin:0; color: #0f172a; font-size: 20px; font-weight: 600;">İş Ekle</h3>
+      <button type="button" class="btn" onclick="closeAddJobModal()" style="background: #f1f5f9; color: #475569; font-weight: 500; padding: 6px 12px; border-radius: 6px; border: 1px solid #e2e8f0; cursor: pointer; font-size: 18px;">x</button>
+    </div>
+
+    <div class="grid2" style="margin-top:10px; gap: 16px;">
+      <label style="font-weight: 500; color: #0f172a; font-size: 14px;">Şehir (İl)
+        <select id="jobCity" style="margin-top: 6px; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; width: 100%; background: #ffffff;">
+          <option value="">- İl seç -</option>
+          {% for city in cities %}
+          <option value="{{ city }}">{{ city }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <div>
+        <label style="font-weight: 500; color: #0f172a; font-size: 14px;">Proje Şablonu
+          <select id="jobTemplateSelect" onchange="fillFromTemplate()" style="margin-top: 6px; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; width: 100%; background: #ffffff;">
+            <option value="0">-- Proje sec --</option>
+            {% for tp in template_projects %}
+              <option value="{{ tp.id }}">{{ tp.project_code }} - {{ tp.project_name }} ({{ tp.responsible }})</option>
+            {% endfor %}
+          </select>
+        </label>
+
+        <label style="font-weight: 500; color: #0f172a; font-size: 14px; margin-top: 16px; display: block;">Alt Proje
+          <select id="jobSubProjectSelect" style="margin-top: 6px; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; width: 100%; background: #ffffff;">
+            <option value="">-- Alt proje seç --</option>
+          </select>
+        </label>
+      </div>
+
+      <label style="font-weight: 500; color: #0f172a; font-size: 14px;">Proje Kodu
+        <input id="jobProjectCode" placeholder="9025-006" style="margin-top: 6px; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; width: 100%; background: #ffffff;" />
+      </label>
+
+      <label style="font-weight: 500; color: #0f172a; font-size: 14px;">Proje Adı
+        <input id="jobProjectName" placeholder="ZTEE..." style="margin-top: 6px; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; width: 100%; background: #ffffff;" />
+      </label>
+
+      <label style="font-weight: 500; color: #0f172a; font-size: 14px;">Sorumlu
+        <input id="jobResponsible" placeholder="Gizem" style="margin-top: 6px; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px; width: 100%; background: #ffffff;" />
+      </label>
+    </div>
+
+    <div class="rowline" style="margin-top:12px; justify-content:flex-end; gap:8px;">
+      <button type="button" class="btn" onclick="closeAddJobModal()" style="background: #f1f5f9; color: #475569; font-weight: 500; padding: 8px 16px; border-radius: 6px; border: 1px solid #e2e8f0; cursor: pointer; font-size: 13px;">İptal</button>
+      <button type="button" class="btn" onclick="createJobRow()" style="background: #0f172a; color: white; font-weight: 500; padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px;">Ekle</button>
+    </div>
+  </div>
+</div>
+
+<!-- JSON verilerini ayrı script tag'inde tanımla (Jinja2 template syntax'ı linter hatası vermesin diye) -->
+<script type="application/json" id="app-data-projects">{{ template_projects_json | tojson | safe }}</script>
+<script type="application/json" id="app-data-cities">{{ cities | tojson | safe }}</script>
+<script type="application/json" id="app-data-today">{{ today_iso | tojson | safe }}</script>
+<script type="text/javascript">
+  /* eslint-disable */
+  (function() {
+    try {
+      // JSON'ı script tag'lerinden alıp parse et
+      var projectsEl = document.getElementById('app-data-projects');
+      var citiesEl = document.getElementById('app-data-cities');
+      var todayEl = document.getElementById('app-data-today');
+      
+      var projectsJson = projectsEl ? projectsEl.textContent.trim() : '[]';
+      var citiesJson = citiesEl ? citiesEl.textContent.trim() : '[]';
+      var todayJson = todayEl ? todayEl.textContent.trim() : '""';
+      
+      window.TEMPLATE_PROJECTS = JSON.parse(projectsJson);
+      window.CITIES = JSON.parse(citiesJson);
+      window.TODAY_ISO = JSON.parse(todayJson);
+      
+      console.log('Loaded TEMPLATE_PROJECTS:', window.TEMPLATE_PROJECTS);
+      console.log('Loaded CITIES:', window.CITIES);
+    } catch(e) {
+      console.error('Error loading app data:', e);
+      window.TEMPLATE_PROJECTS = [];
+      window.CITIES = [];
+      window.TODAY_ISO = '';
+    }
+  })();
+  /* eslint-enable */
+</script>
+
+<!-- Cell Tooltip -->
+<div id="cellTooltip" class="cell-tooltip">
+  <div class="cell-tooltip-title" id="tooltipTitle">İş Detayı</div>
+  <div class="cell-tooltip-item">
+    <span class="cell-tooltip-label">Çalışma Saati:</span>
+    <span class="cell-tooltip-value" id="tooltipShift">-</span>
+  </div>
+  <div class="cell-tooltip-item">
+    <span class="cell-tooltip-label">Personel:</span>
+    <div class="cell-tooltip-value cell-tooltip-people" id="tooltipPeople">-</div>
+  </div>
+  <div class="cell-tooltip-item">
+    <span class="cell-tooltip-label">Araç:</span>
+    <span class="cell-tooltip-value" id="tooltipVehicle">-</span>
+  </div>
+  <div class="cell-tooltip-item">
+    <span class="cell-tooltip-label">ISDP:</span>
+    <span class="cell-tooltip-value" id="tooltipISDP">-</span>
+  </div>
+  <div class="cell-tooltip-item">
+    <span class="cell-tooltip-label">PO:</span>
+    <span class="cell-tooltip-value" id="tooltipPO">-</span>
+  </div>
+  <div class="cell-tooltip-item">
+    <span class="cell-tooltip-label">Not:</span>
+    <span class="cell-tooltip-value" id="tooltipNote">-</span>
+  </div>
+  <div class="cell-tooltip-item" id="tooltipImportantNoteContainer" style="display: none;">
+    <span class="cell-tooltip-label">Önemli Not:</span>
+    <span class="cell-tooltip-value" id="tooltipImportantNote" style="color: #dc2626; font-weight: 600;">-</span>
+  </div>
+</div>
+
+<input type="hidden" id="userRole" value="{{ session.get('role', '') }}">
+<script>
+let tooltipTimeout = null;
+let currentTooltipCell = null;
+
+async function showCellTooltip(td, event) {
+  if (!td || !td.dataset.projectId || !td.dataset.date) return;
+  
+  // Önceki timeout'u temizle
+  if (tooltipTimeout) {
+    clearTimeout(tooltipTimeout);
+    tooltipTimeout = null;
+  }
+  
+  // Eğer aynı hücre üzerindeyse, tekrar başlatma
+  if (currentTooltipCell === td) return;
+  currentTooltipCell = td;
+  
+  // 2 saniye bekle
+  tooltipTimeout = setTimeout(async () => {
+    const tooltip = document.getElementById('cellTooltip');
+    if (!tooltip || currentTooltipCell !== td) return;
+    
+    tooltip.classList.add('show');
+    
+    // Tooltip pozisyonunu ayarla
+    const rect = td.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    let left = rect.right + 10;
+    let top = rect.top;
+    
+    // Sağa sığmazsa sola koy
+    if (left + tooltipRect.width > window.innerWidth) {
+      left = rect.left - tooltipRect.width - 10;
+    }
+    
+    // Aşağıya sığmazsa yukarı koy
+    if (top + tooltipRect.height > window.innerHeight) {
+      top = window.innerHeight - tooltipRect.height - 10;
+    }
+    
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = top + 'px';
+    
+    // İçerişi yükle
+    const project_id = parseInt(td.dataset.projectId, 10);
+    const work_date = td.dataset.date;
+    
+    // Başlık
+    document.getElementById('tooltipTitle').textContent = `${td.dataset.projectCode || 'Proje'} - ${work_date}`;
+    
+    // API'den veri çek
+    try {
+      const res = await fetch(`/api/cell?project_id=${project_id}&date=${encodeURIComponent(work_date)}`);
+      const data = await res.json().catch(() => ({ exists: false }));
+      
+      if (data.exists && data.cell) {
+        const cell = data.cell;
+        
+        // Shift
+        const shiftEl = document.getElementById('tooltipShift');
+        if (shiftEl) {
+          shiftEl.textContent = cell.shift || '-';
+          shiftEl.className = cell.shift ? 'cell-tooltip-value' : 'cell-tooltip-value cell-tooltip-empty';
+        }
+        
+        // Personel
+        const peopleEl = document.getElementById('tooltipPeople');
+        if (peopleEl && data.assigned && data.assigned.length > 0) {
+          const pm = window.ALL_PEOPLE || [];
+          const peopleNames = data.assigned.map(id => {
+            const p = pm.find(p => p.id == id);
+            return p ? p.full_name : `#${id}`;
+          });
+          peopleEl.innerHTML = peopleNames.map(name => `<div>${escapeHtml(name)}</div>`).join('');
+          peopleEl.className = 'cell-tooltip-value cell-tooltip-people';
+        } else {
+          if (peopleEl) {
+            peopleEl.textContent = '-';
+            peopleEl.className = 'cell-tooltip-value cell-tooltip-empty';
+          }
+        }
+        
+        // Araç
+        const vehicleEl = document.getElementById('tooltipVehicle');
+        if (vehicleEl) {
+          const vehicleInfo = (cell.vehicle_info || '').trim();
+          const plateOnly = vehicleInfo ? vehicleInfo.split(' ')[0] : '';
+          vehicleEl.textContent = plateOnly || '-';
+          vehicleEl.className = plateOnly ? 'cell-tooltip-value' : 'cell-tooltip-value cell-tooltip-empty';
+        }
+        
+        // ISDP
+        const isdpEl = document.getElementById('tooltipISDP');
+        if (isdpEl) {
+          isdpEl.textContent = cell.isdp_info || '-';
+          isdpEl.className = cell.isdp_info ? 'cell-tooltip-value' : 'cell-tooltip-value cell-tooltip-empty';
+        }
+        
+        // PO
+        const poEl = document.getElementById('tooltipPO');
+        if (poEl) {
+          poEl.textContent = cell.po_info || '-';
+          poEl.className = cell.po_info ? 'cell-tooltip-value' : 'cell-tooltip-value cell-tooltip-empty';
+        }
+        
+        // Not
+        const noteEl = document.getElementById('tooltipNote');
+        if (noteEl) {
+          noteEl.textContent = cell.note || '-';
+          noteEl.className = cell.note ? 'cell-tooltip-value' : 'cell-tooltip-value cell-tooltip-empty';
+        }
+        
+        // Önemli Not
+        const importantNoteEl = document.getElementById('tooltipImportantNote');
+        const importantNoteContainer = document.getElementById('tooltipImportantNoteContainer');
+        if (importantNoteEl && importantNoteContainer) {
+          if (cell.important_note && cell.important_note.trim()) {
+            importantNoteEl.textContent = cell.important_note.trim();
+            importantNoteContainer.style.display = 'flex';
+          } else {
+            importantNoteContainer.style.display = 'none';
+          }
+        }
+      } else {
+        // Boş hücre
+        document.getElementById('tooltipShift').textContent = '-';
+        document.getElementById('tooltipPeople').textContent = '-';
+        document.getElementById('tooltipVehicle').textContent = '-';
+        document.getElementById('tooltipISDP').textContent = '-';
+        document.getElementById('tooltipPO').textContent = '-';
+        document.getElementById('tooltipNote').textContent = '-';
+        const importantNoteContainer = document.getElementById('tooltipImportantNoteContainer');
+        if (importantNoteContainer) {
+          importantNoteContainer.style.display = 'none';
+        }
+      }
+    } catch (e) {
+      console.error('Tooltip yükleme hatası:', e);
+    }
+  }, 2000); // 2 saniye bekle
+}
+
+function hideCellTooltip() {
+  const tooltip = document.getElementById('cellTooltip');
+  if (tooltip) {
+    tooltip.classList.remove('show');
+  }
+  if (tooltipTimeout) {
+    clearTimeout(tooltipTimeout);
+    tooltipTimeout = null;
+  }
+  currentTooltipCell = null;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Window'a export et
+window.showCellTooltip = showCellTooltip;
+window.hideCellTooltip = hideCellTooltip;
+</script>
+
+<script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+<script>
+  var socket = io();
+  socket.on('update_table', function() {
+    location.reload();
+  });
+</script>
+
+<!-- Drag-drop ve hücre olayları için koruyucu stub'lar (app.js yüklenmese bile hata vermesin) -->
+<script>
+  window.selectCell = window.selectCell || function(){};
+  window.openCellEditor = window.openCellEditor || function(td, weekStartIso){
+    if(window.selectCell){ window.selectCell(td, weekStartIso); }
+  };
+  window.cellDragStart = window.cellDragStart || function(){};
+  window.cellDragEnd = window.cellDragEnd || function(){};
+  window.cellDragOver = window.cellDragOver || function(){};
+  window.cellDragLeave = window.cellDragLeave || function(){};
+  window.cellDrop = window.cellDrop || function(){};
+</script>
+
+{% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

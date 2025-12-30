@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Haftalık Planlama</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+    <a href="{{ url_for('plan_week') }}" style="display: flex; align-items: center; text-decoration: none; transition: opacity 0.2s; flex-shrink: 0;">
+      <img class="brandLogo" src='{{ url_for("static", filename="Kwc_Netmon_Logo_Netmon_2.png") }}' alt="Netmon" style="cursor: pointer;">
+    </a>
+    
+    <div style="display: flex; align-items: center; justify-content: center; flex: 1; min-width: 0;">
+      {% block header_content %}{% endblock %}
+    </div>
+
+    <nav class="nav" style="flex-shrink: 0;">
+    <a href="{{ url_for('plan_week') }}">Plan</a>
+    <a href="{{ url_for('map_page') }}">Harita</a>
+    <a href="{{ url_for('reports_page') }}">Rapor</a>
+    <div class="nav-dropdown">
+      <a href="#" class="nav-dropdown-toggle">Tanımlar ▼</a>
+      <div class="nav-dropdown-menu">
+        <a href="{{ url_for('mail_page') }}">Mail</a>
+        <a href="{{ url_for('projects_page') }}">Projeler</a>
+        <a href="{{ url_for('people_page') }}">Personel</a>
+        <a href="{{ url_for('tools_page') }}">Araçlar</a>
+        {% if session.get('is_admin') %}
+        <a href="{{ url_for('admin_users') }}">Kullanıcılar</a>
+        {% endif %}
+      </div>
+    </div>
+    <a href="{{ url_for('logout') }}">Çıkış ({{ session.get('username', 'Kullanıcı') }})</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-wrap">
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script defer src="{{ url_for('static', filename='app.js') }}"></script></script>
+</body>
+</html>

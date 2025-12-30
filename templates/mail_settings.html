@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card" style="max-width: 720px; margin: 0 auto;">
+  <h2 style="margin-top:0;">Mail Ayarları</h2>
+  <p style="color:#475569; font-size:14px;">SMTP bilgilerini kaydedin. Bu ayarlar haftalık mail gönderiminde kullanılır.</p>
+  <form method="post" style="display:flex; flex-direction:column; gap:12px;">
+    <label>SMTP Host
+      <input class="input" type="text" name="host" value="{{ cfg.host }}" required>
+    </label>
+    <label>SMTP Port
+      <input class="input" type="number" name="port" value="{{ cfg.port or 587 }}" required>
+    </label>
+    <label>Kullanıcı (User)
+      <input class="input" type="text" name="user" value="{{ cfg.user }}">
+    </label>
+    <label>Şifre
+      <input class="input" type="password" name="password" value="{{ cfg.password }}">
+    </label>
+    <label>Gönderen (From)
+      <input class="input" type="text" name="from_addr" value="{{ cfg.from_addr }}">
+    </label>
+    <label style="display:flex; gap:8px; align-items:center;">
+      <input type="checkbox" name="use_tls" value="1" {% if cfg.use_tls %}checked{% endif %}>
+      <span>TLS kullan</span>
+    </label>
+    <div style="display:flex; gap:8px; margin-top:12px;">
+      <button class="btn" type="submit" style="background:#0f172a; color:#fff;">Kaydet</button>
+      <a class="btn" href="{{ url_for('plan_week') }}" style="background:#f1f5f9; color:#475569; border:1px solid #e2e8f0;">Vazgeç</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

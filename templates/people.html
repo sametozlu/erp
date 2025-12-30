@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h2>Personel</h2>
+
+  <!-- Sekmeler -->
+  <div style="margin-bottom: 20px; border-bottom: 2px solid #e2e8f0;">
+    <div style="display: flex; gap: 8px;">
+      <button type="button" class="tab-btn active" onclick="showTab('personel')" style="padding: 10px 20px; border: none; background: #f9e4cb; color: #0f172a; font-weight: 600; cursor: pointer; border-top-left-radius: 8px; border-top-right-radius: 8px;">Personel</button>
+      <button type="button" class="tab-btn" onclick="showTab('firma')" style="padding: 10px 20px; border: none; background: #f1f5f9; color: #64748b; font-weight: 500; cursor: pointer; border-top-left-radius: 8px; border-top-right-radius: 8px;">Firma</button>
+      <button type="button" class="tab-btn" onclick="showTab('seviye')" style="padding: 10px 20px; border: none; background: #f1f5f9; color: #64748b; font-weight: 500; cursor: pointer; border-top-left-radius: 8px; border-top-right-radius: 8px;">Seviye</button>
+    </div>
+  </div>
+
+  <!-- Personel Sekmesi -->
+  <div id="tab-personel" class="tab-content">
+  {% if session.get('role') != 'gözlemci' %}
+  <form method="post" class="filters" style="align-items: flex-end;">
+    <label>Ad Soyad <input name="full_name" required></label>
+    <label>TC <input name="tc_no" placeholder="11111111111"></label>
+    <label>Görev <input name="role"></label>
+    <label>Telefon <input name="phone"></label>
+    <label>Email <input name="email" placeholder="ornek@firma.com"></label>
+    <label>Durum
+      <select name="durum">
+        <option value="Aktif" selected>Aktif</option>
+        <option value="Pasif">Pasif</option>
+      </select>
+    </label>
+    <label>Firma
+      <select name="firma_id" required>
+        <option value="">-- Seçiniz --</option>
+        {% for f in firmalar %}
+        <option value="{{ f.id }}">{{ f.name }}</option>
+        {% endfor %}
+        {% if not firmalar %}
+        <option value="1">Netmon</option>
+        <option value="2">Finans</option>
+        <option value="3">Hytech</option>
+        {% endif %}
+      </select>
+    </label>
+    <label>Seviye
+      <select name="seviye_id">
+        <option value="">-- Seçiniz --</option>
+        {% for s in seviyeler %}
+        <option value="{{ s.id }}">{{ s.name }}</option>
+        {% endfor %}
+        {% if not seviyeler %}
+        <option value="1">Ana kadro</option>
+        <option value="2">Yardımcı</option>
+        <option value="3">Alt yüklenici</option>
+        {% endif %}
+      </select>
+    </label>
+    <button class="btn" type="submit" style="height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Ekle</button>
+  </form>
+
+  <div class="tablewrap" style="margin-top: 20px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <table class="simple">
+      <thead>
+        <tr>
+          <th>Ad Soyad</th>
+          <th>TC</th>
+          <th>Telefon</th>
+          <th>Email</th>
+          <th>Görev</th>
+          <th>Firma</th>
+          <th>Seviye</th>
+          <th>Durum</th>
+          <th style="text-align: center;">İşlem</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in people %}
+          <tr>
+            <td><strong>{{p.full_name}}</strong></td>
+            <td>{{p.tc_no or "-"}}</td>
+            <td>{{p.phone or "-"}}</td>
+            <td>{{p.email or "-"}}</td>
+            <td>{{p.role or "-"}}</td>
+            <td>{{p.firma.name if p.firma else "-"}}</td>
+            <td>{{p.seviye.name if p.seviye else "-"}}</td>
+            <td>
+              {% if p.durum == "Aktif" %}
+                <span style="background: #10b981; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Aktif</span>
+              {% else %}
+                <span style="background: #64748b; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Pasif</span>
+              {% endif %}
+            </td>
+            <td style="text-align: center;">
+              {% if session.get('role') != 'gözlemci' %}
+              <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
+                {% if is_kivanc %}
+                <a class="btn tiny" href="{{ url_for('person_edit', person_id=p.id) }}" style="background-color: #3b82f6; color: white; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-weight: 500; font-size: 12px;">Düzenle</a>
+                {% endif %}
+                <form method="post" action="{{ url_for('person_delete', person_id=p.id) }}"
+                      onsubmit="return confirm('Silinsin mi?')" style="margin: 0; display: inline;">
+                  <button class="btn danger tiny" type="submit" style="padding: 6px 12px; border-radius: 6px; font-size: 12px;">Sil</button>
+                </form>
+              </div>
+              {% else %}
+              <span style="color: #94a3b8; font-size: 12px;">-</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        {% if not people %}
+          <tr>
+            <td colspan="9" style="padding: 40px; text-align: center; color: #64748b; font-size: 14px;">Henüz personel eklenmemiş.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+  </div>
+
+  <!-- Firma Sekmesi -->
+  <div id="tab-firma" class="tab-content" style="display: none;">
+    <form method="post" action="{{ url_for('firma_page') }}" class="filters" style="align-items: flex-end; margin-bottom: 20px;">
+      <label>Firma Adı <input name="name" required></label>
+      <label>Durum
+        <select name="is_active">
+          <option value="1" selected>Aktif</option>
+          <option value="0">Pasif</option>
+        </select>
+      </label>
+      <button class="btn" type="submit" style="height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Ekle</button>
+    </form>
+
+    <div class="tablewrap" style="border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+      <table class="simple">
+        <thead>
+          <tr>
+            <th>Firma Adı</th>
+            <th>Durum</th>
+            <th style="text-align: center;">İşlem</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in firmalar %}
+          <tr>
+            <td><strong>{{ f.name }}</strong></td>
+            <td>
+              {% if f.is_active %}
+                <span style="background: #10b981; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Aktif</span>
+              {% else %}
+                <span style="background: #64748b; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Pasif</span>
+              {% endif %}
+            </td>
+            <td style="text-align: center;">
+              <form method="post" action="{{ url_for('firma_delete', firma_id=f.id) }}" 
+                    onsubmit="return confirm('Firma silinsin mi?')" style="margin: 0; display: inline;">
+                <button class="btn danger tiny" type="submit" style="padding: 6px 12px; border-radius: 6px; font-size: 12px;">Sil</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+          {% if not firmalar %}
+          <tr>
+            <td colspan="3" style="padding: 40px; text-align: center; color: #64748b; font-size: 14px;">Henüz firma eklenmemiş.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Seviye Sekmesi -->
+  <div id="tab-seviye" class="tab-content" style="display: none;">
+    <form method="post" action="{{ url_for('seviye_page') }}" class="filters" style="align-items: flex-end; margin-bottom: 20px;">
+      <label>Seviye Adı <input name="name" required></label>
+      <label>Durum
+        <select name="is_active">
+          <option value="1" selected>Aktif</option>
+          <option value="0">Pasif</option>
+        </select>
+      </label>
+      <button class="btn" type="submit" style="height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Ekle</button>
+    </form>
+
+    <div class="tablewrap" style="border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+      <table class="simple">
+        <thead>
+          <tr>
+            <th>Seviye Adı</th>
+            <th>Durum</th>
+            <th style="text-align: center;">İşlem</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in seviyeler %}
+          <tr>
+            <td><strong>{{ s.name }}</strong></td>
+            <td>
+              {% if s.is_active %}
+                <span style="background: #10b981; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Aktif</span>
+              {% else %}
+                <span style="background: #64748b; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Pasif</span>
+              {% endif %}
+            </td>
+            <td style="text-align: center;">
+              <form method="post" action="{{ url_for('seviye_delete', seviye_id=s.id) }}" 
+                    onsubmit="return confirm('Seviye silinsin mi?')" style="margin: 0; display: inline;">
+                <button class="btn danger tiny" type="submit" style="padding: 6px 12px; border-radius: 6px; font-size: 12px;">Sil</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+          {% if not seviyeler %}
+          <tr>
+            <td colspan="3" style="padding: 40px; text-align: center; color: #64748b; font-size: 14px;">Henüz seviye eklenmemiş.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<script type="text/javascript">
+function showTab(tabName) {
+  // Tüm sekmeleri gizle
+  document.querySelectorAll('.tab-content').forEach(tab => {
+    tab.style.display = 'none';
+  });
+  
+  // Tüm butonları pasif yap
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.style.background = '#f1f5f9';
+    btn.style.color = '#64748b';
+    btn.style.fontWeight = '500';
+  });
+  
+  // Seçili sekmeyi göster
+  document.getElementById('tab-' + tabName).style.display = 'block';
+  
+  // Seçili butonu aktif yap
+  event.target.style.background = '#f9e4cb';
+  event.target.style.color = '#0f172a';
+  event.target.style.fontWeight = '600';
+}
+
+// Firma veya seviye eklendikten sonra sayfayı yenile ve personel sekmesine dön
+{% if request.args.get('tab') == 'firma' %}
+showTab('firma');
+{% elif request.args.get('tab') == 'seviye' %}
+showTab('seviye');
+{% endif %}
+</script>
+{% endblock %}

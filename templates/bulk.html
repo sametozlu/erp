@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <div class="rowline">
+    <h2 style="margin:0;">⚡ Toplu Hızlı Giriş</h2>
+    <a class="btn ghost" href="{{ url_for('week_view') }}">Haftalığa Dön</a>
+  </div>
+
+  <div class="hint">20 satır iş girebilirsin. Boş bıraktığın satırlar kaydedilmez.</div>
+
+  <form method="post" class="bulk">
+    <div class="bulk-head">
+      <div>Şehir</div>
+      <div>Proje Kodu</div>
+      <div>Sorumlu</div>
+      <div>Tarih</div>
+      <div>Çalışma Saati</div>
+      <div>Ekip</div>
+      <div>Detay</div>
+      <div>Araç</div>
+      <div>Personel</div>
+    </div>
+
+    <div id="bulkRows">
+      {% for i in range(20) %}
+      <div class="bulk-row">
+        <input name="city[]" placeholder="Konya">
+        <input name="project_code[]" placeholder="PRJ-001">
+        <input name="project_responsible[]" placeholder="Proje Sorumlusu">
+        <input type="date" name="work_date[]">
+        <select name="shift[]">
+          <option value="Gündüz">08:30-18:00</option>
+          <option value="Gece">00:00-06:00</option>
+          <option value="Gündüz Yol">08:30-18:00 Yol</option>
+        </select>
+        <input name="team_name[]" placeholder="Ekip-1">
+        <input name="detail[]" placeholder="Çalışma detayı kısa">
+        <input name="vehicle_info[]" placeholder="34ABC123">
+        <select name="people_ids_{{i}}[]" multiple size="3">
+          {% for p in people %}
+            <option value="{{p.id}}">{{p.full_name}}{% if p.team %} • {{p.team}}{% endif %}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="rowline" style="margin-top:12px;">
+      <button class="btn" type="submit">Toplu Kaydet</button>
+      <div class="hint">Not: Konum (lat/lon) şehir adına göre otomatik denenir.</div>
+    </div>
+  </form>
+</section>
+{% endblock %}

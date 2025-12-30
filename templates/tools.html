@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h2>Araçlar</h2>
+
+  {% if session.get('role') != 'gözlemci' %}
+  <form method="post" class="filters" style="align-items: flex-end;">
+    <label>Plaka <input name="plate" required placeholder="34 ABC 123" style="height: 36px; box-sizing: border-box;"></label>
+    <label>Marka <input name="brand" required style="height: 36px; box-sizing: border-box;"></label>
+    <label>Model <input name="model" style="height: 36px; box-sizing: border-box;"></label>
+    <label>Yıl <input name="year" type="number" min="1900" max="2100" style="height: 36px; box-sizing: border-box;"></label>
+    <label>Araç Tipi 
+      <select name="vehicle_type" style="height: 36px; box-sizing: border-box;">
+        <option value="">Seçiniz</option>
+        <option value="Araba">Araba</option>
+        <option value="Kamyon">Kamyon</option>
+        <option value="Minibüs">Minibüs</option>
+        <option value="Pick-up">Pick-up</option>
+        <option value="Van">Van</option>
+        <option value="Diğer">Diğer</option>
+      </select>
+    </label>
+    <label>Durum 
+      <select name="status" style="height: 36px; box-sizing: border-box;">
+        <option value="available">Kullanılabilir</option>
+        <option value="maintenance">Bakımda</option>
+        <option value="out_of_service">Hizmet Dışı</option>
+      </select>
+    </label>
+    <label>Notlar <textarea name="notes" rows="2" style="height: 36px; box-sizing: border-box; resize: vertical; min-height: 36px;"></textarea></label>
+    <button class="btn" type="submit" style="height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px;">Ekle</button>
+  </form>
+
+  <div class="tablewrap" style="border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <table class="simple">
+      <thead>
+        <tr>
+          <th>Plaka</th>
+          <th>Marka</th>
+          <th>Model</th>
+          <th>Yıl</th>
+          <th>Tip</th>
+          <th>Durum</th>
+          <th>Notlar</th>
+          <th style="text-align: center;">İşlem</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in vehicles %}
+          <tr>
+            <td><strong>{{v.plate}}</strong></td>
+            <td>{{v.brand}}</td>
+            <td>{{v.model or "-"}}</td>
+            <td>{{v.year or "-"}}</td>
+            <td>{{v.vehicle_type or "-"}}</td>
+            <td>
+              {% if v.status == "available" %}
+                <span style="background: #10b981; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Kullanılabilir</span>
+              {% elif v.status == "maintenance" %}
+                <span style="background: #f59e0b; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Bakımda</span>
+              {% elif v.status == "out_of_service" %}
+                <span style="background: #ef4444; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Hizmet Dışı</span>
+              {% else %}
+                {{v.status or "-"}}
+              {% endif %}
+            </td>
+            <td>{{v.notes or "-"}}</td>
+            <td style="text-align: center;">
+              {% if session.get('role') != 'gözlemci' %}
+              <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
+                <a href="{{ url_for('vehicle_edit', vehicle_id=v.id) }}" class="btn secondary tiny" style="padding: 6px 12px; border-radius: 6px; font-size: 12px;">Düzenle</a>
+                <form method="post" action="{{ url_for('vehicle_delete', vehicle_id=v.id) }}"
+                      onsubmit="return confirm('Araç silinsin mi?')" style="display: inline; margin: 0;">
+                  <button class="btn danger tiny" type="submit" style="padding: 6px 12px; border-radius: 6px; font-size: 12px;">Sil</button>
+                </form>
+              </div>
+              {% else %}
+              <span style="color: #94a3b8; font-size: 12px;">-</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        {% if not vehicles %}
+          <tr>
+            <td colspan="8" style="padding: 40px; text-align: center; color: #64748b; font-size: 14px;">Henüz araç eklenmemiş.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
+

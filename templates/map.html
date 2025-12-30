@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <div class="rowline">
+    <h2 style="margin:0;">Haftalık Harita</h2>
+    <a class="btn ghost" href="{{ url_for('plan_week', date=selected_week) }}">Plan Tablosu</a>
+  </div>
+
+  <div class="filters">
+    <label>Ekip
+      <select id="singleTeamSelect"></select>
+    </label>
+    <button class="btn secondary" type="button" onclick="drawSingleTeamRoute()">Seçili Ekip Rotası</button>
+    <label>Hafta (Pzt)
+      <input id="mapWeek" type="date" value="{{ selected_week }}">
+    </label>
+    <button class="btn secondary" type="button" onclick="loadMap()">İşaretleri Yükle</button>
+    <button class="btn" type="button" onclick="drawAllRoutes()">Tüm Ekip Rotasını Çiz</button>
+  </div>
+
+  <div class="rowline" style="margin: 12px 0; gap: 12px; flex-wrap: wrap;">
+    <div id="allRouteStats" class="hint" style="padding:10px 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; min-width:240px;">Toplam rota: -</div>
+    <div id="routeStats" class="hint" style="padding:10px 12px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; min-width:260px;">Seçili ekip için rota seçin.</div>
+    <button class="btn secondary" type="button" onclick="toggleRouteCities(this)">Şehirleri Göster</button>
+  </div>
+
+  <div class="two" style="gap:14px; margin-bottom:12px;">
+    <div class="box" style="flex:1;">
+      <strong style="display:block; margin-bottom:6px;">Tüm Ekipler Özeti</strong>
+      <div id="allRouteList" class="hint" style="display:flex; flex-direction:column; gap:6px;"></div>
+    </div>
+    <div class="box" style="flex:1;">
+      <strong style="display:block; margin-bottom:6px;">Seçili Ekip Segmentleri</strong>
+      <div id="routeSegments" class="hint" style="display:flex; flex-direction:column; gap:6px;"></div>
+    </div>
+  </div>
+
+  <div id="map" class="map"></div>
+  <div class="hint">Her ekip rota çizgisi farklı renktedir.</div>
+</section>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('map')) {
+      ensureMap();
+    }
+  });
+</script>
+{% endblock %}

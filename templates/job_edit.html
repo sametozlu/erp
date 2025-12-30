@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h2>İş Düzenle</h2>
+  <form method="post" class="form">
+    <label>Şehir* <input name="city" required value="{{job.city}}"></label>
+    <label>Proje Kodu* <input name="project_code" required value="{{job.project_code}}"></label>
+    <label>Proje Sorumlusu* <input name="project_responsible" required value="{{job.project_responsible}}"></label>
+    <label>Çalışma Detayı* <textarea name="detail" required rows="4">{{job.detail}}</textarea></label>
+    <label>Çalışma Tarihi* <input name="work_date" type="date" required value="{{job.work_date.strftime('%Y-%m-%d')}}"></label>
+
+    <label>Çalışma Zamanı*
+      <select name="shift" required>
+        <option value="Gündüz" {% if job.shift=="Gündüz" %}selected{% endif %}>Gündüz</option>
+        <option value="Gece" {% if job.shift=="Gece" %}selected{% endif %}>Gece</option>
+        <option value="Gündüz Yol" {% if job.shift=="Gündüz Yol" %}selected{% endif %}>Gündüz Yol</option>
+      </select>
+    </label>
+
+    <label>Ekip Bilgisi* <input name="team_name" required value="{{job.team_name}}"></label>
+    <label>Araç Bilgisi <input name="vehicle_info" value="{{job.vehicle_info or ''}}"></label>
+
+    <label>Personeller (çoklu seç)
+      <select name="people_ids" multiple size="10">
+        {% for p in people %}
+          <option value="{{p.id}}" {% if p.id in selected_ids %}selected{% endif %}>
+            {{p.full_name}}{% if p.team %} • {{p.team}}{% endif %}
+          </option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <div class="two">
+      <label>Enlem <input name="lat" value="{{job.lat or ''}}"></label>
+      <label>Boylam <input name="lon" value="{{job.lon or ''}}"></label>
+    </div>
+
+    <button class="btn" type="submit">Kaydet</button>
+    <a class="btn ghost" href="{{ url_for('week_view') }}">Haftalığa Dön</a>
+  </form>
+</section>
+{% endblock %}

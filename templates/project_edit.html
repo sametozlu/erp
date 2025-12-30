@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h2>Proje Düzenle</h2>
+
+  <form method="post" class="filters" style="align-items: flex-end;">
+    <label>Proje Kodu <input name="project_code" value="{{ p.project_code }}" required></label>
+    <label>Proje Adı <input name="project_name" value="{{ p.project_name }}" required></label>
+    <label>Sorumlu
+      <select name="responsible" required>
+        <option value="">-- Seçiniz --</option>
+        {% for u in users %}
+        <option value="{{ u.full_name or u.username }}" {% if (u.full_name or u.username) == p.responsible %}selected{% endif %}>{{ u.full_name or u.username }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Karşı Firma Sorumlusu <input name="karsi_firma_sorumlusu" value="{{ p.karsi_firma_sorumlusu or '' }}"></label>
+    <label>Durum
+      <select name="is_active">
+        <option value="1" {% if p.is_active %}selected{% endif %}>Aktif</option>
+        <option value="0" {% if not p.is_active %}selected{% endif %}>Pasif</option>
+      </select>
+    </label>
+    <div style="display: flex; gap: 10px; align-items: center; width: 100%; margin-top: 10px;">
+      <button class="btn" type="submit" style="height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Kaydet</button>
+      <a class="btn" href="{{ url_for('subproject_add', project_id=p.id) }}" style="height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; background-color: #10b981; color: white;">Alt Proje Ekle</a>
+      <a class="btn secondary" href="{{ url_for('projects_page') }}" style="height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">Geri</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

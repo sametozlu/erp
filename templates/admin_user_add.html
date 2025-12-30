@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="card">
+  <h2>Yeni Kullanıcı Ekle</h2>
+  
+  <form method="POST" class="filters" style="max-width: 600px; align-items: flex-end;">
+    <label for="email">Email <span style="color: #ef4444;">*</span>
+      <input type="email" id="email" name="email" required placeholder="email@netmon.com.tr">
+    </label>
+    
+    <label for="password">Şifre <span style="color: #ef4444;">*</span>
+      <input type="password" id="password" name="password" required placeholder="Şifre">
+    </label>
+    
+    <label for="full_name">Ad Soyad
+      <input type="text" id="full_name" name="full_name" placeholder="Ad Soyad">
+    </label>
+    
+    <label for="role">Rol <span style="color: #ef4444;">*</span>
+      <select id="role" name="role" required>
+        <option value="user">Kullanıcı</option>
+        <option value="admin">Admin</option>
+        <option value="gözlemci">Gözlemci</option>
+      </select>
+      <div class="hint" style="margin-top: 4px;">
+        Gözlemci: Sadece görüntüleme yapabilir, değişiklik yapamaz.
+      </div>
+    </label>
+    
+    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; min-width: auto;">
+      <input type="checkbox" name="is_admin" value="1" style="width: auto; margin: 0;">
+      <span style="font-weight: 500;">Admin Yetkisi</span>
+      <div class="hint" style="margin-top: 4px; margin-left: 24px;">
+        Admin yetkisi olan kullanıcılar tüm kullanıcıları yönetebilir.
+      </div>
+    </label>
+    
+    <label for="is_active">Durum <span style="color: #ef4444;">*</span>
+      <select id="is_active" name="is_active" required>
+        <option value="1" selected>Aktif</option>
+        <option value="0">Pasif</option>
+      </select>
+      <div class="hint" style="margin-top: 4px;">
+        Pasif kullanıcılar "Sorumlu" seçimlerinde görünmez.
+      </div>
+    </label>
+    
+    <div style="display: flex; gap: 10px; width: 100%; margin-top: 10px;">
+      <button type="submit" class="btn" style="height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Kaydet</button>
+      <a href="{{ url_for('admin_users') }}" class="btn secondary" style="height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">İptal</a>
+    </div>
+  </form>
+</section>
+{% endblock %}
+

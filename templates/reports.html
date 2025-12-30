@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <div class="rowline">
+    <h2 style="margin:0;">Rapor & Mail</h2>
+    <div class="rowline">
+      <a class="btn ghost" href="{{ url_for('reports_page', date=prev_week) }}">← Önceki</a>
+      <a class="btn ghost" href="{{ url_for('reports_page', date=next_week) }}">Sonraki →</a>
+    </div>
+  </div>
+
+  <form method="get" class="filters">
+    <label>Hafta (Pzt)
+      <input type="date" name="date" value="{{ selected_week }}">
+    </label>
+    <button class="btn secondary">Getir</button>
+  </form>
+
+  <h3 style="margin-top:18px;">Ekip / İş Sayısı Özeti</h3>
+  <div class="hint">Ekip adı otomatik geliyor (personelin takım bilgisine göre). Karma ekiplerde "Karma" görünür.</div>
+
+  {% set ns = namespace(team_jobs={}, team_people={}, seen_jobs={}) %}
+  {% for wd, region, pcode, pname, shift, vehicle, note, person, tc, phone, teamname in detailed_rows %}
+    {% set t = (teamname or 'Belirtilmemiş') %}
+    {% set job_key = wd.strftime('%Y-%m-%d') ~ '|' ~ region ~ '|' ~ pcode ~ '|' ~ (shift or '') ~ '|' ~ (vehicle or '') ~ '|' ~ (note or '') ~ '|' ~ t %}
+    {% if not ns.seen_jobs.get(job_key) %}
+      {% set _ = ns.seen_jobs.update({job_key: 1}) %}
+      {% set _ = ns.team_jobs.update({t: (ns.team_jobs.get(t,0) + 1)}) %}
+    {% endif %}
+    {% set ppl_set = ns.team_people.get(t, {}) %}
+    {% set _ = ppl_set.update({person: 1}) %}
+    {% set _ = ns.team_people.update({t: ppl_set}) %}
+  {% endfor %}
+
+  <div class="tablewrap" style="margin-top:10px;">
+    <table class="simple">
+      <thead>
+        <tr><th>Ekip</th><th>İş Sayısı</th><th>Haftalık Personel Sayısı</th></tr>
+      </thead>
+      <tbody>
+        {% for t, cnt in ns.team_jobs.items()|sort %}
+          <tr>
+            <td data-team-name="{{ t }}">{{ t }}</td>
+            <td>{{ cnt }}</td>
+            <td>{{ (ns.team_people.get(t) or {})|length }}</td>
+          </tr>
+        {% endfor %}
+        {% if ns.team_jobs|length == 0 %}
+          <tr><td colspan="3" class="muted">Bu hafta kayıt yok.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-top:18px;">Kısa Tablo (Müşteri)</h3>
+  <div class="hint">Ad Soyad + TC + Tarih + Saat(Vardiya) + Araç (isteğine göre)</div>
+
+  <div class="tablewrap" style="margin-top:10px;">
+    <table class="simple">
+      <thead>
+        <tr>
+          <th>Tarih</th><th>İl</th><th>Proje</th><th>Ad Soyad</th><th>TC</th><th>Telefon</th><th>Vardiya</th><th>Araç</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for wd, region, pcode, name, tc, phone, shift, vehicle in short_rows %}
+          <tr>
+            <td>{{ wd.strftime("%Y-%m-%d") }}</td>
+            <td>{{ region }}</td>
+            <td>{{ pcode }}</td>
+            <td>{{ name }}</td>
+            <td>{{ tc or "-" }}</td>
+            <td>{{ phone or "-" }}</td>
+            <td>{{ shift or "-" }}</td>
+            <td>{{ vehicle or "-" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h3 style="margin-top:18px;">Detaylı Tablo</h3>
+  <div class="tablewrap" style="margin-top:10px;">
+    <table class="simple">
+      <thead>
+        <tr>
+          <th>Tarih</th><th>İl</th><th>Proje</th><th>Vardiya</th><th>Araç</th><th>Ekip</th><th>İş Detayı</th><th>Personel</th><th>TC</th><th>Telefon</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for wd, region, pcode, pname, shift, vehicle, note, person, tc, phone, teamname in detailed_rows %}
+          <tr>
+            <td>{{ wd.strftime("%Y-%m-%d") }}</td>
+            <td>{{ region }}</td>
+            <td>{{ pcode }} - {{ pname }}</td>
+            <td>{{ shift or "-" }}</td>
+            <td>{{ vehicle or "-" }}</td>
+            <td data-team-name="{{ teamname }}">{{ teamname or "-" }}</td>
+            <td>{{ note or "-" }}</td>
+            <td>{{ person }}</td>
+            <td>{{ tc or "-" }}</td>
+            <td>{{ phone or "-" }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

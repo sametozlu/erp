@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block content %}
+{% set tr_days = ["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"] %}
+
+<div class="layout">
+  <!-- SOL: Haftalık Plan -->
+  <section class="card">
+    <div class="rowline">
+      <h2 style="margin:0;">Haftalık Plan</h2>
+      <div class="rowline">
+        <a class="btn ghost" href="{{ url_for('week_view', date=prev_week, team=filter_team) }}">← Önceki Hafta</a>
+        <a class="btn ghost" href="{{ url_for('week_view', date=next_week, team=filter_team) }}">Sonraki Hafta →</a>
+      </div>
+    </div>
+
+    <form method="get" class="filters">
+      <label>Hafta (Pzt)
+        <input type="date" name="date" value="{{selected_date}}">
+      </label>
+      <label>Ekip
+        <input name="team" value="{{filter_team}}" placeholder="Hepsi (boş bırak)">
+      </label>
+      <button class="btn secondary">Getir</button>
+      <a class="btn" href="{{ url_for('jobs') }}">+ Tek İş Ekle</a>
+    </form>
+
+    <!-- Pazar kaymasın diye: week-wrap overflow -->
+    <div class="week-wrap">
+      <div class="week">
+        {% for day in days %}
+          {% set k = day.strftime("%Y-%m-%d") %}
+          <div class="week-cell">
+            <div class="week-head">
+              <div>
+                <div><strong>{{ tr_days[loop.index0] }}</strong></div>
+                <div class="hint">{{k}}</div>
+              </div>
+              <div class="rowline">
+                <a class="btn tiny ghost" href="{{ url_for('map_page', date=k, team=filter_team) }}">Harita</a>
+              </div>
+            </div>
+
+            <div class="week-list" id="list-{{k}}">
+              {% for j in by_day[k] %}
+                <div class="week-job" data-job-id="{{j.id}}">
+                  <div class="week-job-top">
+                    <span class="pill">{{j.shift}}</span>
+                    <span class="pill soft" data-team-name="{{ j.team_name }}" data-week-start="{{ selected_date }}">{{j.team_name}}</span>
+                  </div>
+                  <div><strong>{{j.city}}</strong> • {{j.project_code}}</div>
+                  <div class="hint">{{j.project_responsible}}</div>
+                  <div class="hint">{{j.detail}}</div>
+                  <div class="week-actions">
+                    <a class="btn tiny" href="{{ url_for('edit_job', job_id=j.id) }}">Düzenle</a>
+                    <form method="post" action="{{ url_for('delete_job', job_id=j.id) }}"
+                          onsubmit="return confirm('İş silinsin mi?')">
+                      <button class="btn danger tiny" type="submit">Sil</button>
+                    </form>
+                  </div>
+                </div>
+              {% endfor %}
+              {% if by_day[k]|length == 0 %}
+                <div class="hint">İş yok</div>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="hint" style="margin-top:10px;">
+      Kartları aynı gün içinde sürükle-bırak ile sıralayın. Haritadaki güzergâh bu sıraya göre çizilir.
+    </div>
+  </section>
+
+  <!-- SAĞ: Personel Paneli -->
+  <section class="card">
+    <h2 style="margin:0 0 10px;">Personel Paneli</h2>
+
+    <div class="stack">
+      <div class="box">
+        <div class="rowline">
+          <strong>Toplam Personel</strong>
+          <span class="badge" id="totalPeopleCount">-</span>
+        </div>
+        <div class="hint">Bu liste sabit. Alttaki “Boşta” listesi, iş atadıkça azalır.</div>
+        <div class="pill-list" id="allPeopleList"></div>
+      </div>
+
+      <div class="box">
+        <div class="rowline">
+          <strong>Boşta Kalan (Gün + Vardiya)</strong>
+        </div>
+
+        <div class="filters">
+          <label>Gün
+            <select id="availDate">
+              {% for day in days %}
+                {% set k = day.strftime("%Y-%m-%d") %}
+                <option value="{{k}}">{{k}} • {{ tr_days[loop.index0] }}</option>
+              {% endfor %}
+            </select>
+          </label>
+
+          <label>Vardiya
+            <select id="availShift">
+              <option value="Gündüz">Gündüz</option>
+              <option value="Gece">Gece</option>
+              <option value="Gündüz Yol">Gündüz Yol</option>
+            </select>
+          </label>
+
+          <button class="btn secondary" type="button" onclick="loadAvailability()">Göster</button>
+        </div>
+
+        <div class="two">
+          <div>
+            <div class="rowline">
+              <strong>Boşta</strong>
+              <span class="badge" id="availCount">-</span>
+            </div>
+            <div class="pill-list" id="availList"></div>
+          </div>
+
+          <div>
+            <div class="rowline">
+              <strong>Çalışmada</strong>
+              <span class="badge" id="busyCount">-</span>
+            </div>
+            <div class="pill-list" id="busyList"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="box">
+        <strong>Hız</strong>
+        <div class="hint">
+          20 iş gireceksen “⚡ Toplu Hızlı Giriş” daha pratik: satır ekle → tek seferde kaydet.
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+{% endblock %}

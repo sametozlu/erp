@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card" style="max-width: 960px; margin: 0 auto;">
+  <div class="rowline" style="justify-content: space-between;">
+    <div>
+      <h2 style="margin:0;">Mail</h2>
+      <p style="margin:4px 0 0; color:#475569; font-size:13px;">Haftalık planı veya belirli bir ekibi mail ile gönder.</p>
+    </div>
+    <div class="rowline" style="gap:8px;">
+      {% if session.get('is_admin') %}
+      <a class="btn ghost" href="{{ url_for('mail_settings_page') }}">Mail Ayarları</a>
+      {% endif %}
+      <a class="btn ghost" href="{{ url_for('reports_page', date=selected_week) }}">Rapor Sayfası</a>
+    </div>
+  </div>
+
+  <form method="get" class="filters" style="margin-top:12px;">
+    <label>Hafta (Pzt)
+      <input type="date" name="date" value="{{ selected_week }}">
+    </label>
+    <button class="btn secondary">Getir</button>
+  </form>
+
+  <div class="card" style="margin-top:16px; padding:16px; border:1px solid #e2e8f0; border-radius:10px;">
+    <h3 style="margin-top:0;">Toplu Gönder</h3>
+    <p class="hint">Seçili haftadaki tüm atamaları ilgili personele mail olarak gönderir. Dosya ekleri (LLD/HHD, Tutanak) ve “İş Detay Maili” metni eklenir.</p>
+    <div class="rowline" style="gap:10px; flex-wrap:wrap;">
+      <button class="btn" type="button" onclick="sendWeeklyEmails('{{ selected_week }}')">Tüm Haftayı Gönder</button>
+      <div id="mailStatusAll" class="hint"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px; padding:16px; border:1px solid #e2e8f0; border-radius:10px;">
+    <h3 style="margin-top:0;">Ekip Bazlı Gönder</h3>
+    <p class="hint">Seçilen ekibe ait haftalık işleri ilgili personele mail olarak gönderir.</p>
+    <div class="rowline" style="gap:10px; flex-wrap:wrap;">
+      <label>Ekip
+        <select id="teamSelect" class="input">
+          {% for t in team_names %}
+            <option value="{{ t }}">{{ t }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button class="btn" type="button" onclick="sendTeamEmails('{{ selected_week }}')">Ekip Gönder</button>
+      <div id="mailStatusTeam" class="hint"></div>
+    </div>
+    {% if team_names|length == 0 %}
+      <div class="hint" style="margin-top:8px;">Bu hafta için ekip bulunamadı.</div>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

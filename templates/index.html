@@ -1,0 +1,98 @@
+.plan-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.week-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.plan-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.plan-table th,
+.plan-table td {
+  border: 1px solid #ddd;
+  padding: 6px;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.job-code {
+  font-weight: 600;
+}
+
+.job-time {
+  font-size: 0.75rem;
+  color: #555;
+}
+
+.cell {
+  cursor: pointer;
+}
+
+.cell.empty {
+  color: #aaa;
+}
+
+.work-normal {
+  background: #d4edda;
+}
+
+.work-road {
+  background: #fff3cd;
+}
+
+.work-night {
+  background: #d1ecf1;
+}
+
+/* SAĞ PANEL */
+.side-panel {
+  position: fixed;
+  top: 0;
+  right: -360px;
+  width: 360px;
+  height: 100%;
+  background: #fff;
+  border-left: 1px solid #ddd;
+  transition: right 0.3s;
+  display: flex;
+  flex-direction: column;
+}
+
+.side-panel.open {
+  right: 0;
+}
+
+.panel-header {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+}
+
+.panel-body {
+  padding: 10px;
+  flex: 1;
+}
+
+.panel-footer {
+  padding: 10px;
+  border-top: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+}
+
+.person-list li.free {
+  color: green;
+}
+
+.person-list li.busy {
+  color: red;
+}

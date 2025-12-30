@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h2>Araç Düzenle</h2>
+
+  <form method="post" class="filters" style="align-items: flex-end;">
+    <label>Plaka <input name="plate" value="{{v.plate}}" required placeholder="34 ABC 123"></label>
+    <label>Marka <input name="brand" value="{{v.brand}}" required></label>
+    <label>Model <input name="model" value="{{v.model or ''}}"></label>
+    <label>Yıl <input name="year" type="number" value="{{v.year or ''}}" min="1900" max="2100"></label>
+    <label>Araç Tipi 
+      <select name="vehicle_type">
+        <option value="">Seçiniz</option>
+        <option value="Araba" {% if v.vehicle_type == "Araba" %}selected{% endif %}>Araba</option>
+        <option value="Kamyon" {% if v.vehicle_type == "Kamyon" %}selected{% endif %}>Kamyon</option>
+        <option value="Minibüs" {% if v.vehicle_type == "Minibüs" %}selected{% endif %}>Minibüs</option>
+        <option value="Pick-up" {% if v.vehicle_type == "Pick-up" %}selected{% endif %}>Pick-up</option>
+        <option value="Van" {% if v.vehicle_type == "Van" %}selected{% endif %}>Van</option>
+        <option value="Diğer" {% if v.vehicle_type == "Diğer" %}selected{% endif %}>Diğer</option>
+      </select>
+    </label>
+    <label>Durum 
+      <select name="status">
+        <option value="available" {% if v.status == "available" %}selected{% endif %}>Kullanılabilir</option>
+        <option value="maintenance" {% if v.status == "maintenance" %}selected{% endif %}>Bakımda</option>
+        <option value="out_of_service" {% if v.status == "out_of_service" %}selected{% endif %}>Hizmet Dışı</option>
+      </select>
+    </label>
+    <label>Notlar <textarea name="notes" rows="3" style="min-height: 36px;">{{v.notes or ''}}</textarea></label>
+    <div style="display: flex; gap: 10px; align-items: center; width: 100%; margin-top: 10px;">
+      <button class="btn" type="submit" style="height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Kaydet</button>
+      <a href="{{ url_for('tools_page') }}" class="btn ghost" style="height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">İptal</a>
+    </div>
+  </form>
+</section>
+{% endblock %}
+
