@@ -13,6 +13,7 @@ def init_users():
         {"username": "kivanc", "password": "kivanc", "is_admin": True, "is_super_admin": True, "role": "admin", "email": "kivancozcan@netmon.com.tr", "full_name": "Kıvanç Özcan"},
         {"username": "burak", "password": "burak", "is_admin": False, "is_super_admin": False, "role": "user", "email": "burakgul@netmon.com.tr", "full_name": "Burak Gül"},
         {"username": "gizem", "password": "gizem", "is_admin": False, "is_super_admin": False, "role": "user", "email": "gizelolmezboyukucar@netmon.com.tr", "full_name": "Gizem Ölmez Boyukucar"},
+        {"username": "halilsamedozlu", "password": "samet1234", "is_admin": False, "is_super_admin": False, "role": "user", "email": "halilsamedozlu@netmon.com.tr", "full_name": "Halil Samed Ozlu"},
     ]
     
     # Önce tüm kullanıcıları kontrol et - Kıvanc dışındaki super admin'leri normal yap
