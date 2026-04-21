@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card" style="max-width: 980px; margin: 0 auto;">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
+    <div>
+      <h2 style="margin:0;">Benim İşlerim</h2>
+      <div class="hint" style="margin-top:4px;">{{ user.full_name or user.email }}</div>
+    </div>
+    <a class="btn secondary" href="{{ url_for('auth.logout') }}" style="text-decoration:none;">Çıkış</a>
+  </div>
+ 
+  <div class="presetChips" style="margin-top:12px;">
+    <a class="presetChip {% if active_tab=='current' %}active{% endif %}" href="{{ url_for('planner.portal_home_current', start=start, end=end, city=city, project_id=project_id, status=status) }}">Güncel işlerim</a>
+    <a class="presetChip {% if active_tab=='completed' %}active{% endif %}" href="{{ url_for('planner.portal_home_completed', start=start, end=end, city=city, project_id=project_id, status=status) }}">Tamamlanan işlerim</a>
+    <a class="presetChip {% if active_tab=='waiting' %}active{% endif %}" href="{{ url_for('planner.portal_home_waiting', start=start, end=end, city=city, project_id=project_id, status=status) }}">Beklemedeki işlerim</a>
+    <a class="presetChip {% if active_tab=='reported' %}active{% endif %}" href="{{ url_for('planner.portal_home_reported', start=start, end=end, city=city, project_id=project_id, status=status) }}">Rapor yazdıklarım</a>
+    <a class="presetChip {% if active_tab=='report_pending' %}active{% endif %}" href="{{ url_for('planner.portal_home_report_pending', start=start, end=end, city=city, project_id=project_id, status=status) }}">Rapor bekleyen</a>
+  </div>
+ 
+  <form method="get" class="filters" style="margin-top:14px; align-items:end;">
+    <label>Başlangıç
+      <input type="date" name="start" value="{{ start }}">
+    </label>
+    <label>Bitiş
+      <input type="date" name="end" value="{{ end }}">
+    </label>
+    <label>İl
+      <select name="city">
+        <option value="">(hepsi)</option>
+        {% for c in cities %}
+          <option value="{{ c }}" {% if city==c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Proje
+      <select name="project_id">
+        <option value="0">(hepsi)</option>
+        {% for p in projects %}
+          <option value="{{ p.id }}" {% if project_id==p.id %}selected{% endif %}>{{ p.region }} | {{ p.project_code }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Durum
+      <select name="status">
+        <option value="" {% if not status %}selected{% endif %}>(hepsi)</option>
+        <option value="pending" {% if status=='pending' %}selected{% endif %}>Beklemede</option>
+        <option value="completed" {% if status=='completed' %}selected{% endif %}>Tamamlandı</option>
+        <option value="problem" {% if status=='problem' %}selected{% endif %}>Sorun</option>
+      </select>
+    </label>
+    <button class="btn" type="submit" style="background:var(--text-strong); color:white; border:none;">Filtrele</button>
+  </form>
+</section>
+
+{% if announcements_preview %}
+<section class="card" style="max-width: 980px; margin: 12px auto 0;">
+  <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+    <h3 style="margin:0;">Duyurular</h3>
+    <a class="btn secondary" href="{{ url_for('chat.announcements_page') }}" style="text-decoration:none;">Tümü</a>
+  </div>
+  {% if announcements_unread_count %}
+    <div class="hint" style="margin-top:4px;">{{ announcements_unread_count }} okunmadı</div>
+  {% endif %}
+  <div style="margin-top:10px; display:flex; flex-direction:column; gap:8px;">
+    {% for a in announcements_preview %}
+      {% if not a.is_read %}
+      <a class="jobCard"
+         href="{{ url_for('chat.announcements_page') }}"
+         style="margin-top:0; border-left-color: var(--text-strong); background: var(--bg-soft);">
+      {% else %}
+      <a class="jobCard"
+         href="{{ url_for('chat.announcements_page') }}"
+         style="margin-top:0; border-left-color: var(--border); background: #ffffff;">
+      {% endif %}
+        <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+          <div style="font-weight:900; color:var(--text-strong);">{{ a.title }}</div>
+          <div class="hint" style="white-space:nowrap;">{% if a.created_at %}{{ a.created_at.strftime('%Y-%m-%d %H:%M') }}{% endif %}</div>
+        </div>
+        <div class="hint" style="margin-top:6px;">
+          {% if a.created_by_name %}{{ a.created_by_name }}{% endif %}
+        </div>
+        {% if a.body %}
+          <div class="hint" style="margin-top:6px; white-space:pre-wrap;">{{ a.body[:160] }}{% if a.body|length > 160 %}...{% endif %}</div>
+        {% endif %}
+      </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="card" style="max-width: 980px; margin: 12px auto 0;">
+  <h3 style="margin:0 0 10px;">Bugün</h3>
+  {% if not today_jobs %}
+    <div class="hint">Bugün için atanmış iş yok.</div>
+  {% endif %}
+  {% for j in today_jobs %}
+    {% set meta = job_meta.get(j.id, {}) %}
+    <a href="{{ url_for('planner.portal_job_detail', job_id=j.id) }}" class="jobCard status-{{ j.status }} {% if meta.get('report_pending') %}status-report-pending report-pending{% elif meta.get('has_report') %}status-reported report-reported{% endif %}">
+      <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+        <div style="font-weight:900; color:var(--text-strong);">{{ j.project.project_code if j.project else '' }} - {{ j.project.project_name if j.project else '' }}{% if j.subproject %} / {{ j.subproject.name }}{% endif %}</div>
+        <div style="font-weight:800; color:var(--text-strong);">{{ j.work_date.strftime('%Y-%m-%d') }}</div>
+      </div>
+      <div class="hint" style="margin-top:6px;">
+        {{ j.project.region if j.project else '' }} | {{ j.shift or '-' }} | {{ j.team_name or '-' }} | Durum: {{ j.status }}
+      </div>
+      {% if j.note %}
+        <div style="margin-top:8px; color:var(--text-subtle); font-size:13px;">{{ j.note }}</div>
+      {% endif %}
+      <div style="margin-top:10px;">
+        <span class="btn tiny" style="background:var(--text-strong); color:white; border:none;">Detay</span>
+      </div>
+    </a>
+  {% endfor %}
+</section>
+
+<section class="card" style="max-width: 980px; margin: 12px auto 0;">
+  <h3 style="margin:0 0 10px;">Yaklaşan</h3>
+  {% if not upcoming_jobs %}
+    <div class="hint">Kayıt yok.</div>
+  {% endif %}
+  {% for j in upcoming_jobs %}
+    {% set meta = job_meta.get(j.id, {}) %}
+    <a href="{{ url_for('planner.portal_job_detail', job_id=j.id) }}" class="jobCard status-{{ j.status }} {% if meta.get('report_pending') %}status-report-pending report-pending{% elif meta.get('has_report') %}status-reported report-reported{% endif %}">
+      <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+        <div style="font-weight:900; color:var(--text-strong);">{{ j.project.project_code if j.project else '' }} - {{ j.project.project_name if j.project else '' }}{% if j.subproject %} / {{ j.subproject.name }}{% endif %}</div>
+        <div style="font-weight:800; color:var(--text-strong);">{{ j.work_date.strftime('%Y-%m-%d') }}</div>
+      </div>
+      <div class="hint" style="margin-top:6px;">
+        {{ j.project.region if j.project else '' }} | {{ j.shift or '-' }} | {{ j.team_name or '-' }} | Durum: {{ j.status }}
+      </div>
+      {% if j.note %}
+        <div style="margin-top:8px; color:var(--text-subtle); font-size:13px;">{{ j.note }}</div>
+      {% endif %}
+      <div style="margin-top:10px;">
+        <span class="btn tiny" style="background:var(--text-strong); color:white; border:none;">Detay</span>
+      </div>
+    </a>
+  {% endfor %}
+</section>
+{% endblock %}

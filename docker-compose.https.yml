@@ -1,0 +1,44 @@
+# HTTPS Destekli Docker Compose Konfigürasyonu
+# Bu dosyayı kullanmak için: docker-compose -f docker-compose.https.yml up -d
+#
+# Önemli: SSL sertifikaları gereklidir.
+# Self-signed sertifika oluşturmak için:
+#   mkdir -p ssl
+#   openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+#     -keyout ssl/server.key -out ssl/server.crt \
+#     -subj "/CN=localhost"
+
+services:
+  staff_planner:
+    build: .
+    container_name: staff_planner
+    ports:
+      - "8890:5000"
+    environment:
+      - TZ=Europe/Istanbul
+      - DB_URL=sqlite:////app/instance/planner.db
+    volumes:
+      - ./instance:/app/instance
+    restart: unless-stopped
+    networks:
+      - app_network
+
+  # Nginx Reverse Proxy - HTTPS desteği sağlar
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_proxy
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - staff_planner
+    restart: unless-stopped
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge

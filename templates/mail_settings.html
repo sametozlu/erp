@@ -1,0 +1,1158 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  /* Basit Tab Yapısı */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    gap: 2px;
+    margin-bottom: 16px;
+  }
+
+  .tab-btn {
+    padding: 10px 16px;
+    border: none;
+    background: none;
+    font-weight: 600;
+    color: var(--text-subtle);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .tab-btn:hover {
+    color: var(--text-main);
+    background: var(--bg-soft);
+  }
+
+  .tab-btn.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+  }
+
+  .tab-pane {
+    display: none;
+    animation: fadeIn 0.3s;
+  }
+
+  .tab-pane.active {
+    display: block;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Log Tablosu */
+  .log-row {
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .log-row:hover {
+    background: var(--bg-soft);
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .status-ok {
+    background: var(--status-success-bg);
+    color: var(--status-success-text);
+  }
+
+  .status-err {
+    background: var(--status-danger-bg);
+    color: var(--status-danger-text);
+  }
+
+  /* Modal Styles */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.open,
+  .modal-overlay:not([style*="display: none"]) {
+    display: flex;
+  }
+
+  .modal-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    width: 900px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  }
+
+  .modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-secondary);
+  }
+
+  .modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: var(--text-muted);
+    line-height: 1;
+    padding: 0 8px;
+  }
+
+  .modal-close:hover {
+    color: var(--text-main);
+  }
+
+  .modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .modal-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-secondary);
+  }
+</style>
+
+<div class="card" style="max-width: 1100px; margin: 0 auto; min-height: 600px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+    <h2 style="margin:0;">Mail Merkezi</h2>
+    <div style="font-size:12px; color:var(--text-subtle);">v2.2</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn" onclick="openTab('settings')">SMTP Ayarları</button>
+    <button class="tab-btn active" onclick="openTab('logs')">Gönderim Logları</button>
+  </div>
+
+  <!-- SEKME 1: AYARLAR -->
+  <div id="tab-settings" class="tab-pane">
+    <form method="post" style="max-width: 600px;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="columns" style="display:flex; gap:16px;">
+        <label style="flex:2;">SMTP Host
+          <input class="input" type="text" name="host" value="{{ cfg.host }}" required placeholder="smtp.gmail.com">
+        </label>
+        <label style="flex:1;">Port
+          <input class="input" type="number" name="port" value="{{ cfg.port or 587 }}" required>
+        </label>
+      </div>
+
+      <div class="columns" style="display:flex; gap:16px; margin-top:8px;">
+        <label style="flex:1;">Kullanıcı
+          <input class="input" type="text" name="user" value="{{ cfg.user }}" placeholder="email@domain.com">
+        </label>
+        <label style="flex:1;">Şifre
+          <input class="input" type="password" name="password" placeholder="Değiştirmek için girin">
+        </label>
+      </div>
+
+      <div class="columns" style="display:flex; gap:16px; margin-top:8px;">
+        <label style="flex:1;">📝 Gönderen Adı (Takma Ad)
+          <input class="input" type="text" name="from_name" value="{{ cfg.from_name or '' }}"
+            placeholder="Netmon Proje Takip">
+          <small style="color:var(--text-muted); font-size:11px;">Mail alıcısının göreceği gönderen ismi</small>
+        </label>
+        <label style="flex:1;">📧 Gönderen E-posta (From)
+          <input class="input" type="text" name="from_addr" value="{{ cfg.from_addr }}" placeholder="email@domain.com">
+        </label>
+      </div>
+      <div class="hint"
+        style="margin-top:4px; background: var(--bg-soft); padding: 8px 12px; border-radius: 6px; font-size: 12px;">
+        💡 Mail şu şekilde görünecek: <strong>"{{ cfg.from_name or 'Gönderen Adı' }}" &lt;{{ cfg.from_addr or
+          'email@domain.com' }}&gt;</strong>
+      </div>
+
+      <div class="checkboxes" style="margin-top:12px; display:flex; gap:16px;">
+        <label style="display:flex; gap:6px; align-items:center; cursor:pointer;">
+          <input type="checkbox" name="use_tls" value="1" {% if cfg.use_tls %}checked{% endif %}>
+          <span>TLS (STARTTLS)</span>
+        </label>
+        <label style="display:flex; gap:6px; align-items:center; cursor:pointer;">
+          <input type="checkbox" name="use_ssl" value="1" {% if cfg.use_ssl %}checked{% endif %}>
+          <span>SSL</span>
+        </label>
+      </div>
+      <div class="hint">Genelde TLS için 587, SSL için 465 portu kullanılır.</div>
+
+      <hr style="margin:20px 0; border:0; border-top:1px solid var(--border);">
+
+      <h3 style="font-size:16px;">Admin Bildirimleri</h3>
+      <div class="columns" style="display:flex; gap:16px;">
+        <label style="flex:1;">Alıcılar (notify_to)
+          <input class="input" type="text" name="notify_to" value="{{ cfg.notify_to or '' }}"
+            placeholder="a@x.com, b@x.com">
+        </label>
+        <label style="flex:1;">CC (notify_cc)
+          <input class="input" type="text" name="notify_cc" value="{{ cfg.notify_cc or '' }}">
+        </label>
+      </div>
+      <div class="hint">Mail gönderim hatası olduğunda bu adreslere bildirim gider.</div>
+
+      <div style="margin-top:24px; display:flex; gap:12px; align-items:center;">
+        <button class="btn primary" type="submit" name="action" value="save">Ayarları Kaydet</button>
+
+        <div style="flex:1;"></div>
+
+        <div style="display:flex; gap:8px;">
+          <input class="input" type="email" name="test_to" placeholder="Test maili alıcısı" style="width:200px;">
+          <button class="btn secondary" type="submit" formaction="{{ url_for('admin.mail_settings_test') }}">Test
+            Gönder</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- SEKME 2: LOGLAR -->
+  <div id="tab-logs" class="tab-pane active">
+    <div style="display:flex; gap:12px; margin-bottom:12px; flex-wrap:wrap; align-items:end;">
+      <label style="min-width:140px;">Başlangıç
+        <input type="date" id="filter-start" class="input" style="width:100%;">
+      </label>
+      <label style="min-width:140px;">Bitiş
+        <input type="date" id="filter-end" class="input" style="width:100%;">
+      </label>
+      <label style="min-width:120px;">Tür
+        <select id="filter-type" class="input" style="width:100%;">
+          <option value="all">Tümü</option>
+          <option value="send">Normal</option>
+          <option value="test">Test</option>
+          <option value="preview">Önizleme</option>
+        </select>
+      </label>
+      <label style="min-width:100px;">Durum
+        <select id="filter-status" class="input" style="width:100%;">
+          <option value="">Hepsi</option>
+          <option value="ok">Başarılı</option>
+          <option value="error">Hatalı</option>
+        </select>
+      </label>
+      <label style="flex:1; min-width:180px;">Arama
+        <input type="text" id="filter-q" class="input" placeholder="Alıcı, konu ara..." style="width:100%;">
+      </label>
+      <button class="btn secondary" onclick="loadLogs(1)">Ara</button>
+      <a class="btn ghost" href="#" id="excelLink" target="_blank">Excel</a>
+    </div>
+
+    <!-- Toplu İşlemler -->
+    <div id="bulkActions"
+      style="display:none; padding:10px; background:var(--status-warning-bg); border-radius:8px; margin-bottom:12px; align-items:center; gap:10px;">
+      <span style="font-weight:600;">Seçilen: <span id="selectedCount">0</span></span>
+      <button class="btn" style="background:var(--status-warning); color:white;" onclick="bulkResend()">Yeniden
+        Gönder</button>
+      <button class="btn secondary" onclick="bulkDelete()">Sil</button>
+      <div style="flex:1;"></div>
+      <button class="btn ghost" onclick="selectAllLogs()">Tümünü Seç</button>
+      <button class="btn ghost" onclick="deselectAllLogs()">Seçimi Kaldır</button>
+    </div>
+
+    <div class="tablewrap">
+      <table class="simple" style="font-size:13px;">
+        <thead>
+          <tr>
+            <th style="width:40px;"><input type="checkbox" id="selectAllLogs" onclick="toggleSelectAllLogs()"></th>
+            <th style="width:130px;">Tarih</th>
+            <th style="width:70px;">Tür</th>
+            <th style="width:70px;">Durum</th>
+            <th>Alıcı</th>
+            <th>Konu</th>
+            <th style="width:100px;">Ekip</th>
+            <th style="width:60px;">Boyut</th>
+            <th style="width:50px;">İşlem</th>
+          </tr>
+        </thead>
+        <tbody id="logs-tbody">
+          <tr>
+            <td colspan="9" style="text-align:center; padding:20px; color:var(--text-muted);">Yükleniyor...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination" style="margin-top:12px; display:flex; justify-content:center; gap:8px;">
+      <button id="prev-page" class="btn small" disabled onclick="changeLogPage(-1)">Önceki</button>
+      <span id="page-info" style="font-size:13px; line-height:30px;">Sayfa 1</span>
+      <button id="next-page" class="btn small" disabled onclick="changeLogPage(1)">Sonraki</button>
+    </div>
+  </div>
+
+  <!-- SEKME 3: ŞABLONLAR (Dropdown seçici + yan yana layout) -->
+  <div id="tab-templates" class="tab-pane">
+
+    <!-- Üst: Şablon Seçici (Dropdown) -->
+    <div
+      style="background: linear-gradient(135deg, var(--bg-soft), var(--bg)); padding: 16px 20px; border-radius: 10px; margin-bottom: 16px; border: 1px solid var(--border);">
+      <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <label style="font-weight: 600; font-size: 14px; color: var(--text-primary); margin: 0; white-space: nowrap;">
+            📧 Şablon Türü:
+          </label>
+          <select id="template-type-dropdown" class="input" onchange="selectTemplateFromDropdown()"
+            style="min-width: 260px; padding: 10px 14px; font-size: 14px; font-weight: 500; cursor: pointer;">
+            <optgroup label="📅 Plan & Ekip">
+              <option value="weekly">📅 Haftalık Plan</option>
+              <option value="team">👥 Ekip Raporu</option>
+              <option value="bulk">📨 Toplu Bildirim</option>
+            </optgroup>
+            <optgroup label="🔧 İş Yönetimi">
+              <option value="job">🔧 İş Atama</option>
+              <option value="cell">📊 İş Detayı (Hücre)</option>
+            </optgroup>
+            <optgroup label="📋 Görev Bildirimleri">
+              <option value="task">📋 Görev Bildirimi (Genel)</option>
+              <option value="task_created">📋 Yeni Görev Oluşturuldu</option>
+              <option value="task_assigned">📋 Görev Atandı</option>
+              <option value="task_status_changed">📋 Görev Durumu Değişti</option>
+              <option value="task_comment">💬 Göreve Yorum Eklendi</option>
+            </optgroup>
+            <optgroup label="⏰ Hatırlatmalar">
+              <option value="reminder">⏰ Görev Hatırlatması</option>
+              <option value="deadline_expired">⚠️ Süre Bitti Uyarısı</option>
+            </optgroup>
+            <optgroup label="📁 Proje Bildirimleri">
+              <option value="project">📁 Proje Eklendi</option>
+              <option value="subproject">📂 Alt Proje Eklendi</option>
+            </optgroup>
+            <optgroup label="🔧 Sistem">
+              <option value="test">🧪 Test Maili</option>
+            </optgroup>
+          </select>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn secondary" onclick="resetTemplate()" style="padding: 10px 16px;">
+            ↩️ Varsayılana Dön
+          </button>
+          <button class="btn primary" onclick="saveTemplate()" style="padding: 10px 16px;">
+            💾 Kaydet
+          </button>
+        </div>
+      </div>
+      <div style="margin-top: 10px;">
+        <span style="font-size: 13px; color: var(--text-muted);" id="template-description">Seçili şablonu
+          düzenleyin</span>
+      </div>
+    </div>
+
+    <input type="hidden" id="current-template-type" value="weekly">
+
+    <!-- Alt: Editör + Önizleme Yan Yana -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; min-height: 500px;">
+
+      <!-- Sol: Editör -->
+      <div
+        style="display: flex; flex-direction: column; gap: 12px; background: var(--card-bg); padding: 16px; border-radius: 10px; border: 1px solid var(--border);">
+        <h4 style="margin: 0 0 8px 0; font-size: 14px; color: var(--text-primary);">✏️ Şablon Düzenle</h4>
+
+        <label style="font-size: 13px; font-weight: 500;">📨 Konu Satırı (Subject)
+          <input class="input" id="template-subject" type="text" oninput="debouncedPreview()"
+            placeholder="Haftalık Plan - {{week_start}}" style="margin-top: 4px;">
+        </label>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <label style="font-size: 13px; font-weight: 500;">📌 Mail Başlığı
+            <input class="input" id="template-heading" type="text" oninput="debouncedPreview()"
+              placeholder="Haftalık İş Planınız" style="margin-top: 4px;">
+          </label>
+          <label style="font-size: 13px; font-weight: 500;">👋 Giriş Metni
+            <input class="input" id="template-intro" type="text" oninput="debouncedPreview()" placeholder="Merhaba,"
+              style="margin-top: 4px;">
+          </label>
+        </div>
+
+        <div style="flex: 1; display: flex; flex-direction: column;">
+          <label style="font-size: 13px; font-weight: 500; margin-bottom: 6px;">📝 İçerik Şablonu (HTML)</label>
+          <div id="var-hint-container"
+            style="margin-bottom: 8px; padding: 10px; background: var(--bg-soft); border-radius: 6px; font-size: 11px;">
+            <strong>Tıklayarak ekle:</strong>
+            <div id="var-hint" style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px;"></div>
+          </div>
+          <textarea class="input" id="template-content"
+            style="flex: 1; font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; line-height: 1.5; resize: none; min-height: 250px;"
+            oninput="debouncedPreview()" placeholder="<p>Mail içeriğinizi buraya yazın...</p>"></textarea>
+        </div>
+      </div>
+
+      <!-- Sağ: Canlı Önizleme -->
+      <div
+        style="display: flex; flex-direction: column; background: var(--card-bg); border-radius: 10px; border: 1px solid var(--border); overflow: hidden;">
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: linear-gradient(135deg, var(--bg-soft), var(--bg)); border-bottom: 1px solid var(--border);">
+          <span style="font-weight: 600; font-size: 14px;">👁️ Canlı Önizleme</span>
+          <div style="display: flex; gap: 4px;">
+            <button class="btn small active" onclick="setPreviewMode('desktop')" id="btn-desktop" title="Masaüstü"
+              style="padding: 6px 10px;">🖥️</button>
+            <button class="btn small" onclick="setPreviewMode('mobile')" id="btn-mobile" title="Mobil"
+              style="padding: 6px 10px;">📱</button>
+          </div>
+        </div>
+        <div style="flex: 1; padding: 12px; background: #f8fafc; overflow: auto;">
+          <iframe id="live-preview-frame"
+            style="width: 100%; height: 100%; min-height: 400px; border: 1px solid var(--border); border-radius: 6px; background: white;"></iframe>
+        </div>
+        <div style="padding: 12px; border-top: 1px solid var(--border); background: var(--bg-soft);">
+          <button class="btn secondary" onclick="sendTestMail()" style="width: 100%;">📧 Bana Test Gönder</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- Log Detay Modalı - Sadece Bilgi Görüntüleme -->
+<div id="log-modal" class="modal-overlay" style="display:none;">
+  <div class="modal-card" style="max-width:700px;">
+    <div class="modal-header">
+      <h3>📧 Mail Log Detayı</h3>
+      <button class="modal-close" onclick="closeLogModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="modal-info-content" style="max-height:60vh; overflow-y:auto; padding:20px;">
+      <div style="text-align:center; padding:40px;">Yükleniyor...</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeLogModal()">Kapat</button>
+      <div style="flex:1;"></div>
+      <button class="btn" style="background:var(--status-danger); color:white;" onclick="deleteCurrentLog()">🗑️
+        Sil</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Tab Yönetimi
+  function openTab(name) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+
+    document.querySelector(`.tab-btn[onclick="openTab('${name}')"]`).classList.add('active');
+    document.getElementById(`tab-${name}`).classList.add('active');
+
+    if (name === 'logs') {
+      loadLogs(1);
+    } else if (name === 'templates') {
+      const currentType = document.getElementById('current-template-type').value || 'weekly';
+      selectTemplate(currentType);
+    }
+  }
+
+  // TEMPLATE MANAGEMENT - Tüm mail türleri ve değişkenleri
+  const TEMPLATE_INFO = {
+    weekly: {
+      icon: '📅',
+      title: 'Haftalık Plan Maili',
+      description: 'Personele haftalık iş planı gönderimi',
+      required: ['person_name'],
+      optional: ['week_start', 'week_end', 'total_jobs', 'table_content']
+    },
+    team: {
+      icon: '👥',
+      title: 'Ekip Plan Maili',
+      description: 'Ekip bazlı plan bildirimi',
+      required: ['team_name'],
+      optional: ['date', 'week_start', 'total_personnel', 'table_content']
+    },
+    job: {
+      icon: '🔧',
+      title: 'İş Atama Maili',
+      description: 'Yeni iş ataması bildirimi',
+      required: ['project_name'],
+      optional: ['person_name', 'job_code', 'work_date', 'team_name', 'description']
+    },
+    task: {
+      icon: '📋',
+      title: 'Görev Bildirimi (Genel)',
+      description: 'Genel görev bildirimi',
+      required: ['task_no', 'task_subject'],
+      optional: ['person_name', 'assigned_user_name', 'status', 'priority', 'target_date', 'description', 'created_by_name']
+    },
+    task_created: {
+      icon: '📋',
+      title: 'Yeni Görev Oluşturuldu',
+      description: 'Yeni görev oluşturma bildirimi',
+      required: ['task_no', 'task_subject', 'assigned_user_name'],
+      optional: ['description', 'priority', 'target_date', 'created_by_name']
+    },
+    task_assigned: {
+      icon: '📋',
+      title: 'Görev Atandı',
+      description: 'Görev atama bildirimi',
+      required: ['task_no', 'task_subject', 'assigned_user_name'],
+      optional: ['description', 'priority', 'target_date', 'assigned_by_name']
+    },
+    task_status_changed: {
+      icon: '📋',
+      title: 'Görev Durumu Değişti',
+      description: 'Görev durum değişikliği bildirimi',
+      required: ['task_no', 'task_subject', 'old_status', 'new_status'],
+      optional: ['changed_by_name', 'comment']
+    },
+    task_comment: {
+      icon: '💬',
+      title: 'Göreve Yorum Eklendi',
+      description: 'Görev yorum bildirimi',
+      required: ['task_no', 'task_subject', 'comment'],
+      optional: ['comment_by_name', 'comment_date']
+    },
+    cell: {
+      icon: '📊',
+      title: 'İş Detayı (Hücre)',
+      description: 'Hücre bazlı iş bildirimi',
+      required: ['job_code'],
+      optional: ['project_name', 'team_name', 'work_date', 'description']
+    },
+    bulk: {
+      icon: '📨',
+      title: 'Toplu Bildirim',
+      description: 'Toplu ekip/personel bildirimi',
+      required: ['date'],
+      optional: ['total_teams', 'total_personnel', 'table_headers', 'table_rows']
+    },
+    deadline_expired: {
+      icon: '⚠️',
+      title: 'Süre Bitti Uyarısı',
+      description: 'Görev deadline aşımı bildirimi',
+      required: ['task_no', 'task_subject', 'target_date'],
+      optional: ['assigned_user_name', 'days_overdue', 'link_url']
+    },
+    reminder: {
+      icon: '⏰',
+      title: 'Görev Hatırlatması',
+      description: 'Yaklaşan deadline hatırlatması',
+      required: ['task_no', 'task_subject', 'target_date'],
+      optional: ['assigned_user_name', 'days_left', 'link_url']
+    },
+    project: {
+      icon: '📁',
+      title: 'Proje Eklendi',
+      description: 'Yeni proje oluşturma bildirimi',
+      required: ['project_name', 'project_code'],
+      optional: ['created_by_name', 'created_date', 'description']
+    },
+    subproject: {
+      icon: '📂',
+      title: 'Alt Proje Eklendi',
+      description: 'Yeni alt proje oluşturma bildirimi',
+      required: ['project_name', 'subproject_name'],
+      optional: ['project_code', 'subproject_code', 'created_by_name']
+    },
+    test: {
+      icon: '🧪',
+      title: 'Test Maili',
+      description: 'SMTP ayar testi için',
+      required: [],
+      optional: ['test_date', 'sender_name']
+    }
+  };
+
+  // Dropdown'dan şablon seç
+  function selectTemplateFromDropdown() {
+    const dropdown = document.getElementById('template-type-dropdown');
+    const type = dropdown.value;
+    selectTemplate(type);
+  }
+
+  function selectTemplate(type) {
+    // Dropdown'ı güncelle (eğer varsa)
+    const dropdown = document.getElementById('template-type-dropdown');
+    if (dropdown) {
+      dropdown.value = type;
+    }
+
+    document.getElementById('current-template-type').value = type;
+
+    // Şablon bilgilerini güncelle
+    const info = TEMPLATE_INFO[type] || { icon: '📧', title: type, description: '', required: [], optional: [] };
+    document.getElementById('template-description').textContent = info.description;
+
+    // Değişken ipuçlarını göster - zorunlu ve opsiyonel ayrı
+    const hintContainer = document.getElementById('var-hint');
+    const openBrace = '{' + '{';
+    const closeBrace = '}' + '}';
+
+    if (hintContainer) {
+      let html = '';
+
+      // Zorunlu değişkenler (kırmızı kenarlık)
+      if (info.required && info.required.length > 0) {
+        html += '<div style="margin-bottom:6px;"><span style="font-size:10px; color:#dc2626; font-weight:600;">🔴 ZORUNLU:</span> ';
+        html += info.required.map(v =>
+          '<code style="background:#fee2e2; color:#dc2626; padding:2px 6px; border-radius:4px; cursor:pointer; font-size:11px; border:1px solid #fca5a5;" onclick="insertVariable(\'' + v + '\')" title="Zorunlu değişken">' + openBrace + v + closeBrace + '</code>'
+        ).join(' ');
+        html += '</div>';
+      }
+
+      // Opsiyonel değişkenler (mavi)
+      if (info.optional && info.optional.length > 0) {
+        html += '<div><span style="font-size:10px; color:#3b82f6; font-weight:600;">🔵 Opsiyonel:</span> ';
+        html += info.optional.map(v =>
+          '<code style="background:var(--primary-bg); color:var(--primary); padding:2px 6px; border-radius:4px; cursor:pointer; font-size:11px;" onclick="insertVariable(\'' + v + '\')" title="Opsiyonel değişken">' + openBrace + v + closeBrace + '</code>'
+        ).join(' ');
+        html += '</div>';
+      }
+
+      hintContainer.innerHTML = html;
+    }
+
+    loadTemplate(type);
+  }
+
+  // Değişkeni içerik alanına ekle
+  function insertVariable(varName) {
+    const textarea = document.getElementById('template-content');
+    const varText = '{' + '{' + varName + '}' + '}';
+
+    // Cursor pozisyonunu al veya sonuna ekle
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+
+    textarea.value = text.substring(0, start) + varText + text.substring(end);
+
+    // Cursor'ı yeni pozisyona taşı
+    const newPos = start + varText.length;
+    textarea.setSelectionRange(newPos, newPos);
+    textarea.focus();
+
+    // Önizlemeyi güncelle
+    debouncedPreview();
+  }
+
+  async function loadTemplate(type) {
+    try {
+      const res = await fetch(`/api/mail/templates/${type}`);
+      const data = await res.json();
+
+      if (!data.ok) {
+        alert("Şablon yüklenemedi: " + (data.error || 'Bilinmeyen hata'));
+        return;
+      }
+
+      document.getElementById('template-subject').value = data.template.subject;
+      document.getElementById('template-heading').value = data.template.heading || '';
+      document.getElementById('template-intro').value = data.template.intro || '';
+      document.getElementById('template-content').value = data.template.content;
+
+      updatePreview();
+
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function saveTemplate() {
+    const type = document.getElementById('current-template-type').value;
+    const info = TEMPLATE_INFO[type] || { required: [], optional: [] };
+
+    const content = document.getElementById('template-content').value;
+    const subject = document.getElementById('template-subject').value;
+    const heading = document.getElementById('template-heading').value;
+    const intro = document.getElementById('template-intro').value;
+
+    // Zorunlu değişken kontrolü
+    const combinedText = subject + ' ' + heading + ' ' + intro + ' ' + content;
+    const missingRequired = [];
+
+    if (info.required && info.required.length > 0) {
+      for (const varName of info.required) {
+        const pattern = new RegExp(`\\{\\{\\s*${varName}\\s*\\}\\}`, 'g');
+        if (!pattern.test(combinedText)) {
+          missingRequired.push(varName);
+        }
+      }
+    }
+
+    // Eksik zorunlu değişken varsa uyarı göster
+    if (missingRequired.length > 0) {
+      const proceed = confirm(
+        `⚠️ Zorunlu Değişken Eksik!\n\n` +
+        `Aşağıdaki zorunlu değişkenler şablonda bulunamadı:\n` +
+        `• ${missingRequired.join('\n• ')}\n\n` +
+        `Bu değişkenler olmadan mail doğru çalışmayabilir.\n` +
+        `Yine de kaydetmek istiyor musunuz?`
+      );
+      if (!proceed) return;
+    }
+
+    const payload = { subject, heading, intro, content };
+
+    try {
+      const btn = document.querySelector('button[onclick="saveTemplate()"]');
+      const originalText = btn.textContent;
+      btn.textContent = "Kaydediliyor...";
+      btn.disabled = true;
+
+      const res = await fetch(`/api/mail/templates/${type}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      btn.textContent = originalText;
+      btn.disabled = false;
+
+      if (data.ok) {
+        const btn = document.querySelector('button[onclick="saveTemplate()"]');
+        btn.textContent = "✅ Kaydedildi!";
+        btn.style.background = '#22c55e';
+        setTimeout(() => {
+          btn.textContent = "💾 Kaydet";
+          btn.style.background = '';
+        }, 2000);
+      } else {
+        alert("Hata: " + data.error);
+      }
+    } catch (e) {
+      alert("Kaydetme hatası: " + e);
+    }
+  }
+
+  async function resetTemplate() {
+    if (!confirm("Bu şablonu varsayılan ayarlara sıfırlamak istediğinize emin misiniz?")) return;
+
+    const type = document.getElementById('current-template-type').value;
+    try {
+      const res = await fetch(`/api/mail/templates/${type}/reset`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token() }}' }
+      });
+      const data = await res.json();
+      if (data.ok) {
+        loadTemplate(type);
+      } else {
+        alert("Hata: " + data.error);
+      }
+    } catch (e) {
+      alert("Sıfırlama hatası: " + e);
+    }
+  }
+
+  // LIVE PREVIEW SYSTEM
+  let previewTimeout;
+  function debouncedPreview() {
+    clearTimeout(previewTimeout);
+    previewTimeout = setTimeout(updatePreview, 500);
+  }
+
+  async function updatePreview() {
+    const type = document.getElementById('current-template-type').value;
+    const payload = {
+      subject: document.getElementById('template-subject').value,
+      heading: document.getElementById('template-heading').value,
+      intro: document.getElementById('template-intro').value,
+      content: document.getElementById('template-content').value,
+      type: type,
+      is_preview: true
+    };
+
+    const iframe = document.getElementById('live-preview-frame');
+
+    try {
+      const res = await fetch('/api/mail/preview/render', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const html = await res.text();
+        const doc = iframe.contentWindow.document;
+        doc.open();
+        doc.write(html);
+        doc.close();
+      } else {
+        const doc = iframe.contentWindow.document;
+        doc.body.innerHTML = "<div style='color:red; padding:20px; font-family:sans-serif;'>Önizleme yüklenemedi.</div>";
+      }
+
+    } catch (e) {
+      console.error("Preview error", e);
+    }
+  }
+
+  function setPreviewMode(mode) {
+    const iframe = document.getElementById('live-preview-frame');
+
+    document.getElementById('btn-desktop').classList.remove('active');
+    document.getElementById('btn-mobile').classList.remove('active');
+    document.getElementById(`btn-${mode}`).classList.add('active');
+
+    if (mode === 'mobile') {
+      iframe.style.width = '375px';
+    } else {
+      iframe.style.width = '100%';
+    }
+  }
+
+  async function sendTestMail() {
+    const type = document.getElementById('current-template-type').value;
+    if (!confirm(`Bu şablonla kendinize (${type}) test maili gönderilsin mi?`)) return;
+
+    try {
+      const res = await fetch(`/api/mail/test-send/${type}`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token() }}' }
+      });
+      const data = await res.json();
+      if (data.ok) alert("Test maili gönderildi!");
+      else alert("Hata: " + data.error);
+    } catch (e) {
+      alert("İletişim hatası: " + e);
+    }
+  }
+
+  // Log API - Gelişmiş
+  let logCurrentPage = 1;
+  let logTotalPages = 1;
+  let currentLogData = null;
+
+  function esc(s) { return String(s || '').replace(/</g, '<').replace(/>/g, '>'); }
+
+  async function loadLogs(page) {
+    const tbody = document.getElementById('logs-tbody');
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:20px; color:var(--text-muted);">Yükleniyor...</td></tr>';
+
+    const start = document.getElementById('filter-start').value;
+    const end = document.getElementById('filter-end').value;
+    const type = document.getElementById('filter-type').value;
+    const status = document.getElementById('filter-status').value;
+    const q = document.getElementById('filter-q').value;
+
+    // Excel linkini güncelle
+    const excelLink = document.getElementById('excelLink');
+    const params = new URLSearchParams({ start_date: start, end_date: end, mail_type: type, ok: status, q: q });
+    excelLink.href = '/reports/mail-log.xlsx?' + params.toString();
+
+    try {
+      const query = new URLSearchParams({ page, date_start: start, date_end: end, type, status, q, per_page: 20 });
+      const res = await fetch(`/api/mail/logs?${query}`);
+      const data = await res.json();
+
+      if (!data.ok) throw new Error(data.error);
+
+      tbody.innerHTML = '';
+      if (data.logs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:20px; color:var(--text-muted);">Kayıt bulunamadı.</td></tr>';
+        updateLogPagination(1, 1);
+        return;
+      }
+
+      data.logs.forEach(log => {
+        const tr = document.createElement('tr');
+        tr.style.cursor = 'pointer';
+        tr.onclick = () => showLogDetail(log);
+
+        const dateStr = log.created_at ? new Date(log.created_at).toLocaleString('tr-TR') : '-';
+        const statusBadge = log.ok
+          ? '<span class="status-badge status-ok">✓</span>'
+          : '<span class="status-badge status-err">✗</span>';
+        const typeStr = log.mail_type || log.kind || '-';
+        const sizeKB = Math.round((log.body_size_bytes || 0) / 1024);
+
+        tr.innerHTML = `
+          <td onclick="event.stopPropagation()">
+            <input type="checkbox" class="log-chk" data-id="${log.id}" onchange="updateBulkActions()">
+          </td>
+          <td>${dateStr}</td>
+          <td><span style="font-size:11px; background:var(--bg-soft); padding:2px 6px; border-radius:4px;">${typeStr}</span></td>
+          <td>${statusBadge}</td>
+          <td style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${esc(log.to_addr)}">${esc(log.to_addr)}</td>
+          <td style="max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${esc(log.subject)}">${esc(log.subject)}</td>
+          <td>${esc(log.team_name) || '-'}</td>
+          <td>${sizeKB > 0 ? sizeKB + ' KB' : '-'}</td>
+          <td onclick="event.stopPropagation()">
+            <button class="btn ghost small" onclick="showLogDetailById(${log.id})">👁</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      updateLogPagination(data.page, data.pages);
+
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red; padding:20px;">Hata: ${esc(err.message)}</td></tr>`;
+    }
+  }
+
+  function updateLogPagination(page, pages) {
+    logCurrentPage = page;
+    logTotalPages = pages;
+    document.getElementById('page-info').textContent = `Sayfa ${page} / ${pages}`;
+    document.getElementById('prev-page').disabled = page <= 1;
+    document.getElementById('next-page').disabled = page >= pages;
+  }
+
+  function changeLogPage(delta) {
+    const newPage = logCurrentPage + delta;
+    if (newPage >= 1 && newPage <= logTotalPages) {
+      loadLogs(newPage);
+    }
+  }
+
+  function toggleSelectAllLogs() {
+    const master = document.getElementById('selectAllLogs');
+    document.querySelectorAll('.log-chk').forEach(x => x.checked = master.checked);
+    updateBulkActions();
+  }
+
+  function selectAllLogs() {
+    document.querySelectorAll('.log-chk').forEach(x => x.checked = true);
+    document.getElementById('selectAllLogs').checked = true;
+    updateBulkActions();
+  }
+
+  function deselectAllLogs() {
+    document.querySelectorAll('.log-chk').forEach(x => x.checked = false);
+    document.getElementById('selectAllLogs').checked = false;
+    updateBulkActions();
+  }
+
+  function updateBulkActions() {
+    const count = document.querySelectorAll('.log-chk:checked').length;
+    document.getElementById('selectedCount').textContent = count;
+    const bulkDiv = document.getElementById('bulkActions');
+    if (count > 0) {
+      bulkDiv.style.display = 'flex';
+    } else {
+      bulkDiv.style.display = 'none';
+    }
+  }
+
+  async function showLogDetailById(logId) {
+    try {
+      const res = await fetch(`/api/mail/logs/${logId}`);
+      const data = await res.json();
+      if (data.ok) {
+        showLogDetail(data.log);
+      }
+    } catch (e) {
+      alert('Detay yüklenemedi: ' + e);
+    }
+  }
+
+  function showLogDetail(log) {
+    currentLogData = log;
+    const modal = document.getElementById('log-modal');
+    const content = document.getElementById('modal-info-content');
+
+    let errHtml = '';
+    if (!log.ok && log.error) {
+      errHtml = `<div style="background:var(--status-danger-bg); color:var(--status-danger-text); padding:10px; border-radius:6px; margin-bottom:12px;">
+        <strong>Hata:</strong> ${esc(log.error)}<br>
+        ${log.error_code ? `<small>Kod: ${esc(log.error_code)}</small>` : ''}
+      </div>`;
+    }
+
+    const dateStr = log.created_at ? new Date(log.created_at).toLocaleString('tr-TR') : '-';
+    const sizeKB = Math.round((log.body_size_bytes || 0) / 1024);
+
+    content.innerHTML = `
+      ${errHtml}
+      <div class="detail-grid" style="display:grid; grid-template-columns:120px 1fr; gap:8px; font-size:13px;">
+        <div style="font-weight:600; color:var(--text-secondary);">ID</div>
+        <div>${log.id}</div>
+
+        <div style="font-weight:600; color:var(--text-secondary);">Tarih</div>
+        <div>${dateStr}</div>
+
+        <div style="font-weight:600; color:var(--text-secondary);">Tür</div>
+        <div>${esc(log.mail_type || log.kind || '-')}</div>
+
+        <div style="font-weight:600; color:var(--text-secondary);">Durum</div>
+        <div>${log.ok ? '<span class="status-badge status-ok">✓ Başarılı</span>' : '<span class="status-badge status-err">✗ Başarısız</span>'}</div>
+
+        <div style="font-weight:600; color:var(--text-secondary);">Alıcı (To)</div>
+        <div style="word-break:break-all;">${esc(log.to_addr)}</div>
+
+        ${log.cc_addr ? `
+        <div style="font-weight:600; color:var(--text-secondary);">CC</div>
+        <div style="word-break:break-all;">${esc(log.cc_addr)}</div>
+        ` : ''}
+
+        <div style="font-weight:600; color:var(--text-secondary);">Konu</div>
+        <div style="font-weight:600;">${esc(log.subject)}</div>
+
+        <div style="font-weight:600; color:var(--text-secondary);">Ekip</div>
+        <div>${esc(log.team_name) || '-'}</div>
+
+        <div style="font-weight:600; color:var(--text-secondary);">Boyut</div>
+        <div>${sizeKB} KB</div>
+
+        <div style="font-weight:600; color:var(--text-secondary);">Ek Sayısı</div>
+        <div>${log.attachments_count || 0}</div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <div style="font-weight:600; margin-bottom:8px; color:var(--text-secondary);">İçerik Önizleme</div>
+        <div style="background:var(--bg-soft); padding:12px; border-radius:6px; font-size:12px; max-height:200px; overflow:auto; white-space:pre-wrap; font-family:monospace;">
+          ${esc(log.body_preview) || 'İçerik yok'}
+        </div>
+      </div>
+    `;
+
+    modal.style.display = 'flex';
+  }
+
+  function closeLogModal() {
+    document.getElementById('log-modal').style.display = 'none';
+    currentLogData = null;
+  }
+
+  async function deleteCurrentLog() {
+    if (!currentLogData) return;
+    if (!confirm('Bu log kaydı silinsin mi?')) return;
+
+    try {
+      const res = await fetch(`/api/mail/logs/delete/${currentLogData.id}`, { method: 'POST' });
+      const data = await res.json();
+      if (data.ok) {
+        alert('✓ Log silindi');
+        closeLogModal();
+        loadLogs(logCurrentPage);
+      } else {
+        alert('✗ Hata: ' + (data.error || 'Bilinmeyen hata'));
+      }
+    } catch (e) {
+      alert('✗ Hata: ' + e);
+    }
+  }
+
+  async function bulkResend() {
+    const ids = Array.from(document.querySelectorAll('.log-chk:checked')).map(x => x.dataset.id);
+    if (!ids.length) return;
+
+    if (!confirm(`${ids.length} adet mail yeniden gönderilsin mi?`)) return;
+
+    const btn = document.querySelector('#bulkActions .btn');
+    btn.textContent = 'Gönderiliyor...';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch('/api/mail/logs/bulk-resend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ log_ids: ids })
+      });
+      const data = await res.json();
+
+      btn.textContent = 'Yeniden Gönder';
+      btn.disabled = false;
+
+      if (data.ok) {
+        const { success_count, total_count } = data;
+        alert(`✓ ${success_count}/${total_count} mail başarıyla gönderildi`);
+        deselectAllLogs();
+        loadLogs(logCurrentPage);
+      } else {
+        alert('✗ Hata: ' + (data.error || 'Bilinmeyen hata'));
+      }
+    } catch (e) {
+      btn.textContent = 'Yeniden Gönder';
+      btn.disabled = false;
+      alert('✗ Hata: ' + e);
+    }
+  }
+
+  async function bulkDelete() {
+    const ids = Array.from(document.querySelectorAll('.log-chk:checked')).map(x => x.dataset.id);
+    if (!ids.length) return;
+
+    if (!confirm(`${ids.length} adet log kaydı silinsin mi? Bu işlem geri alınamaz.`)) return;
+
+    try {
+      const results = await Promise.all(ids.map(id =>
+        fetch(`/api/mail/logs/delete/${id}`, { method: 'POST' }).then(r => r.json())
+      ));
+      const success = results.filter(r => r.ok).length;
+      alert(`✓ ${success}/${ids.length} log silindi`);
+      deselectAllLogs();
+      loadLogs(logCurrentPage);
+    } catch (e) {
+      alert('✗ Hata: ' + e);
+    }
+  }
+
+  const logModalEl = document.getElementById('log-modal');
+  if (logModalEl) {
+    logModalEl.addEventListener('click', (e) => {
+      if (e.target.id === 'log-modal') closeLogModal();
+    });
+  }
+
+  const editModalEl = document.getElementById('edit-modal');
+  if (editModalEl) {
+    editModalEl.addEventListener('click', (e) => {
+      if (e.target.id === 'edit-modal') closeEditModal();
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeLogModal();
+      closeEditModal();
+    }
+  });
+
+  // Port oto-doldurma
+  const portEl = document.querySelector('input[name="port"]');
+  const tlsEl = document.querySelector('input[name="use_tls"]');
+  const sslEl = document.querySelector('input[name="use_ssl"]');
+
+  if (portEl && tlsEl && sslEl) {
+    const normalizePort = () => {
+      const p = parseInt(portEl.value || '0', 10) || 0;
+      const ssl = !!sslEl.checked;
+      const tls = !!tlsEl.checked;
+      if (ssl) {
+        if (!p || p === 587) { portEl.value = '465'; }
+      } else if (tls) {
+        if (!p || p === 465) { portEl.value = '587'; }
+      }
+    };
+    sslEl.addEventListener('change', normalizePort);
+    tlsEl.addEventListener('change', normalizePort);
+  }
+</script>
+{% endblock %}

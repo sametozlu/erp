@@ -1,0 +1,334 @@
+/* Reports Analytics Page Styles */
+
+/* Tabs */
+.report-tabs-container {
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--line);
+}
+
+.report-tabs-list {
+    display: flex;
+    gap: 8px;
+}
+
+.tab-btn {
+    padding: 10px 20px;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    background: #f1f5f9;
+    color: #64748b;
+    transition: all 0.2s;
+}
+
+.tab-btn.active {
+    background: #f9e4cb;
+    color: #0f172a;
+    font-weight: 600;
+}
+
+/* Dark mode overrides are handled by JS or :root vars usually, 
+   but specific overrides for tabs: */
+html.dark-mode .tab-btn {
+    background: #334155;
+    color: #cbd5e1;
+}
+
+html.dark-mode .tab-btn.active {
+    background: #475569;
+    color: #ffffff;
+}
+
+/* Filter Section */
+.report-filter-section {
+    margin-bottom: 16px;
+    padding: 12px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+
+.report-filter-header {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.report-total-count {
+    font-weight: 600;
+    color: var(--text);
+    font-size: 14px;
+}
+
+.report-total-count span {
+    color: #3b82f6;
+}
+
+.report-filter-form {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.filter-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--text);
+    font-weight: 500;
+    margin: 0;
+}
+
+.filter-select, .filter-input {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    font-size: 13px;
+    background: var(--card);
+    color: var(--text);
+    cursor: pointer;
+}
+
+.filter-select {
+    min-width: 140px;
+}
+
+.filter-input {
+    min-width: 150px;
+}
+
+.filter-date-range-display {
+    font-size: 13px;
+    color: var(--text-light);
+}
+
+.filter-date-range-display strong {
+    color: var(--text);
+}
+
+/* Chart Container */
+.report-chart-card {
+    margin-bottom: 24px;
+    padding: 20px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.chart-title-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.chart-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.chart-total-badge {
+    font-size: 15px;
+    font-weight: 700;
+    color: #3b82f6;
+    padding: 4px 12px;
+    background: var(--bg);
+    border-radius: 6px;
+    border: 1px solid var(--line);
+}
+
+.chart-body {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    flex-wrap: wrap;
+    transition: transform 0.5s ease;
+}
+
+.chart-canvas-wrapper {
+    flex: 0 0 300px;
+}
+
+.chart-legend-wrapper {
+    flex: 1;
+    min-width: 200px;
+}
+
+.chart-legend-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    width: 100%;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: var(--bg);
+    border-radius: 6px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.legend-color-box {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.legend-label {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text);
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.legend-value {
+    font-weight: 600;
+    color: #3b82f6;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+/* Empty State */
+.empty-state-card {
+    margin-bottom: 24px;
+    padding: 40px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    text-align: center;
+}
+
+.empty-state-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+}
+
+.empty-state-desc {
+    font-size: 14px;
+    color: var(--text-light);
+}
+
+/* Tables */
+.report-table-btn-wrapper {
+    margin-bottom: 16px;
+}
+
+.report-table-container {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.report-table th, .report-table td {
+    padding: 12px 16px;
+    vertical-align: middle;
+}
+
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-block;
+    color: white;
+}
+.status-active { background: #10b981; }
+.status-passive { background: #64748b; }
+
+.btn-chart-view {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+.btn-chart-view:hover {
+    background: #2563eb;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5);
+}
+
+/* Animation */
+.fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Modal */
+.modalCard {
+    max-width: 900px;
+    width: 90vw;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.modal-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.person-chart-layout {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.person-legend-container {
+    flex: 1;
+    min-width: 250px;
+    max-width: 500px;
+    max-height: 500px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 8px;
+}

@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block header_content %}
+<div style="font-weight:800; color:var(--text-strong); font-size:18px;">Operasyon Listesi (Pano)</div>
+{% endblock %}
+{% block content %}
+
+<input type="hidden" id="csrfTokenBoard" value="{{ csrf_token() }}">
+
+<div id="boardRoot" data-api-jobs="{{ url_for('planner.api_board_jobs') }}"
+  data-detail-template="{{ url_for('planner.api_board_job_detail', job_id=0) }}"
+  data-bulk-publish="{{ url_for('planner.api_board_bulk_publish') }}"
+  data-bulk-close="{{ url_for('planner.api_board_bulk_close') }}"
+  data-bulk-reassign="{{ url_for('planner.api_board_bulk_reassign') }}"
+  data-export-xlsx="{{ url_for('planner.board_export_xlsx') }}"
+  data-subprojects-api="{{ url_for('planner.api_subprojects') }}" style="display:block;">
+</div>
+
+<section class="card board-compact"
+  style="padding: 0; background: transparent; box-shadow:none; width:100%; max-width:100%;">
+  <div id="boardFilters"
+    style="position:sticky; top:10px; z-index:50; background:#ffffff; border:1px solid var(--border); border-radius:8px; padding:8px 10px; box-shadow:0 6px 20px rgba(0,0,0,0.05); margin-bottom:12px; width:100%; box-sizing:border-box;">
+    <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+      <input id="f_q" type="search" placeholder="Ara (proje, alt proje, il, ekip, not...)"
+        style="min-width:200px; flex:1; padding:4px 8px; border:1px solid var(--border); border-radius:4px; height:24px; font-size:12px; box-sizing:border-box; line-height:1.2;">
+      <input id="f_start" type="date" value="{{ start }}"
+        style="padding:4px 8px; border-radius:4px; border:1px solid var(--border); background:#fff; height:24px; font-size:12px; box-sizing:border-box; width:140px;">
+      <input id="f_end" type="date" value="{{ end }}"
+        style="padding:4px 8px; border-radius:4px; border:1px solid var(--border); background:#fff; height:24px; font-size:12px; box-sizing:border-box; width:140px;">
+
+      <select id="f_status"
+        style="padding:4px 8px; border-radius:4px; border:1px solid var(--border); background:#fff; height:24px; font-size:12px; box-sizing:border-box; width:140px;">
+        <option value="">Durum (Hepsi)</option>
+        {% for st in statuses %}
+        <option value="{{ st }}">{{ kanban_labels.get(st, st) }}</option>
+        {% endfor %}
+      </select>
+
+      <select id="f_project"
+        style="padding:4px 8px; border-radius:4px; border:1px solid var(--border); background:#fff; height:24px; min-width:180px; max-width:220px; font-size:12px; box-sizing:border-box;">
+        <option value="">Proje (Hepsi)</option>
+        {% for p in projects %}
+        <option value="{{ p.id }}">{{ p.project_code }} - {{ p.region }} - {{ p.project_name }}</option>
+        {% endfor %}
+      </select>
+
+      <select id="f_subproject"
+        style="padding:4px 8px; border-radius:4px; border:1px solid var(--border); background:#fff; height:24px; min-width:160px; max-width:200px; font-size:12px; box-sizing:border-box;">
+        <option value="">Alt Proje (Hepsi)</option>
+      </select>
+
+      <select id="f_city"
+        style="padding:4px 8px; border-radius:4px; border:1px solid var(--border); background:#fff; height:24px; width:120px; font-size:12px; box-sizing:border-box;">
+        <option value="">İl (Hepsi)</option>
+        {% for c in cities %}
+        <option value="{{ c }}">{{ c }}</option>
+        {% endfor %}
+      </select>
+
+      <select id="f_assigned_user"
+        style="padding:4px 8px; border-radius:4px; border:1px solid var(--border); background:#fff; height:24px; min-width:160px; max-width:200px; font-size:12px; box-sizing:border-box;">
+        <option value="">Atanan (Hepsi)</option>
+        {% for u in users %}
+        <option value="{{ u.id }}">{{ (u.full_name or u.email or u.username) }} ({{ u.role }})</option>
+        {% endfor %}
+      </select>
+
+      <input id="f_assignee_q" type="search" placeholder="Personel/Atanan ara"
+        style="min-width:160px; max-width:200px; padding:4px 8px; border:1px solid var(--border); border-radius:4px; height:24px; font-size:12px; box-sizing:border-box; line-height:1.2;">
+
+      <button id="btnExport" class="btn secondary" type="button"
+        style="height:24px; display:inline-flex; align-items:center; font-size:12px; padding:0 10px; border-radius:4px; white-space:nowrap;">Excel
+        Dışa Aktar</button>
+    </div>
+
+    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; align-items:center;">
+      <label style="display:inline-flex; gap:4px; align-items:center; font-size:11px; color:var(--text-subtle); margin:0;">
+        <input id="f_overdue_only" type="checkbox"> Sadece geciken
+      </label>
+      <label style="display:inline-flex; gap:4px; align-items:center; font-size:11px; color:var(--text-subtle); margin:0;">
+        <input id="f_unassigned_only" type="checkbox"> Sadece atanmamış
+      </label>
+      <label style="display:inline-flex; gap:4px; align-items:center; font-size:11px; color:var(--text-subtle); margin:0;">
+        <input id="f_published_only" type="checkbox"> Sadece yayınlanan
+      </label>
+
+      <div style="flex:1;"></div>
+
+      <div style="display:flex; gap:6px; align-items:center;">
+        <span style="font-size:11px; color:var(--text-muted);">Sayfa boyutu</span>
+        <select id="f_page_size"
+          style="padding:4px 8px; border-radius:4px; border:1px solid var(--border); background:#fff; height:24px; font-size:12px; box-sizing:border-box; width:70px;">
+          <option value="50">50</option>
+          <option value="100">100</option>
+          <option value="200">200</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="bulkBar" style="display:none; margin-top:10px; padding-top:10px; border-top:1px dashed var(--border);">
+      <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+        <div style="font-size:13px; color:var(--text-strong); font-weight:900;">Seçili: <span id="selCount">0</span></div>
+        <button id="btnBulkPublish" class="btn" type="button"
+          style="height:32px; background:var(--text-strong); color:#fff; border-radius:8px;">Toplu Yayınla</button>
+        <button id="btnBulkClose" class="btn secondary" type="button" style="height:32px; border-radius:8px;">Toplu
+          Kapat</button>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <select id="bulkAssignee"
+            style="padding:6px 10px; border-radius:8px; border:1px solid var(--border); background:#fff; height:32px; min-width:220px;">
+            <option value="">Yeniden ata...</option>
+            {% for u in users %}
+            <option value="{{ u.id }}">{{ (u.full_name or u.email or u.username) }} ({{ u.role }})</option>
+            {% endfor %}
+          </select>
+          <button id="btnBulkReassign" class="btn secondary" type="button"
+            style="height:32px; border-radius:8px;">Uygula</button>
+        </div>
+        <button id="btnExportSelected" class="btn secondary" type="button"
+          style="height:32px; border-radius:8px;">Seçileni Dışa Aktar</button>
+        <div style="flex:1;"></div>
+        <button id="btnClearSel" class="btn secondary" type="button" style="height:32px; border-radius:8px;">Seçimi
+          temizle</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card"
+    style="border:1px solid var(--border); border-radius:12px; overflow:hidden; padding:0; width:100%; max-width:100%; box-sizing:border-box;">
+    <div style="overflow-x:auto; overflow-y:visible; width:100%;">
+      <table style="width:100%; border-collapse:collapse; min-width:100%; table-layout:auto;">
+        <thead>
+          <tr style="background:var(--bg-soft); border-bottom:1px solid var(--border);">
+            <th style="padding:10px 10px; text-align:left; width:44px;">
+              <input id="selAll" type="checkbox">
+            </th>
+            <th style="padding:10px 10px; text-align:left;">Tarih</th>
+            <th style="padding:10px 10px; text-align:left;">İl</th>
+            <th style="padding:10px 10px; text-align:left;">Proje / Alt Proje</th>
+            <th style="padding:10px 10px; text-align:left;">Ekip</th>
+            <th style="padding:10px 10px; text-align:left;">Atanan</th>
+            <th style="padding:10px 10px; text-align:left;">Durum</th>
+            <th style="padding:10px 10px; text-align:left;">Yayınlandı</th>
+            <th style="padding:10px 10px; text-align:left;">Son rapor</th>
+            <th style="padding:10px 10px; text-align:left; width:280px;">İşlemler</th>
+          </tr>
+        </thead>
+        <tbody id="jobsTbody"></tbody>
+      </table>
+    </div>
+
+    <div
+      style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-top:1px solid var(--border);">
+      <div style="color:var(--text-muted); font-size:12px;">
+        <span id="metaTotal">0</span> iş
+      </div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button id="btnPrev" class="btn secondary" type="button" style="height:32px; border-radius:8px;">Önceki</button>
+        <div style="font-size:12px; color:var(--text-subtle);">Sayfa <span id="metaPage">1</span></div>
+        <button id="btnNext" class="btn secondary" type="button"
+          style="height:32px; border-radius:8px;">Sonraki</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="drawerOverlay" style="display:none; position:fixed; inset:0; background:rgba(2,6,23,0.55); z-index:9998;">
+</div>
+<aside id="drawer"
+  style="display:none; position:fixed; top:0; right:0; height:100vh; width:520px; max-width: calc(100vw - 24px); background:#ffffff; border-left:1px solid var(--border); z-index:9999; box-shadow:-18px 0 80px rgba(0,0,0,0.18);">
+  <div
+    style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid var(--border);">
+    <div style="font-weight:900; color:var(--text-strong);">İş Detayı</div>
+    <button id="drawerClose" class="btn secondary" type="button" style="height:32px; border-radius:8px;">Kapat</button>
+  </div>
+  <div id="drawerBody" style="padding:14px 14px; overflow:auto; height: calc(100vh - 58px);"></div>
+</aside>
+
+<script defer src="{{ url_for('static', filename='board.js') }}"></script>
+
+{% endblock %}

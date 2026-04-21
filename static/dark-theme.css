@@ -1,0 +1,1396 @@
+/* ============================================
+   NETMON DARK THEME - Comprehensive Dark Mode CSS
+   ============================================
+   Bu dosya karanlık tema için kapsamlı CSS değişkenleri ve 
+   stil override'ları içerir.
+   ============================================ */
+
+/* ============================================
+   1. RENK DEĞİŞKEN SİSTEMİ
+   ============================================ */
+
+html.dark-mode {
+    color-scheme: dark;
+
+    /* ===== ARKA PLAN RENKLERİ (5 Seviye) ===== */
+    --bg-primary: #0f172a;
+    /* En koyu - ana sayfa arka planı */
+    --bg-secondary: #1e293b;
+    /* Kartlar, paneller */
+    --bg-tertiary: #334155;
+    /* Hover state, elevated */
+    --bg-quaternary: #475569;
+    /* Daha açık elemanlar */
+    --bg-elevated: #1e293b;
+    /* Modal, dropdown */
+
+    /* ===== YAZI RENKLERİ (4 Seviye) ===== */
+    --text-primary: #f1f5f9;
+    /* Ana metin */
+    --text-secondary: #94a3b8;
+    /* İkincil metin */
+    --text-tertiary: #64748b;
+    /* Placeholder, muted */
+    --text-inverted: #0f172a;
+    /* Ters renkli butonlar için */
+
+    /* Theme tokens (neutral system) */
+    --text-strong: var(--text-primary);
+    --text-subtle: var(--text-secondary);
+    --text-muted: var(--text-tertiary);
+    --text-on-strong: #ffffff;
+    --surface: var(--bg-secondary);
+    --surface-strong: var(--bg-primary);
+    --bg-soft: var(--bg-tertiary);
+    --bg-soft-2: var(--bg-quaternary);
+    --border: var(--border-default);
+
+    /* Status Palette */
+    --status-success: #22c55e;
+    --status-success-bg: rgba(34, 197, 94, 0.16);
+    --status-success-text: #86efac;
+    --status-warning: #f59e0b;
+    --status-warning-bg: rgba(245, 158, 11, 0.16);
+    --status-warning-text: #facc15;
+    --status-danger: #ef4444;
+    --status-danger-bg: rgba(239, 68, 68, 0.16);
+    --status-danger-text: #fca5a5;
+    --status-info: #60a5fa;
+    --status-info-bg: rgba(96, 165, 250, 0.16);
+    --status-info-text: #bfdbfe;
+    --status-muted: #94a3b8;
+    --status-muted-bg: #1e293b;
+    --status-muted-text: #cbd5f0;
+    --status-online: #22c55e;
+    --status-offline: #334155;
+
+    /* ===== BORDER RENKLERİ (3 Seviye) ===== */
+    --border-light: #475569;
+    /* Hafif border */
+    --border-default: #334155;
+    /* Normal border */
+    --border-dark: #1e293b;
+    /* Koyu border */
+
+    /* ===== TABLO RENKLERİ ===== */
+    --table-header-bg: #374151;
+    --table-header-text: #f1f5f9;
+    --table-row-bg: #1e293b;
+    --table-row-alt: #263548;
+    --table-row-hover: #334155;
+    --table-cell-border: #475569;
+
+    /* ===== BUTTON RENKLERİ ===== */
+    /* Primary */
+    --btn-primary-bg: #3b82f6;
+    --btn-primary-text: #ffffff;
+    --btn-primary-hover: #60a5fa;
+    --btn-primary-active: #2563eb;
+
+    /* Secondary */
+    --btn-secondary-bg: #334155;
+    --btn-secondary-text: #f1f5f9;
+    --btn-secondary-hover: #475569;
+    --btn-secondary-border: #475569;
+
+    /* Success */
+    --btn-success-bg: #059669;
+    --btn-success-text: #ffffff;
+    --btn-success-hover: #10b981;
+
+    /* Danger */
+    --btn-danger-bg: #dc2626;
+    --btn-danger-text: #ffffff;
+    --btn-danger-hover: #ef4444;
+
+    /* Warning */
+    --btn-warning-bg: #d97706;
+    --btn-warning-text: #0f172a;
+    --btn-warning-hover: #f59e0b;
+
+    /* ===== INPUT RENKLERİ ===== */
+    --input-bg: #1e293b;
+    --input-border: #475569;
+    --input-text: #f1f5f9;
+    --input-placeholder: #64748b;
+    --input-focus-border: #3b82f6;
+    --input-focus-shadow: rgba(59, 130, 246, 0.25);
+    --input-disabled-bg: #334155;
+
+    /* ===== BADGE RENKLERİ ===== */
+    --badge-green-bg: rgba(16, 185, 129, 0.2);
+    --badge-green-text: #6ee7b7;
+    --badge-green-border: rgba(16, 185, 129, 0.4);
+
+    --badge-red-bg: rgba(239, 68, 68, 0.2);
+    --badge-red-text: #fca5a5;
+    --badge-red-border: rgba(239, 68, 68, 0.4);
+
+    --badge-yellow-bg: rgba(245, 158, 11, 0.2);
+    --badge-yellow-text: #fcd34d;
+    --badge-yellow-border: rgba(245, 158, 11, 0.4);
+
+    --badge-blue-bg: rgba(59, 130, 246, 0.2);
+    --badge-blue-text: #93c5fd;
+    --badge-blue-border: rgba(59, 130, 246, 0.4);
+
+    --badge-purple-bg: rgba(139, 92, 246, 0.2);
+    --badge-purple-text: #c4b5fd;
+    --badge-purple-border: rgba(139, 92, 246, 0.4);
+
+    --badge-gray-bg: rgba(100, 116, 139, 0.2);
+    --badge-gray-text: #cbd5e1;
+    --badge-gray-border: rgba(100, 116, 139, 0.4);
+
+    /* ===== STATUS MESAJ RENKLERİ ===== */
+    --status-success-bg: rgba(16, 185, 129, 0.15);
+    --status-success-text: #6ee7b7;
+    --status-success-border: rgba(16, 185, 129, 0.3);
+
+    --status-error-bg: rgba(239, 68, 68, 0.15);
+    --status-error-text: #fca5a5;
+    --status-error-border: rgba(239, 68, 68, 0.3);
+
+    --status-warning-bg: rgba(245, 158, 11, 0.15);
+    --status-warning-text: #fcd34d;
+    --status-warning-border: rgba(245, 158, 11, 0.3);
+
+    --status-info-bg: rgba(59, 130, 246, 0.15);
+    --status-info-text: #93c5fd;
+    --status-info-border: rgba(59, 130, 246, 0.3);
+
+    /* ===== MODAL/OVERLAY RENKLERİ ===== */
+    --modal-bg: #1e293b;
+    --modal-border: #475569;
+    --modal-header-bg: #334155;
+    --overlay-bg: rgba(0, 0, 0, 0.75);
+
+    /* ===== SCROLL BAR RENKLERİ ===== */
+    --scrollbar-track: #1e293b;
+    --scrollbar-thumb: #475569;
+    --scrollbar-thumb-hover: #64748b;
+
+    /* ===== SCHEDULE CELL RENKLERİ ===== */
+    --cell-green-bg: rgba(16, 185, 129, 0.25);
+    --cell-green-text: #6ee7b7;
+
+    --cell-red-bg: rgba(239, 68, 68, 0.25);
+    --cell-red-text: #fca5a5;
+
+    --cell-yellow-bg: rgba(245, 158, 11, 0.25);
+    --cell-yellow-text: #fcd34d;
+
+    --cell-blue-bg: rgba(59, 130, 246, 0.25);
+    --cell-blue-text: #93c5fd;
+}
+
+/* ============================================
+   2. GENEL SAYFA STİLİ
+   ============================================ */
+
+html.dark-mode {
+    background-color: var(--bg-primary);
+}
+
+html.dark-mode body {
+    background-color: var(--bg-primary);
+    background-image:
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.03) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.03) 0px, transparent 50%);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ===== TARAYICI SCROLL BAR ===== */
+html.dark-mode {
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+    scrollbar-width: thin;
+}
+
+/* WebKit (Chrome, Safari, Edge) */
+html.dark-mode ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+html.dark-mode ::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+    border-radius: 8px;
+}
+
+html.dark-mode ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 8px;
+    border: 2px solid var(--scrollbar-track);
+}
+
+html.dark-mode ::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+}
+
+html.dark-mode ::-webkit-scrollbar-corner {
+    background: var(--scrollbar-track);
+}
+
+/* ============================================
+   3. NAVIGATION BAR STİLİ
+   ============================================ */
+
+html.dark-mode .topbar {
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-default);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .nav a {
+    color: var(--text-primary);
+}
+
+html.dark-mode .nav a:hover {
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--btn-primary-hover);
+}
+
+html.dark-mode .brandLogo {
+    filter: brightness(1.1);
+}
+
+/* Dropdown Menu */
+html.dark-mode .nav-dropdown-menu {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+html.dark-mode .nav-dropdown-menu a {
+    color: var(--text-secondary);
+    border-bottom-color: var(--border-default);
+}
+
+html.dark-mode .nav-dropdown-menu a:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+/* Nested Submenu */
+html.dark-mode .nav-dropdown-submenu-menu {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+}
+
+html.dark-mode .nav-dropdown-submenu-menu a {
+    color: var(--text-secondary);
+    border-bottom-color: var(--border-default);
+}
+
+html.dark-mode .nav-dropdown-submenu-menu a:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+/* ============================================
+   4. TABLO STİLİ
+   ============================================ */
+
+/* Tablo Container */
+html.dark-mode .tablewrap {
+    background: var(--bg-secondary);
+    border-color: var(--border-light);
+}
+
+/* Tablo Header */
+html.dark-mode .plan thead th,
+html.dark-mode table thead th,
+html.dark-mode .simple thead th {
+    background: var(--table-header-bg) !important;
+    color: var(--table-header-text) !important;
+    border-color: var(--table-cell-border) !important;
+}
+
+html.dark-mode .plan thead .st {
+    background: var(--table-header-bg) !important;
+}
+
+/* Tablo Satırları */
+html.dark-mode .plan tbody tr,
+html.dark-mode table tbody tr,
+html.dark-mode .simple tbody tr {
+    background: var(--table-row-bg);
+}
+
+html.dark-mode .plan tbody tr:nth-child(even),
+html.dark-mode table tbody tr:nth-child(even),
+html.dark-mode .simple tbody tr:nth-child(even) {
+    background: var(--table-row-alt);
+}
+
+html.dark-mode .plan tbody tr:hover,
+html.dark-mode table tbody tr:hover,
+html.dark-mode .simple tbody tr:hover {
+    background: var(--table-row-hover) !important;
+}
+
+/* Tablo Hücreleri */
+html.dark-mode .plan th,
+html.dark-mode .plan td,
+html.dark-mode table th,
+html.dark-mode table td {
+    border-color: var(--table-cell-border) !important;
+    color: var(--text-primary);
+}
+
+html.dark-mode .plan td {
+    background: var(--table-row-bg);
+}
+
+html.dark-mode .plan .st {
+    background: var(--bg-tertiary) !important;
+}
+
+/* Seçili/Düzenlenen Hücreler */
+html.dark-mode .selectedCell {
+    background: var(--bg-tertiary) !important;
+    outline-color: var(--btn-primary-bg) !important;
+}
+
+html.dark-mode .plan td.cell {
+    background: var(--table-row-bg);
+}
+
+html.dark-mode .plan td.cell:hover {
+    background: var(--table-row-hover);
+    outline-color: rgba(59, 130, 246, 0.4);
+}
+
+/* Dolu Hücreler */
+html.dark-mode .plan td.cell.filled {
+    background: var(--cell-green-bg) !important;
+}
+
+html.dark-mode .plan td.cell.filled-personnel {
+    background: rgba(16, 185, 129, 0.35) !important;
+}
+
+/* Schedule Cell Renkleri */
+html.dark-mode .plan td.cell.status-cancelled,
+html.dark-mode .is-cancelled {
+    background: var(--cell-red-bg) !important;
+}
+
+/* Bölge ve Sorumlu Hücreleri */
+html.dark-mode .region {
+    background: var(--cell-green-bg) !important;
+    color: var(--cell-green-text) !important;
+}
+
+html.dark-mode .resp {
+    background: var(--cell-yellow-bg) !important;
+    color: var(--cell-yellow-text) !important;
+}
+
+/* Cell Content */
+html.dark-mode .cell-time,
+html.dark-mode .cell-people,
+html.dark-mode .pcode {
+    color: var(--text-primary);
+}
+
+html.dark-mode .pname,
+html.dark-mode .psubproject {
+    color: var(--text-secondary);
+}
+
+html.dark-mode .cell-subproject {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+/* Bugünün Sütunu */
+html.dark-mode .selectedDateColumn {
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-primary) !important;
+}
+
+html.dark-mode .plan thead th.selectedDateColumn {
+    background-color: var(--bg-tertiary) !important;
+}
+
+/* ============================================
+   5. BUTTON STİLLERİ
+   ============================================ */
+
+/* Primary Button */
+html.dark-mode .btn {
+    background: var(--btn-primary-bg);
+    background-image: linear-gradient(135deg, var(--btn-primary-bg) 0%, var(--btn-primary-active) 100%);
+    color: var(--btn-primary-text);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+html.dark-mode .btn:hover {
+    background: var(--btn-primary-hover);
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+}
+
+/* Secondary Button */
+html.dark-mode .btn.secondary {
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+    box-shadow: none;
+}
+
+html.dark-mode .btn.secondary:hover {
+    background: var(--btn-secondary-hover);
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+}
+
+/* Ghost Button */
+html.dark-mode .btn.ghost {
+    background: transparent;
+    border: 1px solid var(--border-light);
+    color: var(--text-primary);
+}
+
+html.dark-mode .btn.ghost:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--btn-primary-bg);
+    color: var(--btn-primary-hover);
+}
+
+/* Danger Button */
+html.dark-mode .btn.danger {
+    background: var(--btn-danger-bg);
+    color: var(--btn-danger-text);
+}
+
+html.dark-mode .btn.danger:hover {
+    background: var(--btn-danger-hover);
+}
+
+/* Disabled Button */
+html.dark-mode .btn:disabled,
+html.dark-mode .btn[disabled] {
+    background: var(--bg-tertiary) !important;
+    color: var(--text-tertiary) !important;
+    cursor: not-allowed;
+    opacity: 0.6;
+    box-shadow: none;
+}
+
+/* ============================================
+   6. INPUT ALANLARI
+   ============================================ */
+
+html.dark-mode input,
+html.dark-mode select,
+html.dark-mode textarea {
+    background: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--input-text);
+}
+
+html.dark-mode input::placeholder,
+html.dark-mode textarea::placeholder {
+    color: var(--input-placeholder);
+}
+
+html.dark-mode input:focus,
+html.dark-mode select:focus,
+html.dark-mode textarea:focus {
+    border-color: var(--input-focus-border);
+    box-shadow: 0 0 0 3px var(--input-focus-shadow);
+    outline: none;
+}
+
+html.dark-mode input:disabled,
+html.dark-mode select:disabled,
+html.dark-mode textarea:disabled {
+    background: var(--input-disabled-bg);
+    color: var(--text-tertiary);
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Select Dropdown Arrow */
+html.dark-mode select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+}
+
+/* Checkbox */
+html.dark-mode input[type="checkbox"] {
+    width: 14px !important;
+    height: 14px !important;
+    min-width: 14px !important;
+    min-height: 14px !important;
+    max-width: 14px !important;
+    max-height: 14px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    cursor: pointer;
+    flex-shrink: 0;
+    border-radius: 3px;
+    border: 1.5px solid var(--input-border);
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: var(--input-bg);
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+    vertical-align: middle;
+    position: relative;
+}
+
+html.dark-mode input[type="checkbox"]:checked {
+    background-color: var(--btn-primary-bg) !important;
+    border-color: var(--btn-primary-bg) !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23ffffff' d='M8.5 2.5L4 7L1.5 4.5L2.5 3.5L4 5L7.5 1.5Z'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    background-size: 10px 10px !important;
+}
+
+html.dark-mode input[type="checkbox"]:hover {
+    border-color: var(--btn-primary-bg);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+html.dark-mode input[type="checkbox"]:focus {
+    outline: none;
+    border-color: var(--btn-primary-bg);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+/* Date/Time Inputs */
+html.dark-mode input[type="date"],
+html.dark-mode input[type="time"],
+html.dark-mode input[type="datetime-local"] {
+    color-scheme: dark;
+}
+
+/* ============================================
+   7. FORM KONTROL ELEMANLARİ
+   ============================================ */
+
+html.dark-mode label {
+    color: var(--text-primary);
+}
+
+html.dark-mode .lbl {
+    color: var(--text-primary);
+}
+
+/* Range Slider */
+html.dark-mode input[type="range"] {
+    accent-color: var(--btn-primary-bg);
+}
+
+/* Validation Messages */
+html.dark-mode .validation-success {
+    background: var(--status-success-bg);
+    color: var(--status-success-text);
+    border: 1px solid var(--status-success-border);
+}
+
+html.dark-mode .validation-error {
+    background: var(--status-error-bg);
+    color: var(--status-error-text);
+    border: 1px solid var(--status-error-border);
+}
+
+html.dark-mode .validation-warning {
+    background: var(--status-warning-bg);
+    color: var(--status-warning-text);
+    border: 1px solid var(--status-warning-border);
+}
+
+/* ============================================
+   8. BADGE VE LABEL STİLLERİ
+   ============================================ */
+
+html.dark-mode .badge,
+html.dark-mode .tag {
+    background: var(--badge-gray-bg);
+    color: var(--badge-gray-text);
+    border: 1px solid var(--badge-gray-border);
+}
+
+html.dark-mode .badge-success,
+html.dark-mode .tag-success {
+    background: var(--badge-green-bg);
+    color: var(--badge-green-text);
+    border-color: var(--badge-green-border);
+}
+
+html.dark-mode .badge-danger,
+html.dark-mode .tag-danger {
+    background: var(--badge-red-bg);
+    color: var(--badge-red-text);
+    border-color: var(--badge-red-border);
+}
+
+html.dark-mode .badge-warning,
+html.dark-mode .tag-warning {
+    background: var(--badge-yellow-bg);
+    color: var(--badge-yellow-text);
+    border-color: var(--badge-yellow-border);
+}
+
+html.dark-mode .badge-info,
+html.dark-mode .tag-info {
+    background: var(--badge-blue-bg);
+    color: var(--badge-blue-text);
+    border-color: var(--badge-blue-border);
+}
+
+html.dark-mode .badge-purple,
+html.dark-mode .tag-purple {
+    background: var(--badge-purple-bg);
+    color: var(--badge-purple-text);
+    border-color: var(--badge-purple-border);
+}
+
+/* ============================================
+   9. ALERT VE NOTIFICATION STİLLERİ
+   ============================================ */
+
+html.dark-mode .alert,
+html.dark-mode .flash {
+    border-radius: 8px;
+    padding: 12px 16px;
+}
+
+html.dark-mode .alert-success,
+html.dark-mode .flash.success {
+    background: var(--status-success-bg);
+    color: var(--status-success-text);
+    border: 1px solid var(--status-success-border);
+}
+
+html.dark-mode .alert-error,
+html.dark-mode .flash.error,
+html.dark-mode .alert-danger,
+html.dark-mode .flash.danger {
+    background: var(--status-error-bg);
+    color: var(--status-error-text);
+    border: 1px solid var(--status-error-border);
+}
+
+html.dark-mode .alert-warning,
+html.dark-mode .flash.warning {
+    background: var(--status-warning-bg);
+    color: var(--status-warning-text);
+    border: 1px solid var(--status-warning-border);
+}
+
+html.dark-mode .alert-info,
+html.dark-mode .flash.info {
+    background: var(--status-info-bg);
+    color: var(--status-info-text);
+    border: 1px solid var(--status-info-border);
+}
+
+/* Toast Notifications */
+html.dark-mode .toast {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-light);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================
+   10. MODAL VE DIALOG
+   ============================================ */
+
+html.dark-mode .modal {
+    background: var(--overlay-bg);
+}
+
+html.dark-mode .modalCard,
+html.dark-mode .modalBox,
+html.dark-mode .cellModalCard {
+    background: var(--modal-bg);
+    border: 1px solid var(--modal-border);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+html.dark-mode .modal h3,
+html.dark-mode .modalCard h3,
+html.dark-mode .modalBox h3 {
+    color: var(--text-primary);
+}
+
+html.dark-mode .modal .btn.secondary {
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    border-color: var(--btn-secondary-border);
+}
+
+/* Modal Close Button */
+html.dark-mode .modal-close,
+html.dark-mode [onclick*="style.display='none'"] {
+    color: var(--text-secondary);
+}
+
+html.dark-mode .modal-close:hover {
+    color: var(--text-primary);
+}
+
+/* ============================================
+   11. COMBOBOX VE SELECT BİLEŞENLERİ
+   ============================================ */
+
+html.dark-mode .searchable-dropdown,
+html.dark-mode .dropdown-menu,
+html.dark-mode .autocomplete-dropdown {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+html.dark-mode .dropdown-item,
+html.dark-mode .searchable-dropdown-item {
+    color: var(--text-primary);
+    border-bottom-color: var(--border-default);
+}
+
+html.dark-mode .dropdown-item:hover,
+html.dark-mode .searchable-dropdown-item:hover {
+    background: var(--bg-tertiary);
+}
+
+html.dark-mode .dropdown-item.selected,
+html.dark-mode .searchable-dropdown-item.selected {
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+}
+
+/* ============================================
+   12. PANEL VE CARD STİLLERİ
+   ============================================ */
+
+html.dark-mode .card {
+    background: var(--bg-secondary);
+    border-color: var(--border-default);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+html.dark-mode .panel {
+    background: var(--bg-secondary);
+    border-color: var(--border-default);
+}
+
+html.dark-mode .panel-header {
+    background: var(--bg-tertiary);
+    border-bottom-color: var(--border-default);
+}
+
+html.dark-mode .panel-title {
+    color: var(--text-primary);
+}
+
+/* Job Card */
+html.dark-mode .jobCard {
+    background: var(--bg-secondary);
+    border-color: var(--border-default);
+}
+
+html.dark-mode .jobCard:hover {
+    background: var(--bg-tertiary);
+}
+
+html.dark-mode .jobCard.status-completed {
+    background: var(--status-success-bg);
+    border-left-color: var(--status-success-text);
+}
+
+html.dark-mode .jobCard.status-pending {
+    background: var(--status-warning-bg);
+    border-left-color: var(--status-warning-text);
+}
+
+html.dark-mode .jobCard.status-problem {
+    background: var(--status-error-bg);
+    border-left-color: var(--status-error-text);
+}
+
+/* Collapsible */
+html.dark-mode .collapsible {
+    background: var(--bg-secondary);
+    border-color: var(--border-default);
+}
+
+html.dark-mode .collapsibleHeader {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-bottom-color: var(--border-default);
+}
+
+html.dark-mode .collapsibleHeader:hover {
+    background: var(--bg-tertiary);
+}
+
+html.dark-mode .collapsibleIcon,
+html.dark-mode .collapsibleIconSvg {
+    color: var(--text-primary);
+}
+
+/* ============================================
+   13. MENU VE SIDEBAR
+   ============================================ */
+
+html.dark-mode .sidebar {
+    background: var(--bg-secondary);
+    border-right-color: var(--border-default);
+}
+
+html.dark-mode .menu-item {
+    color: var(--text-primary);
+}
+
+html.dark-mode .menu-item:hover {
+    background: var(--bg-tertiary);
+}
+
+html.dark-mode .menu-item.active {
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+}
+
+html.dark-mode .menu-divider {
+    border-color: var(--border-default);
+}
+
+/* ============================================
+   14. CHAT STİLLERİ
+   ============================================ */
+
+html.dark-mode .chatLayout {
+    background: var(--bg-primary);
+}
+
+html.dark-mode .chatSidebar {
+    background: var(--bg-secondary);
+    border-color: var(--border-default);
+}
+
+html.dark-mode .chatSidebarTitle {
+    color: var(--text-primary);
+}
+
+html.dark-mode .chatTeamBtn {
+    background: var(--bg-tertiary);
+    border-color: var(--border-default);
+    color: var(--text-primary);
+}
+
+html.dark-mode .chatTeamBtn.active {
+    background: var(--btn-primary-bg);
+    border-color: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+}
+
+html.dark-mode .chatMain {
+    background: var(--bg-secondary);
+    border-color: var(--border-default);
+}
+
+html.dark-mode .chatMainHeader {
+    border-bottom-color: var(--border-default);
+}
+
+html.dark-mode .chatMessages {
+    background: var(--bg-primary);
+}
+
+html.dark-mode .chatMsg {
+    background: var(--bg-secondary);
+    border-color: var(--border-default);
+}
+
+html.dark-mode .chatMsg.mine {
+    background: var(--status-info-bg);
+    border-color: var(--btn-primary-bg);
+}
+
+html.dark-mode .chatMsgUser {
+    color: var(--text-primary);
+}
+
+html.dark-mode .chatMsgTime {
+    color: var(--text-secondary);
+}
+
+html.dark-mode .chatMsgText {
+    color: var(--text-primary);
+}
+
+html.dark-mode .chatComposer {
+    border-top-color: var(--border-default);
+}
+
+html.dark-mode .chatComposer textarea {
+    background: var(--input-bg);
+    color: var(--input-text);
+    border-color: var(--input-border);
+}
+
+/* ============================================
+   15. PROGRESS BAR VE STATUS ELEMANLARI
+   ============================================ */
+
+html.dark-mode .progress {
+    background: var(--bg-tertiary);
+}
+
+html.dark-mode .progress-bar {
+    background: var(--btn-primary-bg);
+}
+
+html.dark-mode .spinner,
+html.dark-mode .loading-spinner {
+    border-color: var(--border-light);
+    border-top-color: var(--btn-primary-bg);
+}
+
+/* Tooltip */
+html.dark-mode .tooltip,
+html.dark-mode .cell-tooltip {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-light);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+html.dark-mode .cell-tooltip-label {
+    color: var(--text-secondary);
+}
+
+html.dark-mode .cell-tooltip-value {
+    color: var(--text-primary);
+}
+
+html.dark-mode .cell-tooltip-empty {
+    color: var(--text-tertiary);
+}
+
+/* ============================================
+   16. LINK VE TEXT ÖRNEKLERI
+   ============================================ */
+
+html.dark-mode a {
+    color: var(--btn-primary-hover);
+}
+
+html.dark-mode a:hover {
+    color: var(--btn-primary-bg);
+}
+
+html.dark-mode a:visited {
+    color: var(--badge-purple-text);
+}
+
+html.dark-mode strong,
+html.dark-mode b {
+    color: var(--text-primary);
+}
+
+html.dark-mode em,
+html.dark-mode i {
+    color: var(--text-secondary);
+}
+
+html.dark-mode code,
+html.dark-mode pre {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-default);
+}
+
+html.dark-mode blockquote {
+    border-left: 4px solid var(--border-light);
+    color: var(--text-secondary);
+}
+
+html.dark-mode .muted {
+    color: var(--text-tertiary);
+}
+
+html.dark-mode .hint {
+    color: var(--text-tertiary);
+}
+
+/* ============================================
+   17. TYPOGRAPHY
+   ============================================ */
+
+html.dark-mode h1,
+html.dark-mode h2,
+html.dark-mode h3,
+html.dark-mode h4,
+html.dark-mode h5,
+html.dark-mode h6 {
+    color: var(--text-primary);
+}
+
+/* ============================================
+   18. PRESET CHIPS
+   ============================================ */
+
+html.dark-mode .presetChip {
+    background: var(--bg-tertiary);
+    border-color: var(--border-default);
+    color: var(--text-primary);
+}
+
+html.dark-mode .presetChip:hover {
+    background: var(--bg-quaternary);
+    border-color: var(--border-light);
+}
+
+html.dark-mode .presetChip.active {
+    background: var(--btn-primary-bg);
+    border-color: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+}
+
+/* ============================================
+   19. NOWBAR (SELECTED JOB BAR)
+   ============================================ */
+
+html.dark-mode .nowbar {
+    background: var(--status-info-bg);
+    border-color: var(--border-default);
+}
+
+html.dark-mode .nowbar strong {
+    color: var(--text-secondary);
+}
+
+/* ============================================
+   20. FILTERS
+   ============================================ */
+
+html.dark-mode .filters {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-default);
+}
+
+html.dark-mode .filters label {
+    color: var(--text-primary);
+}
+
+/* ============================================
+   21. DROPZONE (FILE UPLOAD)
+   ============================================ */
+
+html.dark-mode .dropzone {
+    background: var(--bg-tertiary);
+    border-color: var(--border-light);
+}
+
+html.dark-mode .dropzone:hover {
+    border-color: var(--btn-primary-bg);
+    background: var(--bg-quaternary);
+}
+
+html.dark-mode .dropzone.dragover {
+    border-color: var(--btn-primary-bg);
+    background: var(--status-info-bg);
+}
+
+/* ============================================
+   22. ATTACH INDICATORS
+   ============================================ */
+
+html.dark-mode .attach-indicator {
+    background: var(--bg-tertiary);
+    border-color: var(--border-default);
+}
+
+html.dark-mode .attach-list {
+    background: var(--bg-tertiary);
+}
+
+/* ============================================
+   23. CONTEXT MENU
+   ============================================ */
+
+html.dark-mode #dynamicContextMenu {
+    background: var(--bg-secondary) !important;
+    border-color: var(--border-light) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+html.dark-mode #dynamicContextMenu .ctx-item {
+    color: var(--text-primary);
+}
+
+html.dark-mode #dynamicContextMenu .ctx-item:hover {
+    background: var(--bg-tertiary) !important;
+}
+
+/* ============================================
+   24. DYNAMIC MODAL
+   ============================================ */
+
+html.dark-mode #dynamicModal {
+    background: var(--overlay-bg) !important;
+}
+
+html.dark-mode #dynamicModal>div {
+    background: var(--modal-bg) !important;
+    border: 1px solid var(--modal-border) !important;
+}
+
+html.dark-mode #dynamicModal h3,
+html.dark-mode #dynamicModal h4 {
+    color: var(--text-primary) !important;
+}
+
+html.dark-mode #dynamicModal input,
+html.dark-mode #dynamicModal select,
+html.dark-mode #dynamicModal textarea {
+    background: var(--input-bg) !important;
+    border-color: var(--input-border) !important;
+    color: var(--input-text) !important;
+}
+
+/* ============================================
+   25. NOTIFICATION DROPDOWN
+   ============================================ */
+
+html.dark-mode #notifDropdown,
+html.dark-mode #onlineDropdown,
+html.dark-mode .notif-dropdown,
+html.dark-mode .online-dropdown {
+    background: var(--bg-secondary) !important;
+    border-color: var(--border-light) !important;
+}
+
+html.dark-mode .notifItem,
+html.dark-mode .online-user-item {
+    border-color: var(--border-default) !important;
+    background: transparent !important;
+}
+
+html.dark-mode .notifItem:hover,
+html.dark-mode .online-user-item:hover {
+    background: var(--bg-tertiary) !important;
+}
+
+/* ============================================
+   26. MAP STYLES
+   ============================================ */
+
+html.dark-mode .map {
+    background: var(--bg-tertiary);
+    border-color: var(--border-default);
+}
+
+/* Leaflet Dark Mode */
+html.dark-mode .leaflet-container {
+    background: var(--bg-tertiary);
+}
+
+html.dark-mode .leaflet-popup-content-wrapper {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+html.dark-mode .leaflet-popup-tip {
+    background: var(--bg-secondary);
+}
+
+/* ============================================
+   27. INLINE STYLE OVERRIDES
+   ============================================ */
+
+/* Override inline styles on buttons */
+html.dark-mode button[style*="background: #f1f5f9"],
+html.dark-mode a[style*="background: #f1f5f9"] {
+    background: var(--btn-secondary-bg) !important;
+    color: var(--btn-secondary-text) !important;
+    border-color: var(--btn-secondary-border) !important;
+}
+
+html.dark-mode button[style*="background: #ffffff"],
+html.dark-mode div[style*="background: #ffffff"],
+html.dark-mode div[style*="background: white"] {
+    background: var(--bg-secondary) !important;
+}
+
+html.dark-mode [style*="color: #0f172a"],
+html.dark-mode [style*="color: #1e293b"],
+html.dark-mode [style*="color: #334155"] {
+    color: var(--text-primary) !important;
+}
+
+html.dark-mode [style*="color: #475569"],
+html.dark-mode [style*="color: #64748b"] {
+    color: var(--text-secondary) !important;
+}
+
+html.dark-mode [style*="color: #94a3b8"] {
+    color: var(--text-tertiary) !important;
+}
+
+html.dark-mode [style*="border: 1px solid #e2e8f0"],
+html.dark-mode [style*="border: 1px solid #cbd5e1"],
+html.dark-mode [style*="border-color: #e2e8f0"] {
+    border-color: var(--border-default) !important;
+}
+
+html.dark-mode [style*="background: #f8fafc"],
+html.dark-mode [style*="background: #f1f5f9"] {
+    background: var(--bg-tertiary) !important;
+}
+
+/* ============================================
+   28. PENDING UPDATE INDICATOR (EDITING STATE)
+   ============================================ */
+
+html.dark-mode #pendingUpdateIndicator {
+    background: linear-gradient(135deg, var(--btn-warning-bg) 0%, #b45309 100%) !important;
+}
+
+/* ============================================
+   29. CELL MODAL SPECIFIC
+   ============================================ */
+
+html.dark-mode #cellModal .cellModalCard {
+    background: var(--modal-bg) !important;
+    border-color: var(--modal-border) !important;
+}
+
+html.dark-mode #cellModal .personnelPanel {
+    background: var(--bg-tertiary) !important;
+    border-color: var(--border-default) !important;
+}
+
+html.dark-mode #cellModal .peopleList>div {
+    color: var(--text-primary);
+}
+
+html.dark-mode #cellModal .peopleList>div:hover {
+    background: var(--bg-quaternary) !important;
+}
+
+html.dark-mode #cellModal #selectedPeopleList>div {
+    background: var(--badge-blue-bg) !important;
+    color: var(--badge-blue-text) !important;
+    border-color: var(--badge-blue-border) !important;
+}
+
+/* ============================================
+   30. UTILITY CLASSES
+   ============================================ */
+
+html.dark-mode .text-muted {
+    color: var(--text-tertiary) !important;
+}
+
+html.dark-mode .text-secondary {
+    color: var(--text-secondary) !important;
+}
+
+html.dark-mode .text-primary-dm {
+    color: var(--text-primary) !important;
+}
+
+html.dark-mode .bg-dark {
+    background: var(--bg-secondary) !important;
+}
+
+html.dark-mode .border-dark {
+    border-color: var(--border-default) !important;
+}
+
+/* ============================================
+   31. PRINT STYLES
+   ============================================ */
+
+@media print {
+
+    html.dark-mode,
+    html.dark-mode body {
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+
+    html.dark-mode * {
+        background: transparent !important;
+        color: #000000 !important;
+        border-color: #cccccc !important;
+        box-shadow: none !important;
+    }
+
+    html.dark-mode .btn,
+    html.dark-mode .badge {
+        background: #eeeeee !important;
+        color: #000000 !important;
+    }
+}
+
+/* ============================================
+   32. RESPONSIVE ADJUSTMENTS
+   ============================================ */
+
+@media (max-width: 768px) {
+    html.dark-mode ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    html.dark-mode .btn {
+        padding: 12px 16px;
+    }
+}
+
+/* Touch devices - disable hover effects */
+@media (hover: none) {
+    html.dark-mode .btn:hover {
+        transform: none;
+    }
+
+    html.dark-mode .card:hover {
+        box-shadow: var(--shadow);
+    }
+}
+
+/* ============================================
+   33. SELECTION STYLES
+   ============================================ */
+
+html.dark-mode ::selection {
+    background: rgba(59, 130, 246, 0.4);
+    color: var(--text-primary);
+}
+
+html.dark-mode ::-moz-selection {
+    background: rgba(59, 130, 246, 0.4);
+    color: var(--text-primary);
+}
+
+/* ============================================
+   34. FOCUS VISIBLE
+   ============================================ */
+
+html.dark-mode :focus-visible {
+    outline: 2px solid var(--btn-primary-bg);
+    outline-offset: 2px;
+}
+
+html.dark-mode button:focus-visible,
+html.dark-mode a:focus-visible,
+html.dark-mode input:focus-visible,
+html.dark-mode select:focus-visible,
+html.dark-mode textarea:focus-visible {
+    outline: 2px solid var(--btn-primary-bg);
+    outline-offset: 2px;
+}

@@ -1,0 +1,1311 @@
+<!doctype html>
+<html lang="tr">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Netmon Proje Takip</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='dark-theme.css') }}">
+  <!-- Tema Sistemi CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme-system.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme-selector.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/glass-effects.css') }}">
+  <script>
+    // FOUC (Flash of Unstyled Content) Önleme - Tema Sistemi
+    // Sayfa yüklenmeden ÖNCE çalışır - tüm CSS değişkenlerini anında ayarlar
+    (function () {
+      try {
+        // Tema tanımları (inline - hızlı yükleme için)
+        var THEMES = {
+          light: { isDark: false, colors: { bgPrimary: '#f3f6fc', bgSecondary: '#ffffff', bgTertiary: '#f8fafc', textPrimary: '#1e293b', textSecondary: '#64748b', textTertiary: '#94a3b8', accentPrimary: '#3b82f6', border: '#e2e8f0', borderLight: '#f1f5f9', glassBg: 'rgba(255, 255, 255, 0.85)', glassBorder: 'rgba(255, 255, 255, 0.5)' } },
+          dark: { isDark: true, colors: { bgPrimary: '#0f172a', bgSecondary: '#1e293b', bgTertiary: '#334155', textPrimary: '#f1f5f9', textSecondary: '#94a3b8', textTertiary: '#64748b', accentPrimary: '#60a5fa', border: '#334155', borderLight: '#475569', glassBg: 'rgba(30, 41, 59, 0.85)', glassBorder: 'rgba(255, 255, 255, 0.1)' } },
+          'pure-black': { isDark: true, colors: { bgPrimary: '#000000', bgSecondary: '#0a0a0a', bgTertiary: '#171717', textPrimary: '#ffffff', textSecondary: '#a3a3a3', textTertiary: '#737373', accentPrimary: '#3b82f6', border: '#262626', borderLight: '#262626', glassBg: 'rgba(0, 0, 0, 0.9)', glassBorder: 'rgba(255, 255, 255, 0.08)' } },
+          'pure-white': { isDark: false, colors: { bgPrimary: '#ffffff', bgSecondary: '#ffffff', bgTertiary: '#f5f5f5', textPrimary: '#171717', textSecondary: '#525252', textTertiary: '#737373', accentPrimary: '#2563eb', border: '#e5e5e5', borderLight: '#f5f5f5', glassBg: 'rgba(255, 255, 255, 0.95)', glassBorder: 'rgba(0, 0, 0, 0.05)' } },
+          ocean: { isDark: false, colors: { bgPrimary: '#f0f9ff', bgSecondary: '#ffffff', bgTertiary: '#e0f2fe', textPrimary: '#0c4a6e', textSecondary: '#0369a1', textTertiary: '#0284c7', accentPrimary: '#0284c7', border: '#bae6fd', borderLight: '#e0f2fe', glassBg: 'rgba(255, 255, 255, 0.85)', glassBorder: 'rgba(186, 230, 253, 0.5)' } },
+          forest: { isDark: false, colors: { bgPrimary: '#f0fdf4', bgSecondary: '#ffffff', bgTertiary: '#dcfce7', textPrimary: '#14532d', textSecondary: '#166534', textTertiary: '#15803d', accentPrimary: '#16a34a', border: '#bbf7d0', borderLight: '#dcfce7', glassBg: 'rgba(255, 255, 255, 0.85)', glassBorder: 'rgba(187, 247, 208, 0.5)' } },
+          sunset: { isDark: false, colors: { bgPrimary: '#fff7ed', bgSecondary: '#ffffff', bgTertiary: '#ffedd5', textPrimary: '#7c2d12', textSecondary: '#c2410c', textTertiary: '#ea580c', accentPrimary: '#ea580c', border: '#fed7aa', borderLight: '#ffedd5', glassBg: 'rgba(255, 255, 255, 0.85)', glassBorder: 'rgba(254, 215, 170, 0.5)' } },
+          purple: { isDark: false, colors: { bgPrimary: '#faf5ff', bgSecondary: '#ffffff', bgTertiary: '#f3e8ff', textPrimary: '#581c87', textSecondary: '#7e22ce', textTertiary: '#9333ea', accentPrimary: '#9333ea', border: '#e9d5ff', borderLight: '#f3e8ff', glassBg: 'rgba(255, 255, 255, 0.85)', glassBorder: 'rgba(233, 213, 255, 0.5)' } },
+          // Yeni Temalar
+          red: { isDark: false, colors: { bgPrimary: '#fef2f2', bgSecondary: '#ffffff', bgTertiary: '#fee2e2', textPrimary: '#7f1d1d', textSecondary: '#b91c1c', textTertiary: '#ef4444', accentPrimary: '#ef4444', border: '#fecaca', borderLight: '#fee2e2', glassBg: 'rgba(255, 255, 255, 0.85)', glassBorder: 'rgba(254, 202, 202, 0.5)' } },
+          red_dark: { isDark: true, colors: { bgPrimary: '#7f1d1d', bgSecondary: '#991b1b', bgTertiary: '#b91c1c', textPrimary: '#fef2f2', textSecondary: '#fecaca', textTertiary: '#f87171', accentPrimary: '#f87171', border: '#7f1d1d', borderLight: '#991b1b', glassBg: 'rgba(153, 27, 27, 0.85)', glassBorder: 'rgba(254, 202, 202, 0.1)' } },
+          yellow: { isDark: false, colors: { bgPrimary: '#fefce8', bgSecondary: '#ffffff', bgTertiary: '#fef9c3', textPrimary: '#713f12', textSecondary: '#a16207', textTertiary: '#eab308', accentPrimary: '#eab308', border: '#fde047', borderLight: '#fef9c3', glassBg: 'rgba(255, 255, 255, 0.85)', glassBorder: 'rgba(253, 224, 71, 0.5)' } },
+          navy: { isDark: true, colors: { bgPrimary: '#0f172a', bgSecondary: '#1e3a8a', bgTertiary: '#1e40af', textPrimary: '#eff6ff', textSecondary: '#bfdbfe', textTertiary: '#60a5fa', accentPrimary: '#3b82f6', border: '#1e3a8a', borderLight: '#1e40af', glassBg: 'rgba(30, 58, 138, 0.85)', glassBorder: 'rgba(191, 219, 254, 0.1)' } }
+        };
+
+        // Temayı al
+        var savedTheme = localStorage.getItem('netmon_theme_appTheme');
+        var oldDarkMode = localStorage.getItem('darkMode');
+        var customColor = localStorage.getItem('netmon_theme_appCustomPrimary');
+
+        // Eski sistemden migration
+        if (!savedTheme && oldDarkMode === 'true') {
+          savedTheme = 'dark';
+        }
+
+        // Varsayılan tema
+        var themeId = savedTheme || 'light';
+        var theme = THEMES[themeId] || THEMES.light;
+        var colors = theme.colors;
+        var root = document.documentElement;
+
+        // data-theme attribute'u
+        root.setAttribute('data-theme', themeId);
+
+        // ESKİ CSS DEĞİŞKENLERİNİ GÜNCELLE (style.css uyumluluğu için)
+        root.style.setProperty('--bg', colors.bgPrimary);
+        root.style.setProperty('--card', colors.bgSecondary);
+        root.style.setProperty('--surface', colors.bgSecondary);
+        root.style.setProperty('--bg-soft', colors.bgTertiary);
+        root.style.setProperty('--bg-soft-2', colors.bgTertiary);
+        root.style.setProperty('--text', colors.textPrimary);
+        root.style.setProperty('--text-strong', colors.textPrimary);
+        root.style.setProperty('--text-secondary', colors.textSecondary);
+        root.style.setProperty('--text-light', colors.textSecondary);
+        root.style.setProperty('--muted', colors.textSecondary);
+        root.style.setProperty('--text-muted', colors.textTertiary);
+        root.style.setProperty('--text-subtle', colors.textTertiary);
+        root.style.setProperty('--border', colors.border);
+        root.style.setProperty('--line', colors.border);
+        root.style.setProperty('--border-soft', colors.borderLight);
+        root.style.setProperty('--border-glass', colors.glassBorder);
+        root.style.setProperty('--glass-bg', colors.glassBg);
+        root.style.setProperty('--glass-border', colors.glassBorder);
+        root.style.setProperty('--primary', colors.accentPrimary);
+
+        // RGB değerleri (buton shadow'ları için)
+        var rgb = hexToRgb(colors.accentPrimary);
+        root.style.setProperty('--primary-rgb', rgb.r + ', ' + rgb.g + ', ' + rgb.b);
+        var rgbSecondary = hexToRgb(colors.accentSecondary);
+        root.style.setProperty('--secondary-rgb', rgbSecondary.r + ', ' + rgbSecondary.g + ', ' + rgbSecondary.b);
+
+        // dark-mode class'ı (geriye dönük uyumluluk)
+        if (theme.isDark) {
+          root.classList.add('dark-mode');
+        }
+
+        // Özel renk uygula
+        if (customColor) {
+          root.style.setProperty('--custom-primary-color', customColor);
+          root.style.setProperty('--custom-primary', customColor);
+          root.style.setProperty('--primary', customColor);
+        }
+      } catch (e) {
+        // Sessizce hata yut
+      }
+    })();
+
+    // Hex to RGB helper function
+    function hexToRgb(hex) {
+      if (!hex || typeof hex !== 'string') return { r: 59, g: 130, b: 246 };
+
+      // Short form (#fff) destekle
+      let hexStr = hex.replace('#', '');
+      if (hexStr.length === 3) {
+        hexStr = hexStr[0] + hexStr[0] + hexStr[1] + hexStr[1] + hexStr[2] + hexStr[2];
+      }
+
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hexStr);
+      if (result) {
+        return {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16)
+        };
+      }
+
+      return { r: 59, g: 130, b: 246 };
+    }
+  </script>
+</head>
+
+<body>
+  <header class="topbar">
+    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+      <a href="{{ url_for('planner.plan_week') }}"
+        style="display: flex; align-items: center; text-decoration: none; transition: opacity 0.2s; flex-shrink: 0;">
+        <img class="brandLogo" src='{{ url_for("static", filename="Kwc_Netmon_Logo_Netmon_2.png") }}' alt="Netmon"
+          style="cursor: pointer;">
+      </a>
+
+      <div style="display: flex; align-items: center; justify-content: center; flex: 1; min-width: 0;">
+        {% block header_content %}{% endblock %}
+      </div>
+
+      <nav class="nav" style="flex-shrink: 0;">
+        {% if session.get('role') == 'field' %}
+        <a href="{{ url_for('planner.portal_home_current') }}">Benim İşlerim</a>
+        <a href="{{ url_for('planner.portal_where') }}">Kim Nerede</a>
+        <a href="{{ url_for('chat.announcements_page') }}">Duyurular</a>
+        <a href="{{ url_for('chat.chat_page') }}">Sohbet</a>
+        {% else %}
+        <a href="{{ url_for('planner.plan_week') }}">Plan</a>
+        <a href="{{ url_for('tasks.task_list') }}">Görev Takip</a>
+        <a href="{{ url_for('planner.board_page') }}">Pano</a>
+        <a href="{{ url_for('planner.map_page') }}">Harita</a>
+        <a href="{{ url_for('chat.chat_page') }}">Sohbet</a>
+        <a href="{{ url_for('chat.announcements_page') }}">Duyurular</a>
+        <div class="nav-dropdown">
+          <a href="#" class="nav-dropdown-toggle">Raporlar ▼</a>
+          <div class="nav-dropdown-menu">
+            <a href="{{ url_for('tasks.task_report_page') }}">Görev Takip Raporu</a>
+            <a href="{{ url_for('planner.reports_analytics_page') }}">Proje Raporları</a>
+            <a href="{{ url_for('planner.reports_page') }}">Rapor</a>
+            {% if session.get('is_admin') or session.get('role') in ['planner','planlayici','planlayıcı'] %}
+            <a href="{{ url_for('planner.admin_reports') }}">Saha Raporları</a>
+            {% endif %}
+          </div>
+        </div>
+        <div class="nav-dropdown">
+          <a href="#" class="nav-dropdown-toggle">Tanımlar ▼</a>
+          <div class="nav-dropdown-menu">
+            <a href="{{ url_for('planner.projects_page') }}">Projeler</a>
+            <a href="{{ url_for('planner.people_page') }}">Personel</a>
+            <a href="{{ url_for('planner.personnel_settings_page') }}">Personel Durumları</a>
+            <a href="{{ url_for('planner.tools_page') }}">Araçlar</a>
+            {% if session.get('is_admin') or session.get('role') in ['planner','planlayici','planlayıcı'] %}
+            <a href="{{ url_for('admin.mail_settings_page') }}">Mail Ayarları</a>
+            <a href="{{ url_for('planner.arvento_settings_page') }}">Arvento Ayarları</a>
+            <a href="{{ url_for('auth.admin_users') }}">Kullanıcılar</a>
+            {% endif %}
+            <a href="{{ url_for('planner.mail_page') }}">Mail</a>
+          </div>
+        </div>
+        <div id="notifWrap"
+          style="position:relative; display:inline-flex; align-items:center; gap:4px; margin-left:6px; overflow:visible; padding-top:4px;">
+          <div id="chatNotifWrap" style="position:relative; display:inline-flex; align-items:center; overflow:visible;">
+            <button id="chatNotifBellBtn" type="button" class="btn" title="Sohbet Bildirimleri"
+              style="background:var(--bg-soft-2); color:var(--text-strong); border:1px solid var(--border); height:34px; width:38px; padding:0; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:visible;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              <span id="chatNotifBadge"
+                style="display:none; position:absolute; top:-4px; right:-10px; min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:var(--status-info); color:#fff; font-size:12px; font-weight:900; line-height:22px; text-align:center; box-shadow:0 2px 8px rgba(59,130,246,0.4), 0 0 0 3px #ffffff; z-index:1000; white-space:nowrap;"></span>
+            </button>
+          </div>
+          <button id="notifBellBtn" type="button" class="btn" title="Bildirimler"
+            style="background:var(--bg-soft-2); color:var(--text-strong); border:1px solid var(--border); height:34px; width:38px; padding:0; display:inline-flex; align-items:center; justify-content:center; position:relative; overflow:visible;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Z" fill="currentColor" />
+              <path d="M18 16V11a6 6 0 1 0-12 0v5l-2 2v1h16v-1l-2-2Z" stroke="currentColor" stroke-width="1.6"
+                stroke-linejoin="round" />
+            </svg>
+            <span id="notifBadge"
+              style="display:none; position:absolute; top:-4px; right:-10px; min-width:22px; height:22px; padding:0 6px; border-radius:999px; background:var(--status-danger); color:#fff; font-size:12px; font-weight:900; line-height:22px; text-align:center; box-shadow:0 2px 8px rgba(220,38,38,0.4), 0 0 0 3px #ffffff; z-index:1000; white-space:nowrap;"></span>
+          </button>
+          <div id="notifDropdown" class="notif-dropdown"
+            style="display:none; position:absolute; right:0; top:42px; width:380px; max-width: calc(100vw - 24px); background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:12px; box-shadow:0 12px 40px rgba(0,0,0,0.12); overflow:hidden; z-index:9999;">
+            <div
+              style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-bottom:1px solid var(--line);">
+              <div style="font-weight:900; color:var(--text); font-size:13px;">Bildirimler</div>
+              <button id="notifMarkAllBtn" class="btn" type="button"
+                style="background:var(--bg); border:1px solid var(--line); padding:6px 10px; font-size:12px; color:var(--text);">Tümünü
+                okundu yap</button>
+            </div>
+            <div id="notifList" style="max-height:420px; overflow:auto; padding:8px 10px;"></div>
+          </div>
+        </div>
+        {% endif %}
+        {% if session.get('user_id') %}
+        <div id="onlineWrap" style="position:relative; display:inline-flex; align-items:center; margin-left:6px;">
+          <button id="onlineBtn" type="button" class="btn" title="Online Kullanıcılar"
+            style="background:var(--bg-soft-2); color:var(--text-strong); border:1px solid var(--border); height:34px; padding:0 10px; display:inline-flex; align-items:center; gap:8px; position:relative; font-weight:800;">
+            Online
+            <span id="onlineBadge"
+              style="display:none; min-width:18px; height:18px; padding:0 5px; border-radius:999px; background:var(--status-success); color:#fff; font-size:11px; font-weight:900; line-height:18px; text-align:center;"></span>
+          </button>
+          <div id="onlineDropdown" class="online-dropdown"
+            style="display:none; position:absolute; right:0; top:42px; width:320px; max-width: calc(100vw - 24px); background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:12px; box-shadow:0 12px 40px rgba(0,0,0,0.12); overflow:hidden; z-index:9999;">
+            <div
+              style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-bottom:1px solid var(--line);">
+              <div style="font-weight:900; color:var(--text); font-size:13px;">Online Kullanıcılar</div>
+              <div id="onlineMeta" style="color:var(--muted); font-size:11px; font-weight:700;"></div>
+            </div>
+            <div id="onlineList" style="max-height:420px; overflow:auto; padding:8px 10px;"></div>
+          </div>
+        </div>
+        {% endif %}
+        <!-- Tema Seçici -->
+        <div id="themeSelector" class="theme-selector" style="margin-left: 6px;"></div>
+        <a href="{{ url_for('auth.logout') }}">Çıkış ({% if g.user %}{{ g.user.full_name }}{% elif
+          session.get('full_name') %}{{ session.get('full_name') }}{% else %}Kullanıcı{% endif %})</a>
+      </nav>
+    </div>
+  </header>
+
+  <script>
+    // Navigation dropdown toggle (Raporlar, Tanımlar - hepsi tıklanınca açılır)
+    document.addEventListener('DOMContentLoaded', function () {
+      const allDropdownToggles = document.querySelectorAll('.nav-dropdown-toggle');
+
+      allDropdownToggles.forEach(function (toggle) {
+        toggle.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          const navDropdown = this.closest('.nav-dropdown');
+          if (!navDropdown) return;
+          const isActive = navDropdown.classList.contains('active');
+
+          // Diğer tüm dropdown'ları kapat
+          document.querySelectorAll('.nav-dropdown').forEach(function (dd) {
+            if (dd !== navDropdown) {
+              dd.classList.remove('active');
+            }
+          });
+
+          // Bu dropdown'ı aç/kapat
+          if (isActive) {
+            navDropdown.classList.remove('active');
+          } else {
+            navDropdown.classList.add('active');
+          }
+        });
+      });
+
+      // Her dropdown için mouseleave ile kapat
+      document.querySelectorAll('.nav-dropdown').forEach(function (dd) {
+        dd.addEventListener('mouseleave', function () {
+          this.classList.remove('active');
+          document.querySelectorAll('.nav-dropdown-submenu').forEach(function (sm) {
+            sm.classList.remove('active');
+          });
+        });
+      });
+
+      // Submenu toggle'lar (varsa)
+      document.querySelectorAll('.nav-dropdown-submenu-toggle').forEach(function (toggle) {
+        toggle.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          const submenu = this.closest('.nav-dropdown-submenu');
+          if (!submenu) return;
+          const isActive = submenu.classList.contains('active');
+          document.querySelectorAll('.nav-dropdown-submenu').forEach(function (sm) {
+            if (sm !== submenu) sm.classList.remove('active');
+          });
+          if (isActive) {
+            submenu.classList.remove('active');
+          } else {
+            submenu.classList.add('active');
+          }
+        });
+      });
+
+      // Dışarı tıklanınca tüm dropdown'ları kapat
+      document.addEventListener('click', function (e) {
+        const clickedLink = e.target.closest('.nav-dropdown-menu a');
+        if (clickedLink && !clickedLink.classList.contains('nav-dropdown-submenu-toggle') && !clickedLink.classList.contains('nav-dropdown-toggle')) {
+          document.querySelectorAll('.nav-dropdown').forEach(function (dd) { dd.classList.remove('active'); });
+          document.querySelectorAll('.nav-dropdown-submenu').forEach(function (sm) { sm.classList.remove('active'); });
+          return;
+        }
+        if (!e.target.closest('.nav-dropdown')) {
+          document.querySelectorAll('.nav-dropdown').forEach(function (dd) { dd.classList.remove('active'); });
+          document.querySelectorAll('.nav-dropdown-submenu').forEach(function (sm) { sm.classList.remove('active'); });
+        }
+      });
+    });
+  </script>
+
+  <main class="container">
+    <input type="hidden" id="csrfTokenGlobal" value="{{ csrf_token() }}">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-wrap">
+      {% for category, message in messages %}
+      <div class="flash {{ category }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+
+  <script>
+    (() => {
+      const badge = document.getElementById('notifBadge');
+      const btn = document.getElementById('notifBellBtn');
+      const dd = document.getElementById('notifDropdown');
+      const list = document.getElementById('notifList');
+      const markAllBtn = document.getElementById('notifMarkAllBtn');
+      const csrfToken = (document.getElementById('csrfTokenGlobal') || {}).value || '';
+
+      const fmtTime = (isoStr) => {
+        if (!isoStr) return '';
+        try {
+          const d = new Date(isoStr);
+          return d.toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '');
+        } catch (_) { return isoStr; }
+      };
+
+      const setBadge = (count) => {
+        const n = Number(count || 0) || 0;
+        if (!badge) return;
+        if (n <= 0) {
+          badge.style.display = 'none';
+          badge.textContent = '';
+          return;
+        }
+        badge.style.display = 'inline-block';
+        badge.textContent = String(n > 99 ? '99+' : n);
+      };
+
+      const loadCount = async () => {
+        try {
+          const res = await fetch('/api/notifications/unread_count');
+          const data = await res.json().catch(() => ({ ok: false }));
+          if (res.ok && data.ok) setBadge(data.count);
+        } catch (_) { }
+      };
+
+      window.__notifReload = () => {
+        try {
+          loadCount();
+          if (dd && dd.style.display === 'block') loadList();
+        } catch (_) { }
+      };
+
+      const renderItems = (items) => {
+        if (!list) return;
+        const isDark = document.documentElement.classList.contains('dark-mode');
+        const emptyColor = isDark ? 'var(--text-secondary-dark)' : 'var(--text-muted)';
+        const unreadBorder = isDark ? 'var(--border-dark)' : 'var(--border)';
+        const unreadBg = isDark ? 'var(--bg-dark)' : 'var(--bg-soft)';
+        const readBorder = isDark ? 'var(--border-dark)' : 'var(--border)';
+        const readBg = isDark ? 'var(--card-dark)' : 'var(--surface)';
+        const titleColor = isDark ? 'var(--text-dark)' : 'var(--text-strong)';
+        const timeColor = isDark ? 'var(--text-secondary-dark)' : 'var(--text-muted)';
+        const bodyColor = isDark ? 'var(--text-secondary-dark)' : 'var(--text-subtle)';
+
+        if (!items || !items.length) {
+          list.innerHTML = `<div style="color:${emptyColor}; font-size:13px; padding:10px 4px;">Bildirim yok</div>`;
+          return;
+        }
+        list.innerHTML = items.map(it => {
+          const unread = !it.read;
+          const title = (it.title || '').replace(/</g, '&lt;');
+          const body = (it.body || '').replace(/</g, '&lt;');
+          const time = fmtTime(it.created_at);
+          const link = it.link_url || '';
+          const borderColor = unread ? unreadBorder : readBorder;
+          const bgColor = unread ? unreadBg : readBg;
+          return `
+        <div class="notifItem" data-id="${it.id}" data-link="${link.replace(/"/g, '&quot;')}" style="border:1px solid ${borderColor} !important; background:${bgColor} !important; color:${isDark ? 'var(--text-dark)' : 'var(--text)'} !important; border-radius:12px; padding:10px 10px; margin-bottom:8px; cursor:pointer;">
+          <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+            <div style="font-weight:${unread ? '900' : '700'}; color:${titleColor} !important; font-size:13px; line-height:1.2;">${title}</div>
+            <div style="white-space:nowrap; color:${timeColor} !important; font-size:11px;">${time}</div>
+          </div>
+          ${body ? `<div style="margin-top:6px; color:${bodyColor} !important; font-size:12px; white-space:pre-wrap;">${body}</div>` : ''}
+        </div>
+      `;
+        }).join('');
+
+        list.querySelectorAll('.notifItem').forEach(el => {
+          el.addEventListener('click', async () => {
+            const id = Number(el.getAttribute('data-id') || 0);
+            const link = el.getAttribute('data-link') || '';
+            if (id) {
+              try {
+                await fetch('/api/notifications/mark_read', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ ids: [id], csrf_token: csrfToken })
+                });
+              } catch (_) { }
+              loadCount();
+            }
+            if (link) { window.location.href = link; }
+          });
+        });
+      };
+
+      const loadList = async () => {
+        try {
+          const res = await fetch('/api/notifications/list?limit=20');
+          const data = await res.json().catch(() => ({ ok: false }));
+          if (res.ok && data.ok) renderItems(data.items || []);
+        } catch (_) {
+          const isDark = document.documentElement.classList.contains('dark-mode');
+          const errorColor = isDark ? 'var(--text-secondary-dark)' : 'var(--text-muted)';
+          if (list) list.innerHTML = `<div style="color:${errorColor}; font-size:13px; padding:10px 4px;">Yüklenemedi</div>`;
+        }
+      };
+
+      const toggleDropdown = async () => {
+        if (!dd) return;
+        const open = dd.style.display === 'block';
+        dd.style.display = open ? 'none' : 'block';
+        if (!open) {
+          await loadList();
+          await loadCount();
+        }
+      };
+
+      if (btn) {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleDropdown();
+        });
+      }
+      document.addEventListener('click', () => { if (dd) dd.style.display = 'none'; });
+      if (dd) dd.addEventListener('click', (e) => e.stopPropagation());
+
+      if (markAllBtn) {
+        markAllBtn.addEventListener('click', async () => {
+          try {
+            await fetch('/api/notifications/mark_read', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ all: true, csrf_token: csrfToken })
+            });
+          } catch (_) { }
+          loadCount();
+          loadList();
+        });
+      }
+
+      loadCount();
+      setInterval(loadCount, 60000);
+    })();
+
+    // Tema Seçici Başlatma (Theme Selector Initialization)
+    (function () {
+      // Tema tanımları - GENİŞLETİLMİŞ (eski CSS değişkenleriyle uyumluluk için)
+      const THEMES = {
+        light: {
+          id: 'light', name: 'Açık', isDark: false,
+          colors: {
+            bgPrimary: '#f3f6fc', bgSecondary: '#ffffff', bgTertiary: '#f8fafc',
+            textPrimary: '#1e293b', textSecondary: '#64748b', textTertiary: '#94a3b8',
+            accentPrimary: '#3b82f6', accentSecondary: '#6366f1',
+            border: '#e2e8f0', borderLight: '#f1f5f9',
+            glassBg: 'rgba(255, 255, 255, 0.85)', glassBorder: 'rgba(255, 255, 255, 0.5)'
+          }
+        },
+        dark: {
+          id: 'dark', name: 'Koyu', isDark: true,
+          colors: {
+            bgPrimary: '#1a1a1a', bgSecondary: '#2d2d2d', bgTertiary: '#3d3d3d',
+            textPrimary: '#f5f5f5', textSecondary: '#a3a3a3', textTertiary: '#737373',
+            accentPrimary: '#60a5fa', accentSecondary: '#818cf8',
+            border: '#404040', borderLight: '#525252',
+            glassBg: 'rgba(45, 45, 45, 0.85)', glassBorder: 'rgba(255, 255, 255, 0.1)'
+          }
+        },
+        navy: {
+          id: 'navy', name: 'Lacivert', isDark: true,
+          colors: {
+            bgPrimary: '#0f172a', bgSecondary: '#1e3a8a', bgTertiary: '#1e40af',
+            textPrimary: '#eff6ff', textSecondary: '#bfdbfe', textTertiary: '#60a5fa',
+            accentPrimary: '#3b82f6', accentSecondary: '#4f46e5',
+            border: '#1e3a8a', borderLight: '#1e40af',
+            glassBg: 'rgba(30, 58, 138, 0.85)', glassBorder: 'rgba(191, 219, 254, 0.1)'
+          }
+        },
+        grey: {
+          id: 'grey', name: 'Gri (Nötr)', isDark: true,
+          colors: {
+            bgPrimary: '#3f3f46', bgSecondary: '#52525b', bgTertiary: '#71717a',
+            textPrimary: '#fafafa', textSecondary: '#d4d4d8', textTertiary: '#a1a1aa',
+            accentPrimary: '#a1a1aa', accentSecondary: '#d4d4d8',
+            border: '#52525b', borderLight: '#71717a',
+            glassBg: 'rgba(82, 82, 91, 0.85)', glassBorder: 'rgba(255, 255, 255, 0.1)'
+          }
+        },
+        'pure-black': {
+          id: 'pure-black', name: 'Saf Siyah', isDark: true,
+          colors: {
+            bgPrimary: '#000000', bgSecondary: '#0a0a0a', bgTertiary: '#171717',
+            textPrimary: '#ffffff', textSecondary: '#a3a3a3', textTertiary: '#737373',
+            accentPrimary: '#3b82f6', accentSecondary: '#6366f1',
+            border: '#262626', borderLight: '#262626',
+            glassBg: 'rgba(0, 0, 0, 0.9)', glassBorder: 'rgba(255, 255, 255, 0.08)'
+          }
+        },
+        'pure-white': {
+          id: 'pure-white', name: 'Saf Beyaz', isDark: false,
+          colors: {
+            bgPrimary: '#ffffff', bgSecondary: '#ffffff', bgTertiary: '#f5f5f5',
+            textPrimary: '#171717', textSecondary: '#525252', textTertiary: '#737373',
+            accentPrimary: '#2563eb', accentSecondary: '#4f46e5',
+            border: '#e5e5e5', borderLight: '#f5f5f5',
+            glassBg: 'rgba(255, 255, 255, 0.95)', glassBorder: 'rgba(0, 0, 0, 0.05)'
+          }
+        },
+        ocean: {
+          id: 'ocean', name: 'Okyanus', isDark: false,
+          colors: {
+            bgPrimary: '#f0f9ff', bgSecondary: '#ffffff', bgTertiary: '#e0f2fe',
+            textPrimary: '#0c4a6e', textSecondary: '#0369a1', textTertiary: '#0284c7',
+            accentPrimary: '#0284c7', accentSecondary: '#0891b2',
+            border: '#bae6fd', borderLight: '#e0f2fe',
+            glassBg: 'rgba(255, 255, 255, 0.85)', glassBorder: 'rgba(186, 230, 253, 0.5)'
+          }
+        },
+        forest: {
+          id: 'forest', name: 'Orman', isDark: false,
+          colors: {
+            bgPrimary: '#f0fdf4', bgSecondary: '#ffffff', bgTertiary: '#dcfce7',
+            textPrimary: '#14532d', textSecondary: '#166534', textTertiary: '#15803d',
+            accentPrimary: '#16a34a', accentSecondary: '#22c55e',
+            border: '#bbf7d0', borderLight: '#dcfce7',
+            glassBg: 'rgba(255, 255, 255, 0.85)', glassBorder: 'rgba(187, 247, 208, 0.5)'
+          }
+        },
+        sunset: {
+          id: 'sunset', name: 'Gün Batımı', isDark: false,
+          colors: {
+            bgPrimary: '#fff7ed', bgSecondary: '#ffffff', bgTertiary: '#ffedd5',
+            textPrimary: '#7c2d12', textSecondary: '#c2410c', textTertiary: '#ea580c',
+            accentPrimary: '#ea580c', accentSecondary: '#f97316',
+            border: '#fed7aa', borderLight: '#ffedd5',
+            glassBg: 'rgba(255, 255, 255, 0.85)', glassBorder: 'rgba(254, 215, 170, 0.5)'
+          }
+        },
+        purple: {
+          id: 'purple', name: 'Mor', isDark: false,
+          colors: {
+            bgPrimary: '#faf5ff', bgSecondary: '#ffffff', bgTertiary: '#f3e8ff',
+            textPrimary: '#581c87', textSecondary: '#7e22ce', textTertiary: '#9333ea',
+            accentPrimary: '#9333ea', accentSecondary: '#a855f7',
+            border: '#e9d5ff', borderLight: '#f3e8ff',
+            glassBg: 'rgba(255, 255, 255, 0.85)', glassBorder: 'rgba(233, 213, 255, 0.5)'
+          }
+        },
+        slate: {
+          id: 'slate', name: 'Gri', isDark: true,
+          colors: {
+            bgPrimary: '#020617', bgSecondary: '#0f172a', bgTertiary: '#1e293b',
+            textPrimary: '#f8fafc', textSecondary: '#94a3b8', textTertiary: '#64748b',
+            accentPrimary: '#64748b', accentSecondary: '#94a3b8',
+            border: '#1e293b', borderLight: '#334155',
+            glassBg: 'rgba(15, 23, 42, 0.85)', glassBorder: 'rgba(255, 255, 255, 0.1)'
+          }
+        }
+      };
+
+      const COLOR_PRESETS = [
+        { name: 'Mavi', color: '#3b82f6' },
+        { name: 'İndigo', color: '#6366f1' },
+        { name: 'Mor', color: '#8b5cf6' },
+        { name: 'Pembe', color: '#ec4899' },
+        { name: 'Kırmızı', color: '#ef4444' },
+        { name: 'Turuncu', color: '#f97316' },
+        { name: 'Yeşil', color: '#22c55e' },
+        { name: 'Turkuaz', color: '#14b8a6' }
+      ];
+
+      // Storage helpers
+      function getTheme() {
+        try {
+          let theme = localStorage.getItem('netmon_theme_appTheme');
+          if (!theme) {
+            const old = localStorage.getItem('darkMode');
+            if (old === 'true') theme = 'dark';
+          }
+          return theme || 'light';
+        } catch (e) { return 'light'; }
+      }
+
+      function setTheme(themeId) {
+        try {
+          localStorage.setItem('netmon_theme_appTheme', themeId);
+          const theme = THEMES[themeId];
+          if (theme && theme.isDark) {
+            localStorage.setItem('darkMode', 'true');
+          } else {
+            localStorage.setItem('darkMode', 'false');
+          }
+        } catch (e) { }
+      }
+
+      function getCustomColor() {
+        try { return localStorage.getItem('netmon_theme_appCustomPrimary'); } catch (e) { return null; }
+      }
+
+      function setCustomColor(color) {
+        try { localStorage.setItem('netmon_theme_appCustomPrimary', color); } catch (e) { }
+      }
+
+      function removeCustomColor() {
+        try { localStorage.removeItem('netmon_theme_appCustomPrimary'); } catch (e) { }
+      }
+
+      // Renk ayarlama fonksiyonu
+      function adjustColor(hex, percent) {
+        const num = parseInt(hex.replace('#', ''), 16);
+        const amt = Math.round(2.55 * percent);
+        const R = Math.max(0, Math.min(255, (num >> 16) + amt));
+        const G = Math.max(0, Math.min(255, ((num >> 8) & 0x00FF) + amt));
+        const B = Math.max(0, Math.min(255, (num & 0x0000FF) + amt));
+        return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+      }
+
+      // GÜNCELLENMİŞ: Tema uygula - ESKİ CSS DEĞİŞKENLERİNİ DE GÜNCELLER
+      function applyTheme(themeId) {
+        const theme = THEMES[themeId] || THEMES.light;
+        const root = document.documentElement;
+        const colors = theme.colors;
+
+        // 1. data-theme attribute'u
+        root.setAttribute('data-theme', themeId);
+
+        // 2. ESKİ CSS DEĞİŞKENLERİNİ GÜNCELLE (style.css uyumluluğu için)
+        // Arka plan değişkenleri
+        root.style.setProperty('--bg', colors.bgPrimary);
+        root.style.setProperty('--card', colors.bgSecondary);
+        root.style.setProperty('--surface', colors.bgSecondary);
+        root.style.setProperty('--bg-soft', colors.bgTertiary);
+        root.style.setProperty('--bg-soft-2', colors.bgTertiary);
+
+        // Yazı değişkenleri
+        root.style.setProperty('--text', colors.textPrimary);
+        root.style.setProperty('--text-strong', colors.textPrimary);
+        root.style.setProperty('--text-secondary', colors.textSecondary);
+        root.style.setProperty('--text-light', colors.textSecondary);
+        root.style.setProperty('--muted', colors.textSecondary);
+        root.style.setProperty('--text-muted', colors.textTertiary);
+        root.style.setProperty('--text-subtle', colors.textTertiary);
+
+        // Kenarlık değişkenleri
+        root.style.setProperty('--border', colors.border);
+        root.style.setProperty('--line', colors.border);
+        root.style.setProperty('--border-soft', colors.borderLight);
+        root.style.setProperty('--border-glass', colors.glassBorder);
+
+        // Cam efekti değişkenleri
+        root.style.setProperty('--glass-bg', colors.glassBg);
+        root.style.setProperty('--glass-border', colors.glassBorder);
+
+        // Vurgu rengi
+        root.style.setProperty('--primary', colors.accentPrimary);
+        root.style.setProperty('--primary-hover', adjustColor(colors.accentPrimary, -10));
+        root.style.setProperty('--accent', colors.accentPrimary);
+
+        // Status renkleri (tema bazlı)
+        if (theme.isDark) {
+          root.style.setProperty('--status-success-bg', 'rgba(16, 185, 129, 0.2)');
+          root.style.setProperty('--status-success-text', '#6ee7b7');
+          root.style.setProperty('--status-warning-bg', 'rgba(245, 158, 11, 0.2)');
+          root.style.setProperty('--status-warning-text', '#fcd34d');
+          root.style.setProperty('--status-danger-bg', 'rgba(239, 68, 68, 0.2)');
+          root.style.setProperty('--status-danger-text', '#fca5a5');
+          root.style.setProperty('--status-info-bg', 'rgba(59, 130, 246, 0.2)');
+          root.style.setProperty('--status-info-text', '#93c5fd');
+        } else {
+          root.style.setProperty('--status-success-bg', '#ecfdf5');
+          root.style.setProperty('--status-success-text', '#065f46');
+          root.style.setProperty('--status-warning-bg', '#fffbeb');
+          root.style.setProperty('--status-warning-text', '#92400e');
+          root.style.setProperty('--status-danger-bg', '#fef2f2');
+          root.style.setProperty('--status-danger-text', '#b91c1c');
+          root.style.setProperty('--status-info-bg', '#eff6ff');
+          root.style.setProperty('--status-info-text', '#1e40af');
+        }
+
+        // 3. dark-mode class'ı (geriye dönük uyumluluk)
+        if (theme.isDark) {
+          root.classList.add('dark-mode');
+        } else {
+          root.classList.remove('dark-mode');
+        }
+      }
+
+      // Özel renk uygula
+      function applyCustomColor(color) {
+        const root = document.documentElement;
+        root.style.setProperty('--custom-primary-color', color);
+        root.style.setProperty('--custom-primary', color);
+      }
+
+      // Tema ikonları
+      function getThemeIcon(themeId) {
+        const icons = {
+          light: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>',
+          dark: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
+          'pure-black': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>',
+          'pure-white': '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>',
+          ocean: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2"><path d="M2 12c2-2 4-3 6-3s4 1 6 3 4 3 6 3"/><path d="M2 17c2-2 4-3 6-3s4 1 6 3 4 3 6 3"/></svg>',
+          forest: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><path d="M12 2L8 10h2v6H8l-2 6h4v-4h4v4h4l-2-6h-2v-6h2L12 2z"/></svg>',
+          sunset: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="2"><path d="M17 18a5 5 0 0 0-10 0"/><circle cx="12" cy="9" r="4"/></svg>',
+          purple: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9333ea" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+          slate: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><line x1="8" y1="2" x2="8" y2="4"/><line x1="16" y1="2" x2="16" y2="4"/><line x1="4" y1="10" x2="20" y2="10"/></svg>',
+          navy: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>',
+          grey: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>'
+        };
+        return icons[themeId] || icons.light;
+      }
+
+      // Tema seçici render
+      const container = document.getElementById('themeSelector');
+      if (!container) return;
+
+      const currentThemeId = getTheme();
+      const customColor = getCustomColor() || '#3b82f6';
+
+      // Tema listesi HTML
+      let themeItemsHtml = '';
+      Object.entries(THEMES).forEach(([id, theme]) => {
+        const isActive = id === currentThemeId;
+        themeItemsHtml += '<div class="theme-item ' + (isActive ? 'active' : '') + '" data-theme="' + id + '" role="button" tabindex="0">' +
+          '<div class="theme-preview">' +
+          '<div class="theme-preview-bar" style="background: ' + theme.colors.bgPrimary + '"></div>' +
+          '<div class="theme-preview-bar" style="background: ' + theme.colors.bgSecondary + '"></div>' +
+          '<div class="theme-preview-dot" style="background: ' + theme.colors.accentPrimary + '"></div>' +
+          '</div>' +
+          '<span class="theme-name">' + theme.name + '</span>' +
+          '<svg class="theme-check" width="16" height="16" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor"/></svg>' +
+          '</div>';
+      });
+
+      // Preset renkler HTML
+      let presetsHtml = '<div class="theme-color-presets" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;">';
+      COLOR_PRESETS.forEach(p => {
+        presetsHtml += '<button class="theme-color-preset" style="width:24px; height:24px; border-radius:50%; border:2px solid var(--border-default); background:' + p.color + '; cursor:pointer;" data-color="' + p.color + '" title="' + p.name + '"></button>';
+      });
+      presetsHtml += '</div>';
+
+      // Ana HTML
+      container.innerHTML =
+        '<button class="theme-selector-trigger" type="button" aria-label="Tema Seç" aria-expanded="false">' +
+        '<span class="theme-current-icon">' + getThemeIcon(currentThemeId) + '</span>' +
+        '<span class="theme-current-name">' + (THEMES[currentThemeId] ? THEMES[currentThemeId].name : 'Açık') + '</span>' +
+        '<svg class="theme-dropdown-arrow" width="12" height="12" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z" fill="currentColor"/></svg>' +
+        '</button>' +
+        '<div class="theme-dropdown-menu" hidden>' +
+        themeItemsHtml +
+        '<div class="theme-divider"></div>' +
+        '<div class="theme-custom-section">' +
+        '<div class="theme-custom-header"><span>Özel Vurgu Rengi</span></div>' +
+        presetsHtml +
+        '<div class="theme-custom-color-picker">' +
+        '<input type="color" id="themeCustomColorPicker" value="' + customColor + '">' +
+        '<input type="text" id="themeCustomColorText" value="' + customColor + '" maxlength="7">' +
+        '</div>' +
+        '<button class="theme-reset-btn" type="button">Varsayılana Sıfırla</button>' +
+        '</div>' +
+        '</div>';
+
+      const trigger = container.querySelector('.theme-selector-trigger');
+      const dropdown = container.querySelector('.theme-dropdown-menu');
+      let isOpen = false;
+
+      function updateUI() {
+        const themeId = getTheme();
+        const theme = THEMES[themeId];
+        if (!theme) return;
+
+        container.querySelector('.theme-current-icon').innerHTML = getThemeIcon(themeId);
+        container.querySelector('.theme-current-name').textContent = theme.name;
+
+        container.querySelectorAll('.theme-item').forEach(el => {
+          if (el.dataset.theme === themeId) {
+            el.classList.add('active');
+          } else {
+            el.classList.remove('active');
+          }
+        });
+      }
+
+      // Toggle dropdown
+      trigger.addEventListener('click', e => {
+        e.stopPropagation();
+        isOpen = !isOpen;
+        dropdown.hidden = !isOpen;
+        container.classList.toggle('open', isOpen);
+        trigger.setAttribute('aria-expanded', isOpen);
+      });
+
+      // Tema seçimi
+      container.querySelectorAll('.theme-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const themeId = item.dataset.theme;
+          setTheme(themeId);
+          applyTheme(themeId);
+          updateUI();
+          isOpen = false;
+          dropdown.hidden = true;
+          container.classList.remove('open');
+        });
+
+        item.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            item.click();
+          }
+        });
+      });
+
+      // Renk seçici
+      const colorPicker = container.querySelector('#themeCustomColorPicker');
+      const colorText = container.querySelector('#themeCustomColorText');
+
+      if (colorPicker) {
+        colorPicker.addEventListener('input', e => {
+          const color = e.target.value;
+          if (colorText) colorText.value = color;
+          setCustomColor(color);
+          applyCustomColor(color);
+        });
+      }
+
+      if (colorText) {
+        colorText.addEventListener('change', e => {
+          let color = e.target.value.trim();
+          if (!color.startsWith('#')) color = '#' + color;
+          if (/^#[0-9A-Fa-f]{6}$/.test(color)) {
+            if (colorPicker) colorPicker.value = color;
+            setCustomColor(color);
+            applyCustomColor(color);
+          }
+        });
+      }
+
+      // Preset renkler
+      container.querySelectorAll('.theme-color-preset').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const color = btn.dataset.color;
+          if (colorPicker) colorPicker.value = color;
+          if (colorText) colorText.value = color;
+          setCustomColor(color);
+          applyCustomColor(color);
+        });
+      });
+
+      // Sıfırla
+      const resetBtn = container.querySelector('.theme-reset-btn');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+          removeCustomColor();
+          const root = document.documentElement;
+          root.style.removeProperty('--custom-primary-color');
+          root.style.removeProperty('--custom-primary');
+          if (colorPicker) colorPicker.value = '#3b82f6';
+          if (colorText) colorText.value = '#3b82f6';
+        });
+      }
+
+      // Dışarı tıklama
+      document.addEventListener('click', e => {
+        if (!container.contains(e.target)) {
+          isOpen = false;
+          dropdown.hidden = true;
+          container.classList.remove('open');
+          trigger.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      // ESC tuşu
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && isOpen) {
+          isOpen = false;
+          dropdown.hidden = true;
+          container.classList.remove('open');
+          trigger.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      // İlk yüklemede tema uygula (FOUC önleme zaten yapıldı ama double check)
+      applyTheme(currentThemeId);
+      const savedColor = getCustomColor();
+      if (savedColor) applyCustomColor(savedColor);
+    })();
+  </script>
+
+  {% if session.get('user_id') %}
+  <div id="session-data" data-json="{{ {"isAdmin": session.get('is_admin') or false, "userId": session.get('user_id') or 0} | tojson | e }}" hidden></div>
+  <script>
+    (function () {
+      var el = document.getElementById('session-data');
+      window.__sessionData = el ? JSON.parse(el.getAttribute('data-json') || '{"isAdmin":false,"userId":0}') : { isAdmin: false, userId: 0 };
+    })();
+  </script>
+  <script>
+    (() => {
+      if (!window.__sessionData) window.__sessionData = { isAdmin: false, userId: 0 };
+      const btn = document.getElementById('onlineBtn');
+      const badge = document.getElementById('onlineBadge');
+      const dd = document.getElementById('onlineDropdown');
+      const list = document.getElementById('onlineList');
+      const meta = document.getElementById('onlineMeta');
+      const isAdmin = !!window.__sessionData.isAdmin;
+      const viewerId = Number(window.__sessionData.userId) || 0;
+
+      const fmtTime = (isoStr) => {
+        if (!isoStr) return '';
+        try {
+          const d = new Date(isoStr);
+          return d.toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '');
+        } catch (_) { return isoStr; }
+      };
+
+      const fmtDur = (sec) => {
+        const s = Number(sec || 0) || 0;
+        if (s <= 0) return '';
+        const m = Math.floor(s / 60);
+        if (m < 60) return `${m} dk`;
+        const h = Math.floor(m / 60);
+        const rm = m % 60;
+        return `${h} sa ${rm} dk`;
+      };
+
+      const setBadge = (count) => {
+        const n = Number(count || 0) || 0;
+        if (!badge) return;
+        if (n <= 0) {
+          badge.style.display = 'none';
+          badge.textContent = '';
+          return;
+        }
+        badge.style.display = 'inline-block';
+        badge.textContent = String(n > 99 ? '99+' : n);
+      };
+
+      const render = (data) => {
+        if (!list) return;
+        let items = (data && data.items) ? data.items : [];
+        items = items.filter(u => u && u.is_online);
+        if (meta) {
+          const win = Number((data || {}).window_sec || 0) || 0;
+          meta.textContent = win ? `Son ${Math.round(win / 60)} dk` : '';
+        }
+        if (!items.length) {
+          list.innerHTML = `<div style="color:var(--muted); font-size:13px; padding:10px 4px;">Şu an online kullanıcı yok</div>`;
+          setBadge(0);
+          return;
+        }
+        setBadge(items.length);
+
+        const esc = (s) => (s || '').toString().replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+        const isDark = document.documentElement.classList.contains('dark-mode');
+        list.innerHTML = items.map(it => {
+          const dot = it.is_online ? 'var(--status-online)' : 'var(--status-muted)';
+          const name = esc(it.name || '');
+          const role = esc((it.role || '').toString());
+          const uid = Number(it.id || 0) || 0;
+          const chatLink = (uid && uid !== viewerId) ? `<a href="/chat/users?user_id=${encodeURIComponent(uid)}" class="online-chat-link" style="text-decoration:none; font-size:11px; font-weight:900; padding:6px 10px; border-radius:999px; border:1px solid var(--line); background:var(--primary); color:var(--text-on-strong);">Sohbet</a>` : '';
+          const lastSeen = isAdmin ? fmtTime(it.last_seen) : '';
+          const dur = isAdmin && it.is_online ? fmtDur(it.online_for_sec) : '';
+          const line2 = isAdmin ? `<div style="margin-top:4px; color:var(--muted); font-size:11px; display:flex; justify-content:space-between; gap:8px;"><span>${dur ? `Online: ${dur}` : ''}</span><span>${lastSeen ? `Son: ${lastSeen}` : ''}</span></div>` : '';
+
+          return `
+        <div class="online-user-item" style="border:1px solid var(--line); border-radius:12px; padding:10px 10px; margin-bottom:8px; background:transparent;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="width:10px; height:10px; border-radius:999px; background:${dot}; display:inline-block;"></span>
+            <div style="min-width:0; flex:1;">
+              <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+                <div style="font-weight:900; color:var(--text); font-size:13px; line-height:1.2; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${name}</div>
+                <div style="display:flex; align-items:center; gap:8px; white-space:nowrap;">
+                  <div style="color:var(--text-light); font-size:11px; font-weight:800;">${role || '-'}</div>
+                  ${chatLink}
+                </div>
+              </div>
+              ${line2}
+            </div>
+          </div>
+        </div>
+      `;
+        }).join('');
+      };
+
+      const load = async () => {
+        try {
+          const res = await fetch('/api/online_users?only_online=1');
+          const data = await res.json().catch(() => ({ ok: false }));
+          if (res.ok && data.ok) render(data);
+        } catch (_) { }
+      };
+
+      const toggle = async () => {
+        if (!dd) return;
+        const open = dd.style.display === 'block';
+        dd.style.display = open ? 'none' : 'block';
+        if (!open) await load();
+      };
+
+      if (btn) {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          toggle();
+        });
+      }
+      document.addEventListener('click', () => { if (dd) dd.style.display = 'none'; });
+      if (dd) dd.addEventListener('click', (e) => e.stopPropagation());
+
+      const heartbeat = async () => {
+        try {
+          const tok = (document.getElementById('csrfTokenGlobal') || {}).value || '';
+          await fetch('/api/heartbeat', { method: 'POST', headers: { 'X-CSRF-Token': tok } });
+        } catch (_) { }
+      };
+
+      heartbeat();
+      load();
+      setInterval(load, 30000);
+      setInterval(heartbeat, 30000);
+    })();
+  </script>
+  {% endif %}
+
+  {% if session.get('role') != 'field' %}
+  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+  <script>
+    (() => {
+      try {
+        if (!window.io) {
+          window.__socket = null;
+          return;
+        }
+        const shared = io({
+          transports: ["websocket"],
+          upgrade: false
+        });
+        window.__socket = shared;
+        shared.on('new_report', () => {
+          try {
+            window.__notifReload && window.__notifReload();
+          } catch (_) { }
+        });
+
+        // Sohbet bildirimleri için pop-up ve bildirim çanı
+        const currentUserId = Number(window.__sessionData ? window.__sessionData.userId : 0) || 0;
+        let unreadChatCount = 0;
+
+        const updateChatBadge = () => {
+          const badge = document.getElementById('chatNotifBadge');
+          if (!badge) return;
+          if (unreadChatCount > 0) {
+            badge.style.display = 'inline-block';
+            badge.textContent = String(unreadChatCount > 99 ? '99+' : unreadChatCount);
+          } else {
+            badge.style.display = 'none';
+            badge.textContent = '';
+          }
+        };
+
+        if (currentUserId > 0) {
+          // Bağlandığında odaya katıl
+          shared.on('connect', () => {
+            shared.emit('join_chat');
+          });
+
+          // 1) Mevcut chat_message eventi (eski sistem veya tam veri için)
+          shared.on('chat_message', (m) => {
+            try {
+              const incomingToMe = Number(m.to_user_id || 0) === currentUserId;
+              const fromUser = Number(m.from_user_id || 0) || 0;
+              // Sadece bize gelen mesajlar için pop-up göster
+              if (incomingToMe && fromUser && fromUser !== currentUserId) {
+                const isChatPage = window.location.pathname.includes('/chat');
+                // Chat sayfasında değilsek veya o kişiyle konuşmuyorsak bildirim ver
+                if (!isChatPage || (isChatPage && !window.location.search.includes(`user_id=${fromUser}`))) {
+                  unreadChatCount++;
+                  updateChatBadge();
+                  showChatNotificationGlobal(m.from_user_name || 'Bilinmeyen', m.text || '', fromUser);
+                }
+              }
+            } catch (_) { }
+          });
+
+          // 2) GÖREV: new_message eventini dinle (Tarayıcı Bildirimi için)
+          // Payload: {sender: "...", text: "..."}
+          shared.on('new_message', (data) => {
+            try {
+              // Tarayıcı bildirimi göster
+              if (Notification.permission === 'granted') {
+                new Notification(`Yeni Mesaj: ${data.sender}`, {
+                  body: data.text,
+                  icon: '/static/Kwc_Netmon_Logo_Netmon_2.png' // Varsa ikon
+                });
+              }
+            } catch (e) { console.error(e); }
+          });
+
+          // İzin iste
+          if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+            Notification.requestPermission();
+          }
+        }
+
+        // Bildirim çanına tıklanınca sohbet sayfasına git ve badge'i sıfırla
+        const chatNotifBtn = document.getElementById('chatNotifBellBtn');
+        if (chatNotifBtn) {
+          chatNotifBtn.addEventListener('click', () => {
+            unreadChatCount = 0;
+            updateChatBadge();
+            window.location.href = '/chat/users';
+          });
+        }
+
+        const emitHeartbeat = () => {
+          try {
+            shared.emit('heartbeat');
+          } catch (_) { }
+        };
+        emitHeartbeat();
+        setInterval(emitHeartbeat, 25000);
+      } catch (_) {
+        window.__socket = null;
+      }
+    })();
+
+    // Global sohbet bildirim pop-up fonksiyonu
+    function showChatNotificationGlobal(fromName, messageText, fromUserId) {
+      // Bildirim container'ı oluştur (eğer yoksa)
+      let notificationContainer = document.getElementById('chatNotificationContainer');
+      if (!notificationContainer) {
+        notificationContainer = document.createElement('div');
+        notificationContainer.id = 'chatNotificationContainer';
+        notificationContainer.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; pointer-events: none;';
+        document.body.appendChild(notificationContainer);
+      }
+
+      // Bildirim pop-up'ı oluştur
+      const isDark = document.documentElement.classList.contains('dark-mode');
+      const notification = document.createElement('div');
+      notification.style.cssText = `
+    background: ${isDark ? 'var(--card-dark)' : 'var(--card)'};
+    color: ${isDark ? 'var(--text-dark)' : 'var(--text)'};
+    border: 1px solid ${isDark ? 'var(--border-dark)' : 'var(--line)'};
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    padding: 14px 16px;
+    min-width: 300px;
+    max-width: 400px;
+    pointer-events: auto;
+    cursor: pointer;
+    animation: slideInRight 0.3s ease-out;
+    transition: opacity 0.2s;
+  `;
+
+      // Mesaj metnini kısalt
+      const shortText = messageText.length > 80 ? messageText.substring(0, 80) + '...' : messageText;
+      const escapeHtml = (s) => (s ?? '').toString().replace(/[&<>"']/g, (ch) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[ch]));
+
+      notification.innerHTML = `
+    <div style="display: flex; align-items: flex-start; gap: 12px;">
+      <div style="flex: 1; min-width: 0;">
+        <div style="font-weight: 700; color: ${isDark ? 'var(--text-dark)' : 'var(--text)'}; font-size: 14px; margin-bottom: 4px;">${escapeHtml(fromName)}</div>
+        <div style="color: ${isDark ? 'var(--text-secondary-dark)' : 'var(--text-light)'}; font-size: 13px; line-height: 1.4; word-wrap: break-word;">${escapeHtml(shortText)}</div>
+      </div>
+      <button class="closeBtn" style="background: none; border: none; color: ${isDark ? 'var(--text-secondary-dark)' : 'var(--muted)'}; cursor: pointer; font-size: 18px; padding: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">×</button>
+    </div>
+  `;
+
+      // Kapat butonu
+      const closeBtn = notification.querySelector('.closeBtn');
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        notification.style.transform = 'translateX(100%)';
+        notification.style.opacity = '0';
+        setTimeout(() => notification.remove(), 200);
+      });
+
+      // Tıklanınca sohbet sayfasına git
+      notification.addEventListener('click', () => {
+        window.location.href = `/chat/users?user_id=${encodeURIComponent(fromUserId)}`;
+      });
+
+      notificationContainer.appendChild(notification);
+
+      // 5 saniye sonra otomatik kapat
+      setTimeout(() => {
+        if (notification.parentElement) {
+          notification.style.transform = 'translateX(100%)';
+          notification.style.opacity = '0';
+          setTimeout(() => notification.remove(), 200);
+        }
+      }, 5000);
+    }
+
+    // CSS animasyonu ekle (eğer yoksa)
+    if (!document.getElementById('chatNotificationStyle')) {
+      const style = document.createElement('style');
+      style.id = 'chatNotificationStyle';
+      style.textContent = `
+    @keyframes slideInRight {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+  `;
+      document.head.appendChild(style);
+    }
+  </script>
+  {% endif %}
+
+  {% if popup_announcement %}
+  <div class="modal" id="updateNotesModal">
+    <div class="modalCard" style="max-width: 760px;">
+      <div class="rowline" style="justify-content:space-between; gap:12px; flex-wrap:wrap;">
+        <div>
+          <h3 style="margin:0;">{{ popup_announcement.title or "Güncelleme Notu" }}</h3>
+          {% if popup_announcement.created_at %}
+          <div class="hint" style="margin-top:4px;">{{ popup_announcement.created_at }}</div>
+          {% endif %}
+        </div>
+        <button class="btn secondary" type="button" id="updateNotesCloseBtn">Kapat</button>
+      </div>
+      <div style="margin-top:12px; color:var(--text-strong); font-size:14px; white-space:pre-wrap;">{{
+        popup_announcement.body }}</div>
+      <div class="rowline" style="justify-content:flex-end; margin-top:16px;">
+        <button class="btn" type="button" id="updateNotesOkBtn">Okudum</button>
+      </div>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const modal = document.getElementById('updateNotesModal');
+      const btnClose = document.getElementById('updateNotesCloseBtn');
+      const btnOk = document.getElementById('updateNotesOkBtn');
+      if (!modal) return;
+
+      const annId = "{{ popup_announcement.id }}";
+      const csrfToken = (document.getElementById('csrfTokenGlobal') || {}).value || '';
+
+      const markRead = async () => {
+        if (!annId) return;
+        try {
+          await fetch(`/api/announcements/${encodeURIComponent(annId)}/read`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ csrf_token: csrfToken })
+          });
+        } catch (_) { }
+      };
+
+      const closeModal = async () => {
+        await markRead();
+        modal.classList.remove('open');
+        modal.style.display = 'none';
+      };
+
+      modal.classList.add('open');
+      if (btnClose) btnClose.addEventListener('click', closeModal);
+      if (btnOk) btnOk.addEventListener('click', closeModal);
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+      });
+    });
+  </script>
+  {% endif %}
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script defer src="{{ url_for('static', filename='js/editing-state.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='js/realtime.js') }}"></script>
+  <script defer src="{{ url_for('static', filename='app.js') }}"></script>
+
+</body>
+
+</html>

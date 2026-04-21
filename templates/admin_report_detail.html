@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card" style="max-width: 980px; margin: 0 auto;">
+  <div class="rowline" style="justify-content:space-between; gap:12px; flex-wrap:wrap;">
+    <div>
+      <h2 style="margin:0;">Rapor Detayı</h2>
+      <div class="hint" style="margin-top:4px;">#{{ rep.id }} | {{ rep.submitted_at.strftime('%d.%m.%Y %H:%M') if rep.submitted_at else '-' }}</div>
+    </div>
+    <div class="rowline" style="gap:8px;">
+      <a class="btn secondary" href="{{ url_for('planner.admin_reports', start=request.args.get('start',''), end=request.args.get('end','')) }}" style="text-decoration:none;">Geri</a>
+      {% if job %}
+        <a class="btn secondary" href="{{ url_for('planner.assignment_page', job_id=job.id) }}" style="text-decoration:none;">İş</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div style="margin-top:12px; display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+    <div class="card" style="border:1px solid var(--border); border-radius:12px; padding:12px;">
+      <div style="font-weight:900; color:var(--text-strong);">Özet</div>
+      <div class="hint" style="margin-top:8px;">
+        <div><strong>Kullanıcı:</strong> {{ user.full_name or user.email if user else '-' }}</div>
+        <div><strong>Sonuç:</strong> {{ {"completed":"Tamamlandı","not_completed":"Tamamlanmadı","issue":"Sorun"}.get(rep.outcome or "", rep.outcome or "-") }}</div>
+        <div><strong>İş:</strong> #{{ rep.job_id }}</div>
+        <div><strong>Proje:</strong> {{ project.project_code if project else '' }} - {{ project.project_name if project else '' }}{% if job and job.subproject %} / {{ job.subproject.name }}{% endif %}</div>
+        <div><strong>İl:</strong> {{ project.region if project else '' }}</div>
+        {% if job %}
+          <div><strong>Tarih:</strong> {{ job.work_date.strftime('%Y-%m-%d') }}</div>
+          <div><strong>Ekip:</strong> {{ job.team_name or '-' }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card" style="border:1px solid var(--border); border-radius:12px; padding:12px;">
+      <div style="font-weight:900; color:var(--text-strong);">İnceleme</div>
+      <div class="hint" style="margin-top:8px;">
+        <div><strong>Durum:</strong> {{ rep.review_status or 'pending' }}</div>
+        {% if rep.reviewed_at %}
+          <div>İnceleme: {{ rep.reviewed_at.strftime('%d.%m.%Y %H:%M') }}</div>
+        {% else %}
+          <div>İncelenmedi</div>
+        {% endif %}
+        {% if rep.review_note %}
+          <div style="margin-top:6px; white-space:pre-wrap;">{{ rep.review_note }}</div>
+        {% endif %}
+      </div>
+      <form method="post" style="margin-top:10px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <textarea name="review_note" rows="3" class="input" style="width:100%; margin-top:6px;" placeholder="İnceleme notu (opsiyonel)">{{ rep.review_note or '' }}</textarea>
+        <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+          <button class="btn" name="action" value="approve" type="submit" style="background:var(--status-success); color:white; border:none;">Onayla</button>
+          <button class="btn" name="action" value="reject" type="submit" style="background:var(--status-danger); color:white; border:none;">Reddet</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px; border:1px solid var(--border); border-radius:12px; padding:12px;">
+    <div style="font-weight:900; color:var(--text-strong);">Cevaplar</div>
+    <div style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+      <div>
+        <div class="hint"><strong>Q1:</strong> {{ answers.get('q1_completed','') }}</div>
+        <div class="hint" style="margin-top:6px;"><strong>Q2:</strong> {{ answers.get('q2_isdp','') }}</div>
+      </div>
+      <div>
+        <div class="hint"><strong>Ek çalışma:</strong></div>
+        <div style="white-space:pre-wrap; color:var(--text-subtle); font-size:13px;">{{ answers.get('extra_work_note','') }}</div>
+      </div>
+    </div>
+    <div style="margin-top:10px;">
+      <div class="hint"><strong>Notlar / Problemler:</strong></div>
+      <div style="white-space:pre-wrap; color:var(--text-subtle); font-size:13px;">{{ answers.get('issue_note','') }}</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px; border:1px solid var(--border); border-radius:12px; padding:12px;">
+    <div style="font-weight:900; color:var(--text-strong);">Ekler</div>
+    {% if rep.media and rep.media|length %}
+      <div style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+        {% for m in rep.media %}
+          <div style="border:1px solid var(--border); border-radius:12px; padding:10px;">
+            <div style="font-weight:800; color:var(--text-strong); font-size:12px; word-break:break-word;">{{ m.original_name or m.file_path }}</div>
+            <div style="margin-top:8px;">
+              {% if m.file_type == 'image' %}
+                <a href="{{ url_for('admin.view_file_inline', filename=m.file_path) }}" target="_blank" style="text-decoration:none;">
+                  <img src="{{ url_for('admin.view_file_inline', filename=m.file_path) }}" alt="{{ m.original_name or '' }}" style="width:100%; height:auto; border-radius:10px; border:1px solid var(--border);">
+                </a>
+              {% elif m.file_type == 'video' %}
+                <video controls style="width:100%; border-radius:10px; border:1px solid var(--border);">
+                  <source src="{{ url_for('admin.view_file_inline', filename=m.file_path) }}">
+                </video>
+              {% else %}
+                <a class="btn tiny" href="{{ url_for('admin.download_file', filename=m.file_path) }}" style="text-decoration:none;">İndir</a>
+              {% endif %}
+            </div>
+            <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+              <a class="btn tiny secondary" href="{{ url_for('admin.view_file_inline', filename=m.file_path) }}" target="_blank" style="text-decoration:none;">Aç</a>
+              <a class="btn tiny secondary" href="{{ url_for('admin.download_file', filename=m.file_path) }}" style="text-decoration:none;">İndir</a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="hint" style="margin-top:10px;">Ek yok.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+

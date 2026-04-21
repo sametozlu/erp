@@ -1,0 +1,640 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card" style="max-width: 900px; margin: 20px auto; padding: 24px;">
+    <div
+        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-bottom: 1px solid var(--line); padding-bottom: 16px;">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 700; color: var(--text);">
+            🚗 Arvento Araç Takip Ayarları
+        </h2>
+        <a href="{{ url_for('planner.plan_week') }}" class="btn"
+            style="background: var(--line-light); color: var(--text-light); font-size: 12px; padding: 6px 12px; border-radius: 6px; text-decoration: none;">
+            ← Geri
+        </a>
+    </div>
+
+    <!-- TAB NAVIGATION -->
+    <div
+        style="display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 8px;">
+        <button onclick="switchTab('credentials')" id="tabCredentials" class="tab-btn active"
+            style="padding: 8px 16px; border: none; background: var(--primary); color: white; border-radius: 6px 6px 0 0; font-weight: 600; font-size: 13px; cursor: pointer;">
+            🔐 Kimlik Bilgileri
+        </button>
+        <button onclick="switchTab('devices')" id="tabDevices" class="tab-btn"
+            style="padding: 8px 16px; border: none; background: var(--line-light); color: var(--text-light); border-radius: 6px 6px 0 0; font-weight: 600; font-size: 13px; cursor: pointer;">
+            📱 Cihaz Yönetimi
+        </button>
+    </div>
+
+    <!-- TAB 1: CREDENTIALS -->
+    <div id="credentialsTab">
+        <div id="arventoSettingsForm">
+            <!-- Loading State -->
+            <div id="arventoLoading" style="text-align: center; padding: 40px;">
+                <div style="font-size: 24px; margin-bottom: 12px;">⏳</div>
+                <div style="color: var(--text-light);">Ayarlar yükleniyor...</div>
+            </div>
+
+            <!-- Form Content -->
+            <div id="arventoFormContent" style="display: none;">
+                <!-- Uyarı Mesajı -->
+                <div
+                    style="background: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
+                    <div style="font-weight: 600; color: #92400e; margin-bottom: 4px;">⚠️ Güvenlik Uyarısı</div>
+                    <div style="font-size: 12px; color: #78350f;">
+                        Kimlik bilgileriniz AES-256 şifreleme ile güvenli olarak saklanır.<br>
+                        Bu bilgiler sadece Arvento servisleriyle iletişim için kullanılır.
+                    </div>
+                </div>
+
+                <!-- FORM FIELDS -->
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+
+                    <!-- Username -->
+                    <div>
+                        <label
+                            style="display: block; font-weight: 600; color: var(--text); font-size: 13px; margin-bottom: 6px;">
+                            Kullanıcı Adı (Username)
+                        </label>
+                        <input type="text" id="arventoUsername" placeholder="Arvento kullanıcı adınız"
+                            style="width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; background: var(--card); color: var(--text);">
+                        <div id="arventoUsernameHint"
+                            style="font-size: 11px; color: var(--text-light); margin-top: 4px;">
+                        </div>
+                    </div>
+
+                    <!-- PIN1 -->
+                    <div>
+                        <label
+                            style="display: block; font-weight: 600; color: var(--text); font-size: 13px; margin-bottom: 6px;">
+                            PIN1
+                        </label>
+                        <input type="password" id="arventoPIN1" placeholder="••••••••"
+                            style="width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; background: var(--card); color: var(--text);">
+                        <div id="arventoPIN1Hint" style="font-size: 11px; color: var(--text-light); margin-top: 4px;">
+                        </div>
+                    </div>
+
+                    <!-- PIN2 -->
+                    <div>
+                        <label
+                            style="display: block; font-weight: 600; color: var(--text); font-size: 13px; margin-bottom: 6px;">
+                            PIN2
+                        </label>
+                        <input type="password" id="arventoPIN2" placeholder="••••••••"
+                            style="width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; background: var(--card); color: var(--text);">
+                        <div id="arventoPIN2Hint" style="font-size: 11px; color: var(--text-light); margin-top: 4px;">
+                        </div>
+                    </div>
+
+                    <!-- Language -->
+                    <div>
+                        <label
+                            style="display: block; font-weight: 600; color: var(--text); font-size: 13px; margin-bottom: 6px;">
+                            Dil (Language)
+                        </label>
+                        <select id="arventoLanguage"
+                            style="width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; background: var(--card); color: var(--text);">
+                            <option value="TR">Türkçe (TR)</option>
+                            <option value="EN">English (EN)</option>
+                            <option value="RO">Română (RO)</option>
+                            <option value="RU">Русский (RU)</option>
+                        </select>
+                    </div>
+
+                </div>
+
+                <!-- Status Badge -->
+                <div id="arventoStatusBadge" style="margin-top: 20px; display: none;">
+                    <div
+                        style="background: #dcfce7; border: 1px solid #86efac; border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 16px;">✅</span>
+                        <span style="color: #166534; font-weight: 500; font-size: 13px;">Kimlik bilgileri kayıtlı</span>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div style="display: flex; gap: 10px; margin-top: 24px; justify-content: space-between;">
+                    <button type="button" onclick="testArventoConnection()" id="arventoTestBtn"
+                        style="flex: 1; padding: 12px 16px; background: var(--line-light); color: var(--text); border: 1px solid var(--line); border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s;">
+                        🔌 Bağlantıyı Test Et
+                    </button>
+                    <button type="button" onclick="saveArventoSettings()" id="arventoSaveBtn"
+                        style="flex: 1; padding: 12px 16px; background: var(--text-strong); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; transition: all 0.2s;">
+                        💾 Kaydet
+                    </button>
+                </div>
+
+                <!-- Test Result -->
+                <div id="arventoTestResult" style="margin-top: 16px; display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 2: DEVICE MANAGEMENT -->
+    <div id="devicesTab" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <div style="font-size: 14px; color: var(--text-light);">
+                Arvento cihazlarını yönetin, pasif olanlar haritada gösterilmez.
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button onclick="syncDevices()" class="btn"
+                    style="background: var(--status-info); color: white; font-size: 12px; padding: 8px 14px;">
+                    🔄 Senkronize Et
+                </button>
+                <button onclick="showAddDeviceModal()" class="btn"
+                    style="background: var(--status-success); color: white; font-size: 12px; padding: 8px 14px;">
+                    ➕ Yeni Cihaz
+                </button>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+            <button onclick="toggleAllDevices(true)" class="btn"
+                style="background: var(--line-light); color: var(--text); font-size: 11px; padding: 6px 12px;">
+                ✅ Tümünü Aktif Yap
+            </button>
+            <button onclick="toggleAllDevices(false)" class="btn"
+                style="background: var(--line-light); color: var(--text); font-size: 11px; padding: 6px 12px;">
+                ❌ Tümünü Pasif Yap
+            </button>
+        </div>
+
+        <!-- Device List -->
+        <div id="deviceListLoading" style="text-align: center; padding: 40px;">
+            <div style="font-size: 20px;">⏳</div>
+            <div style="color: var(--text-light); margin-top: 8px;">Cihazlar yükleniyor...</div>
+        </div>
+
+        <div id="deviceListContainer" style="display: none;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                    <tr style="background: var(--bg); border-bottom: 2px solid var(--line);">
+                        <th style="padding: 10px 8px; text-align: left; font-weight: 700; color: var(--text);">Aktif
+                        </th>
+                        <th style="padding: 10px 8px; text-align: left; font-weight: 700; color: var(--text);">Plaka
+                        </th>
+                        <th style="padding: 10px 8px; text-align: left; font-weight: 700; color: var(--text);">Cihaz No
+                        </th>
+                        <th style="padding: 10px 8px; text-align: left; font-weight: 700; color: var(--text);">Ekip</th>
+                        <th style="padding: 10px 8px; text-align: center; font-weight: 700; color: var(--text);">İşlem
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="deviceTableBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- Add/Edit Device Modal -->
+<div id="deviceModal"
+    style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="background: var(--card); padding: 24px; border-radius: 12px; width: 400px; max-width: 90vw;">
+        <h3 id="deviceModalTitle" style="margin: 0 0 16px 0; font-size: 18px; color: var(--text);">Yeni Cihaz Ekle</h3>
+
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            <div>
+                <label
+                    style="display: block; font-weight: 600; font-size: 12px; margin-bottom: 4px; color: var(--text);">Cihaz
+                    Numarası *</label>
+                <input type="text" id="modalDeviceNo" placeholder="Örn: 174263"
+                    style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; background: var(--card); color: var(--text);">
+            </div>
+            <div>
+                <label
+                    style="display: block; font-weight: 600; font-size: 12px; margin-bottom: 4px; color: var(--text);">Plaka
+                    *</label>
+                <input type="text" id="modalPlate" placeholder="Örn: 06 BJ 8300"
+                    style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; background: var(--card); color: var(--text);">
+            </div>
+            <div>
+                <label
+                    style="display: block; font-weight: 600; font-size: 12px; margin-bottom: 4px; color: var(--text);">Notlar</label>
+                <input type="text" id="modalNotes" placeholder="Opsiyonel"
+                    style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; background: var(--card); color: var(--text);">
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="modalIsActive" checked>
+                <label for="modalIsActive" style="font-size: 13px; color: var(--text);">Haritada Göster (Aktif)</label>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end;">
+            <button onclick="closeDeviceModal()" class="btn"
+                style="background: var(--line-light); color: var(--text); padding: 10px 20px;">
+                İptal
+            </button>
+            <button onclick="submitDeviceModal()" id="deviceModalSubmit" class="btn"
+                style="background: var(--primary); color: white; padding: 10px 20px;">
+                Kaydet
+            </button>
+        </div>
+
+        <input type="hidden" id="modalDeviceId" value="">
+    </div>
+</div>
+
+<style>
+    .tab-btn {
+        transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+        opacity: 0.9;
+    }
+
+    .tab-btn.active {
+        background: var(--primary) !important;
+        color: white !important;
+    }
+
+    .device-row {
+        transition: background 0.2s;
+    }
+
+    .device-row:hover {
+        background: var(--bg);
+    }
+
+    .toggle-switch {
+        width: 42px;
+        height: 22px;
+        background: var(--border);
+        border-radius: 999px;
+        position: relative;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .toggle-switch.active {
+        background: var(--status-online);
+    }
+
+    .toggle-switch::after {
+        content: '';
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        background: white;
+        border-radius: 999px;
+        top: 2px;
+        left: 2px;
+        transition: transform 0.2s;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    .toggle-switch.active::after {
+        transform: translateX(20px);
+    }
+</style>
+
+<script>
+    let currentDevices = [];
+    let editingDeviceId = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadArventoSettings();
+        loadDevices();
+    });
+
+    function switchTab(tab) {
+        document.getElementById('credentialsTab').style.display = tab === 'credentials' ? 'block' : 'none';
+        document.getElementById('devicesTab').style.display = tab === 'devices' ? 'block' : 'none';
+
+        document.getElementById('tabCredentials').classList.toggle('active', tab === 'credentials');
+        document.getElementById('tabDevices').classList.toggle('active', tab === 'devices');
+
+        document.getElementById('tabCredentials').style.background = tab === 'credentials' ? 'var(--primary)' : 'var(--line-light)';
+        document.getElementById('tabCredentials').style.color = tab === 'credentials' ? 'white' : 'var(--text-light)';
+        document.getElementById('tabDevices').style.background = tab === 'devices' ? 'var(--primary)' : 'var(--line-light)';
+        document.getElementById('tabDevices').style.color = tab === 'devices' ? 'white' : 'var(--text-light)';
+    }
+
+    async function loadArventoSettings() {
+        try {
+            const res = await fetch('/api/arvento/settings');
+            const data = await res.json();
+
+            document.getElementById('arventoLoading').style.display = 'none';
+            document.getElementById('arventoFormContent').style.display = 'block';
+
+            if (data.ok && data.has_credentials) {
+                const settings = data.settings || {};
+                if (settings.username) {
+                    document.getElementById('arventoUsernameHint').textContent = 'Kayıtlı: ' + settings.username;
+                }
+                if (settings.pin1) {
+                    document.getElementById('arventoPIN1Hint').textContent = 'Kayıtlı: ' + settings.pin1;
+                }
+                if (settings.pin2) {
+                    document.getElementById('arventoPIN2Hint').textContent = 'Kayıtlı: ' + settings.pin2;
+                }
+                if (settings.language) {
+                    document.getElementById('arventoLanguage').value = settings.language;
+                }
+                document.getElementById('arventoStatusBadge').style.display = 'block';
+            }
+        } catch (err) {
+            console.error('Load settings error:', err);
+            document.getElementById('arventoLoading').innerHTML = '<div style="color: var(--status-danger);">Ayarlar yüklenemedi</div>';
+        }
+    }
+
+    async function loadDevices() {
+        try {
+            const res = await fetch('/api/arvento/devices');
+            const data = await res.json();
+
+            document.getElementById('deviceListLoading').style.display = 'none';
+            document.getElementById('deviceListContainer').style.display = 'block';
+
+            if (data.ok) {
+                currentDevices = data.devices || [];
+                renderDeviceTable();
+            }
+        } catch (err) {
+            console.error('Load devices error:', err);
+            document.getElementById('deviceListLoading').innerHTML = '<div style="color: var(--status-danger);">Cihazlar yüklenemedi</div>';
+        }
+    }
+
+    function renderDeviceTable() {
+        const tbody = document.getElementById('deviceTableBody');
+        if (!currentDevices.length) {
+            tbody.innerHTML = '<tr><td colspan="5" style="padding: 20px; text-align: center; color: var(--text-light);">Henüz cihaz eklenmemiş</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = currentDevices.map(d => `
+            <tr class="device-row" style="border-bottom: 1px solid var(--line);">
+                <td style="padding: 10px 8px;">
+                    <div class="toggle-switch ${d.is_active ? 'active' : ''}" onclick="toggleDevice(${d.id}, ${!d.is_active})"></div>
+                </td>
+                <td style="padding: 10px 8px; font-weight: 600; color: var(--text);">${escapeHtml(d.plate)}</td>
+                <td style="padding: 10px 8px; color: var(--text-light); font-family: monospace; font-size: 11px;">${escapeHtml(d.device_no)}</td>
+                <td style="padding: 10px 8px; color: var(--text-light);">
+                    ${d.team_name ? `<span style="background: #dbeafe; color: var(--status-info); padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">${escapeHtml(d.team_name)}</span>` : '<span style="color: #9ca3af; font-size: 11px;">-</span>'}
+                </td>
+                <td style="padding: 10px 8px; text-align: center;">
+                    <button onclick="editDevice(${d.id})" style="background: none; border: none; cursor: pointer; font-size: 14px; margin-right: 8px;" title="Düzenle">✏️</button>
+                    <button onclick="deleteDevice(${d.id})" style="background: none; border: none; cursor: pointer; font-size: 14px;" title="Sil">🗑️</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.toString().replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    async function toggleDevice(id, isActive) {
+        try {
+            const res = await fetch(`/api/arvento/devices/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_active: isActive })
+            });
+            const data = await res.json();
+            if (data.ok) {
+                loadDevices();
+            } else {
+                alert('Hata: ' + (data.error || 'Bilinmeyen hata'));
+            }
+        } catch (err) {
+            console.error(err);
+            alert('İşlem başarısız');
+        }
+    }
+
+    async function toggleAllDevices(isActive) {
+        if (!confirm(`Tüm cihazları ${isActive ? 'aktif' : 'pasif'} yapmak istediğinize emin misiniz?`)) return;
+
+        try {
+            const res = await fetch('/api/arvento/devices/toggle-all', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ is_active: isActive })
+            });
+            const data = await res.json();
+            if (data.ok) {
+                loadDevices();
+            } else {
+                alert('Hata: ' + (data.error || 'Bilinmeyen hata'));
+            }
+        } catch (err) {
+            console.error(err);
+            alert('İşlem başarısız');
+        }
+    }
+
+    async function syncDevices() {
+        try {
+            const res = await fetch('/api/arvento/devices/sync', { method: 'POST' });
+            const data = await res.json();
+            if (data.ok) {
+                alert(`${data.added} yeni cihaz eklendi. Toplam: ${data.total}`);
+                loadDevices();
+            } else {
+                alert('Hata: ' + (data.error || 'Bilinmeyen hata'));
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Senkronizasyon başarısız');
+        }
+    }
+
+    function showAddDeviceModal() {
+        editingDeviceId = null;
+        document.getElementById('deviceModalTitle').textContent = 'Yeni Cihaz Ekle';
+        document.getElementById('modalDeviceNo').value = '';
+        document.getElementById('modalDeviceNo').disabled = false;
+        document.getElementById('modalPlate').value = '';
+        document.getElementById('modalNotes').value = '';
+        document.getElementById('modalIsActive').checked = true;
+        document.getElementById('modalDeviceId').value = '';
+        document.getElementById('deviceModal').style.display = 'flex';
+    }
+
+    function editDevice(id) {
+        const device = currentDevices.find(d => d.id === id);
+        if (!device) return;
+
+        editingDeviceId = id;
+        document.getElementById('deviceModalTitle').textContent = 'Cihaz Düzenle';
+        document.getElementById('modalDeviceNo').value = device.device_no;
+        document.getElementById('modalDeviceNo').disabled = true; // Cihaz no değiştirilemez
+        document.getElementById('modalPlate').value = device.plate;
+        document.getElementById('modalNotes').value = device.notes || '';
+        document.getElementById('modalIsActive').checked = device.is_active;
+        document.getElementById('modalDeviceId').value = id;
+        document.getElementById('deviceModal').style.display = 'flex';
+    }
+
+    function closeDeviceModal() {
+        document.getElementById('deviceModal').style.display = 'none';
+    }
+
+    async function submitDeviceModal() {
+        const deviceNo = document.getElementById('modalDeviceNo').value.trim();
+        const plate = document.getElementById('modalPlate').value.trim();
+        const notes = document.getElementById('modalNotes').value.trim();
+        const isActive = document.getElementById('modalIsActive').checked;
+        const deviceId = editingDeviceId;
+
+        if (!deviceNo || !plate) {
+            alert('Cihaz numarası ve plaka zorunludur');
+            return;
+        }
+
+        try {
+            let res;
+            if (deviceId) {
+                // Update
+                res = await fetch(`/api/arvento/devices/${deviceId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ plate, notes, is_active: isActive })
+                });
+            } else {
+                // Add
+                res = await fetch('/api/arvento/devices', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ device_no: deviceNo, plate, notes, is_active: isActive })
+                });
+            }
+
+            const data = await res.json();
+            if (data.ok) {
+                closeDeviceModal();
+                loadDevices();
+            } else {
+                alert('Hata: ' + (data.error || 'Bilinmeyen hata'));
+            }
+        } catch (err) {
+            console.error(err);
+            alert('İşlem başarısız');
+        }
+    }
+
+    async function deleteDevice(id) {
+        if (!confirm('Bu cihazı silmek istediğinize emin misiniz?')) return;
+
+        try {
+            const res = await fetch(`/api/arvento/devices/${id}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.ok) {
+                loadDevices();
+            } else {
+                alert('Hata: ' + (data.error || 'Bilinmeyen hata'));
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Silme işlemi başarısız');
+        }
+    }
+
+    async function saveArventoSettings() {
+        const username = document.getElementById('arventoUsername').value.trim();
+        const pin1 = document.getElementById('arventoPIN1').value.trim();
+        const pin2 = document.getElementById('arventoPIN2').value.trim();
+        const language = document.getElementById('arventoLanguage').value;
+
+        if (!username && !pin1 && !pin2) {
+            alert('Lütfen kimlik bilgilerini girin');
+            return;
+        }
+
+        const hasExisting = document.getElementById('arventoStatusBadge').style.display !== 'none';
+
+        if (hasExisting) {
+            if (!username || !pin1 || !pin2) {
+                if (!confirm('Boş bırakılan alanlar silinecek. Devam etmek istiyor musunuz?')) {
+                    return;
+                }
+            }
+        } else {
+            if (!username || !pin1 || !pin2) {
+                alert('Tüm alanları doldurun');
+                return;
+            }
+        }
+
+        const btn = document.getElementById('arventoSaveBtn');
+        btn.disabled = true;
+        btn.textContent = 'Kaydediliyor...';
+
+        try {
+            const res = await fetch('/api/arvento/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, pin1, pin2, language })
+            });
+
+            const data = await res.json();
+
+            if (data.ok) {
+                alert('✅ Ayarlar başarıyla kaydedildi');
+                location.reload();
+            } else {
+                alert('❌ Hata: ' + (data.error || 'Bilinmeyen hata'));
+            }
+        } catch (err) {
+            console.error('Save error:', err);
+            alert('❌ Kaydetme sırasında hata oluştu');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '💾 Kaydet';
+        }
+    }
+
+    async function testArventoConnection() {
+        const resultDiv = document.getElementById('arventoTestResult');
+        const btn = document.getElementById('arventoTestBtn');
+
+        btn.disabled = true;
+        btn.textContent = 'Test ediliyor...';
+        resultDiv.style.display = 'none';
+
+        try {
+            const res = await fetch('/api/arvento/test', { method: 'POST' });
+            const data = await res.json();
+
+            resultDiv.style.display = 'block';
+
+            if (data.ok) {
+                resultDiv.innerHTML = `
+          <div style="background: #dcfce7; border: 1px solid #86efac; border-radius: 8px; padding: 12px 16px;">
+            <div style="font-weight: 600; color: #166534; margin-bottom: 4px;">✅ Bağlantı Başarılı!</div>
+            <div style="font-size: 12px; color: #15803d;">${data.message || 'Arvento servisi ile bağlantı kuruldu.'}</div>
+          </div>
+        `;
+            } else {
+                resultDiv.innerHTML = `
+          <div style="background: #fee2e2; border: 1px solid #fca5a5; border-radius: 8px; padding: 12px 16px;">
+            <div style="font-weight: 600; color: #991b1b; margin-bottom: 4px;">❌ Bağlantı Başarısız</div>
+            <div style="font-size: 12px; color: #b91c1c;">${data.error || 'Arvento servisi ile bağlantı kurulamadı.'}</div>
+          </div>
+        `;
+            }
+        } catch (err) {
+            console.error('Test error:', err);
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `
+        <div style="background: #fee2e2; border: 1px solid #fca5a5; border-radius: 8px; padding: 12px 16px;">
+          <div style="font-weight: 600; color: #991b1b;">❌ Test Hatası</div>
+          <div style="font-size: 12px; color: #b91c1c;">Bağlantı testi yapılamadı.</div>
+        </div>
+      `;
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '🔌 Bağlantıyı Test Et';
+        }
+    }
+</script>
+
+<input type="hidden" id="csrfToken" value="{{ csrf_token() }}">
+{% endblock %}

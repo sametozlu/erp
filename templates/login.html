@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="tr">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Giriş - Netmon Proje Takip</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <!-- Tema Sistemi CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/theme-system.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/glass-effects.css') }}">
+  <style>
+    /* Login sayfası tema uyumlu stiller */
+    :root {
+      --login-bg: var(--bg-primary, #f3f6fc);
+      --login-card-bg: var(--bg-secondary, #ffffff);
+      --login-text: var(--text-primary, #1e293b);
+      --login-text-muted: var(--text-tertiary, #94a3b8);
+      --login-border: var(--border-default, #e2e8f0);
+      --login-accent: var(--accent-primary, #3b82f6);
+    }
+
+    .login-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--login-bg);
+      background-image:
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.08) 0px, transparent 50%);
+      padding: 20px;
+      transition: background 0.3s ease;
+    }
+
+    .login-card {
+      background: var(--login-card-bg);
+      border: 1px solid var(--login-border);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 420px;
+      transition: background 0.3s ease, border-color 0.3s ease;
+    }
+
+
+
+    .login-logo {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .login-logo img {
+      height: 60px;
+      width: auto;
+      transition: filter 0.3s ease;
+      animation: logoFloat 3s ease-in-out infinite;
+    }
+
+    @keyframes logoFloat {
+
+      0%,
+      100% {
+        transform: translateY(0px);
+        opacity: 1;
+      }
+
+      50% {
+        transform: translateY(-8px);
+        opacity: 0.95;
+      }
+    }
+
+    .login-logo img:hover {
+      animation: none;
+      transform: scale(1.05);
+      filter: brightness(1.1);
+    }
+
+    .login-title {
+      text-align: center;
+      font-size: 24px;
+      font-weight: 900;
+      margin-bottom: 30px;
+      color: var(--login-text);
+      transition: color 0.3s ease;
+    }
+
+
+    .login-form {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .form-group label {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--login-text);
+      transition: color 0.3s ease;
+    }
+
+    .form-group input {
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--login-border);
+      background: var(--login-card-bg);
+      font-size: 14px;
+      color: var(--login-text);
+      transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+    }
+
+    .form-group input:focus {
+      outline: 2px solid var(--login-accent);
+      outline-offset: 2px;
+    }
+
+    .form-group input::placeholder {
+      color: var(--login-text-muted);
+      transition: color 0.3s ease;
+    }
+
+    .login-btn {
+      background: var(--login-accent);
+      color: #ffffff;
+
+      border: 0;
+      border-radius: 12px;
+      padding: 14px 24px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 16px;
+      margin-top: 10px;
+      width: 100%;
+      transition: all 0.2s ease;
+      display: block;
+    }
+
+    .login-btn:hover {
+      background: var(--accent-primary-hover, #2563eb);
+      color: #ffffff;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 12px -2px rgba(59, 130, 246, 0.3);
+    }
+
+    .login-btn:active {
+      transform: translateY(0);
+    }
+
+    .form-group-remember {
+      margin-top: 6px;
+      margin-bottom: 0;
+    }
+    .remember-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--login-text);
+      user-select: none;
+    }
+    .remember-label input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--login-accent);
+      cursor: pointer;
+    }
+
+    /* Tema Değişkenleri - Dark Mode */
+    html[data-theme="dark"] .login-container,
+    html[data-theme="pure-black"] .login-container,
+    html.dark-mode .login-container {
+      --login-bg: var(--bg-primary);
+      --login-card-bg: var(--bg-secondary);
+      --login-text: var(--text-primary);
+      --login-text-muted: var(--text-tertiary);
+      --login-border: var(--border-default);
+      --login-accent: var(--accent-primary);
+      background-image:
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.04) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.04) 0px, transparent 50%);
+    }
+
+    html[data-theme="dark"] .login-logo img,
+    html[data-theme="pure-black"] .login-logo img,
+    html.dark-mode .login-logo img {
+      filter: brightness(1.2);
+    }
+
+    /* Tema bazlı stiller - Okyanus */
+    html[data-theme="ocean"] .login-container {
+      background-image:
+        radial-gradient(at 0% 0%, rgba(2, 132, 199, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(8, 145, 178, 0.12) 0px, transparent 50%);
+    }
+
+    /* Tema bazlı stiller - Orman */
+    html[data-theme="forest"] .login-container {
+      background-image:
+        radial-gradient(at 0% 0%, rgba(22, 163, 74, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(34, 197, 94, 0.12) 0px, transparent 50%);
+    }
+
+    /* Tema bazlı stiller - Gün Batımı */
+    html[data-theme="sunset"] .login-container {
+      background-image:
+        radial-gradient(at 0% 0%, rgba(234, 88, 12, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(249, 115, 22, 0.12) 0px, transparent 50%);
+    }
+
+    /* Tema bazlı stiller - Mor */
+    html[data-theme="purple"] .login-container {
+      background-image:
+        radial-gradient(at 0% 0%, rgba(147, 51, 234, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.12) 0px, transparent 50%);
+    }
+  </style>
+</head>
+
+<body>
+  <script>
+    // FOUC (Flash of Unstyled Content) Önleme - Tema Sistemi
+    (function () {
+      try {
+        // Tema tanımları (inline - hızlı yükleme için)
+        var THEMES = {
+          light: { isDark: false, colors: { bgPrimary: '#f3f6fc', bgSecondary: '#ffffff', bgTertiary: '#f8fafc', textPrimary: '#1e293b', textSecondary: '#64748b', textTertiary: '#94a3b8', accentPrimary: '#3b82f6', border: '#e2e8f0', borderLight: '#f1f5f9', glassBg: 'rgba(255, 255, 255, 0.85)', glassBorder: 'rgba(255, 255, 255, 0.5)' } },
+          dark: { isDark: true, colors: { bgPrimary: '#0f172a', bgSecondary: '#1e293b', bgTertiary: '#334155', textPrimary: '#f1f5f9', textSecondary: '#94a3b8', textTertiary: '#64748b', accentPrimary: '#60a5fa', border: '#334155', borderLight: '#475569', glassBg: 'rgba(30, 41, 59, 0.85)', glassBorder: 'rgba(255, 255, 255, 0.1)' } },
+          'pure-black': { isDark: true, colors: { bgPrimary: '#000000', bgSecondary: '#0a0a0a', bgTertiary: '#171717', textPrimary: '#ffffff', textSecondary: '#a3a3a3', textTertiary: '#737373', accentPrimary: '#3b82f6', border: '#262626', borderLight: '#262626', glassBg: 'rgba(0, 0, 0, 0.9)', glassBorder: 'rgba(255, 255, 255, 0.08)' } },
+          'pure-white': { isDark: false, colors: { bgPrimary: '#ffffff', bgSecondary: '#ffffff', bgTertiary: '#f5f5f5', textPrimary: '#171717', textSecondary: '#525252', textTertiary: '#737373', accentPrimary: '#2563eb', border: '#e5e5e5', borderLight: '#f5f5f5', glassBg: 'rgba(255, 255, 255, 0.95)', glassBorder: 'rgba(0, 0, 0, 0.05)' } },
+          ocean: { isDark: false, colors: { bgPrimary: '#f0f9ff', bgSecondary: '#ffffff', bgTertiary: '#e0f2fe', textPrimary: '#0c4a6e', textSecondary: '#0369a1', textTertiary: '#0284c7', accentPrimary: '#0284c7', border: '#bae6fd', borderLight: '#e0f2fe', glassBg: 'rgba(255, 255, 255, 0.85)', glassBorder: 'rgba(186, 230, 253, 0.5)' } },
+          forest: { isDark: false, colors: { bgPrimary: '#f0fdf4', bgSecondary: '#ffffff', bgTertiary: '#dcfce7', textPrimary: '#14532d', textSecondary: '#166534', textTertiary: '#15803d', accentPrimary: '#16a34a', border: '#bbf7d0', borderLight: '#dcfce7', glassBg: 'rgba(255, 255, 255, 0.85)', glassBorder: 'rgba(187, 247, 208, 0.5)' } },
+          sunset: { isDark: false, colors: { bgPrimary: '#fff7ed', bgSecondary: '#ffffff', bgTertiary: '#ffedd5', textPrimary: '#7c2d12', textSecondary: '#c2410c', textTertiary: '#ea580c', accentPrimary: '#ea580c', border: '#fed7aa', borderLight: '#ffedd5', glassBg: 'rgba(255, 255, 255, 0.85)', glassBorder: 'rgba(254, 215, 170, 0.5)' } },
+          purple: { isDark: false, colors: { bgPrimary: '#faf5ff', bgSecondary: '#ffffff', bgTertiary: '#f3e8ff', textPrimary: '#581c87', textSecondary: '#7e22ce', textTertiary: '#9333ea', accentPrimary: '#9333ea', border: '#e9d5ff', borderLight: '#f3e8ff', glassBg: 'rgba(255, 255, 255, 0.85)', glassBorder: 'rgba(233, 213, 255, 0.5)' } },
+          // Yeni Temalar
+          red: { isDark: false, colors: { bgPrimary: '#fef2f2', bgSecondary: '#ffffff', bgTertiary: '#fee2e2', textPrimary: '#7f1d1d', textSecondary: '#b91c1c', textTertiary: '#ef4444', accentPrimary: '#ef4444', border: '#fecaca', borderLight: '#fee2e2', glassBg: 'rgba(255, 255, 255, 0.85)', glassBorder: 'rgba(254, 202, 202, 0.5)' } },
+          red_dark: { isDark: true, colors: { bgPrimary: '#7f1d1d', bgSecondary: '#991b1b', bgTertiary: '#b91c1c', textPrimary: '#fef2f2', textSecondary: '#fecaca', textTertiary: '#f87171', accentPrimary: '#f87171', border: '#7f1d1d', borderLight: '#991b1b', glassBg: 'rgba(153, 27, 27, 0.85)', glassBorder: 'rgba(254, 202, 202, 0.1)' } },
+          yellow: { isDark: false, colors: { bgPrimary: '#fefce8', bgSecondary: '#ffffff', bgTertiary: '#fef9c3', textPrimary: '#713f12', textSecondary: '#a16207', textTertiary: '#eab308', accentPrimary: '#eab308', border: '#fde047', borderLight: '#fef9c3', glassBg: 'rgba(255, 255, 255, 0.85)', glassBorder: 'rgba(253, 224, 71, 0.5)' } },
+          navy: { isDark: true, colors: { bgPrimary: '#0f172a', bgSecondary: '#1e3a8a', bgTertiary: '#1e40af', textPrimary: '#eff6ff', textSecondary: '#bfdbfe', textTertiary: '#60a5fa', accentPrimary: '#3b82f6', border: '#1e3a8a', borderLight: '#1e40af', glassBg: 'rgba(30, 58, 138, 0.85)', glassBorder: 'rgba(191, 219, 254, 0.1)' } }
+        };
+
+        // Temayı al
+        var savedTheme = localStorage.getItem('netmon_theme_appTheme');
+        var oldDarkMode = localStorage.getItem('darkMode');
+        var customColor = localStorage.getItem('netmon_theme_appCustomPrimary');
+
+        // Eski sistemden migration
+        if (!savedTheme && oldDarkMode === 'true') {
+          savedTheme = 'dark';
+        }
+
+        // Varsayılan tema
+        var themeId = savedTheme || 'light';
+        var theme = THEMES[themeId] || THEMES.light;
+        var colors = theme.colors;
+        var root = document.documentElement;
+
+        // data-theme attribute'u
+        root.setAttribute('data-theme', themeId);
+
+        // ESKİ CSS DEĞİŞKENLERİNİ GÜNCELLE (style.css uyumluluğu için)
+        root.style.setProperty('--bg', colors.bgPrimary);
+        root.style.setProperty('--card', colors.bgSecondary);
+        root.style.setProperty('--surface', colors.bgSecondary);
+        root.style.setProperty('--bg-soft', colors.bgTertiary);
+        root.style.setProperty('--bg-soft-2', colors.bgTertiary);
+        root.style.setProperty('--text', colors.textPrimary);
+        root.style.setProperty('--text-strong', colors.textPrimary);
+        root.style.setProperty('--text-secondary', colors.textSecondary);
+        root.style.setProperty('--text-light', colors.textSecondary);
+        root.style.setProperty('--muted', colors.textSecondary);
+        root.style.setProperty('--text-muted', colors.textTertiary);
+        root.style.setProperty('--text-subtle', colors.textTertiary);
+        root.style.setProperty('--border', colors.border);
+        root.style.setProperty('--line', colors.border);
+        root.style.setProperty('--border-soft', colors.borderLight);
+        root.style.setProperty('--border-glass', colors.glassBorder);
+        root.style.setProperty('--glass-bg', colors.glassBg);
+        root.style.setProperty('--glass-border', colors.glassBorder);
+        root.style.setProperty('--primary', colors.accentPrimary);
+
+        // RGB değerleri (buton shadow'ları için)
+        var rgb = hexToRgb(colors.accentPrimary);
+        root.style.setProperty('--primary-rgb', rgb.r + ', ' + rgb.g + ', ' + rgb.b);
+        var rgbSecondary = hexToRgb(colors.accentSecondary);
+        root.style.setProperty('--secondary-rgb', rgbSecondary.r + ', ' + rgbSecondary.g + ', ' + rgbSecondary.b);
+
+        // Login değişkenleri
+        root.style.setProperty('--login-bg', colors.bgPrimary);
+        root.style.setProperty('--login-card-bg', colors.bgSecondary);
+        root.style.setProperty('--login-text', colors.textPrimary);
+        root.style.setProperty('--login-text-muted', colors.textTertiary);
+        root.style.setProperty('--login-border', colors.border);
+        root.style.setProperty('--login-accent', colors.accentPrimary);
+
+        // dark-mode class'ı (geriye dönük uyumluluk)
+        if (theme.isDark) {
+          root.classList.add('dark-mode');
+        }
+
+        // Özel renk uygula
+        if (customColor) {
+          root.style.setProperty('--custom-primary-color', customColor);
+          root.style.setProperty('--custom-primary', customColor);
+          root.style.setProperty('--primary', customColor);
+          root.style.setProperty('--login-accent', customColor);
+        }
+      } catch (e) {
+        // Sessizce hata yut
+      }
+    })();
+
+    // Hex to RGB helper function
+    function hexToRgb(hex) {
+      if (!hex || typeof hex !== 'string') return { r: 59, g: 130, b: 246 };
+
+      // Short form (#fff) destekle
+      let hexStr = hex.replace('#', '');
+      if (hexStr.length === 3) {
+        hexStr = hexStr[0] + hexStr[0] + hexStr[1] + hexStr[1] + hexStr[2] + hexStr[2];
+      }
+
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hexStr);
+      if (result) {
+        return {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16)
+        };
+      }
+
+      return { r: 59, g: 130, b: 246 };
+    }
+  </script>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-logo">
+        <img src="{{ url_for('static', filename='Kwc_Netmon_Logo_Netmon_2.png') }}" alt="Netmon">
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <div class="flash-wrap">
+        {% for category, message in messages %}
+        <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% endwith %}
+
+      <form method="POST" class="login-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group">
+          <label for="email">Email / Kullanıcı Adı</label>
+          <input type="text" id="email" name="email" required autofocus placeholder="email@... veya kullanici">
+        </div>
+
+        <div class="form-group">
+          <label for="password">Şifre</label>
+          <input type="password" id="password" name="password" required>
+        </div>
+
+        <div class="form-group form-group-remember">
+          <label class="remember-label">
+            <input type="checkbox" name="remember" value="1" id="remember">
+            <span>Beni Hatırla</span>
+          </label>
+        </div>
+
+        <button type="submit" class="login-btn">Giriş Yap</button>
+      </form>
+    </div>
+  </div>
+</body>
+
+</html>

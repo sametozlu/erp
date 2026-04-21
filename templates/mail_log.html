@@ -1,0 +1,673 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .log-row {
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .log-row:hover {
+    background: var(--bg-soft);
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .status-ok {
+    background: var(--status-success-bg);
+    color: var(--status-success-text);
+  }
+
+  .status-err {
+    background: var(--status-danger-bg);
+    color: var(--status-danger-text);
+  }
+
+  .status-preview {
+    background: var(--status-warning-bg);
+    color: var(--status-warning-text);
+  }
+
+  /* Modal Styles */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.open {
+    display: flex;
+  }
+
+  .modal-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    width: 900px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  }
+
+  .modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-secondary);
+  }
+
+  .modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    cursor: pointer;
+    color: var(--text-muted);
+    line-height: 1;
+    padding: 0 8px;
+  }
+
+  .modal-close:hover {
+    color: var(--text-main);
+  }
+
+  .modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .modal-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-secondary);
+  }
+
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .detail-label {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+
+  .detail-value {
+    color: var(--text-main);
+    font-size: 13px;
+    word-break: break-all;
+  }
+
+  .email-preview-frame {
+    width: 100%;
+    height: 400px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: white;
+  }
+
+  .tab-buttons {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .tab-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    background: var(--bg-tertiary);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+
+  .tab-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 8px;
+  }
+
+  .checkbox-cell {
+    width: 40px;
+    text-align: center;
+  }
+
+  .bulk-actions {
+    display: none;
+    padding: 12px 16px;
+    background: var(--status-warning-bg);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .bulk-actions.visible {
+    display: flex;
+  }
+</style>
+
+<section class="card" style="max-width: 1400px; margin: 0 auto;">
+  <div class="rowline" style="justify-content: space-between; align-items: center;">
+    <div>
+      <h2 style="margin:0;">📧 Mail Logları</h2>
+      <div class="hint">Sistemde gönderilen tüm mailler. Detay için tıklayın.</div>
+    </div>
+    <div class="rowline" style="gap:8px;">
+      <a class="btn secondary"
+        href="{{ url_for('planner.mail_log_excel', start_date=start_date, end_date=end_date, team_name=team_name, ok=ok_filter, mail_type=mail_type_filter, q=q_filter) }}">📊 Excel</a>
+      <a class="btn ghost" href="{{ url_for('admin.mail_settings_page') }}">⚙️ Ayarlar</a>
+    </div>
+  </div>
+
+  <!-- Gelişmiş Filtreler -->
+  <form method="get" class="filters"
+    style="margin-top:16px; padding:16px; background:var(--bg-soft); border-radius:12px;">
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:end;">
+      <label style="flex:1; min-width:150px;">Başlangıç Tarihi
+        <input type="date" class="input" name="start_date" value="{{ start_date }}">
+      </label>
+      <label style="flex:1; min-width:150px;">Bitiş Tarihi
+        <input type="date" class="input" name="end_date" value="{{ end_date }}">
+      </label>
+      <label style="flex:1; min-width:150px;">Mail Türü
+        <select class="input" name="mail_type">
+          <option value="">Tümü</option>
+          <option value="weekly" {% if mail_type_filter=='weekly' %}selected{% endif %}>Haftalık</option>
+          <option value="team" {% if mail_type_filter=='team' %}selected{% endif %}>Ekip</option>
+          <option value="job" {% if mail_type_filter=='job' %}selected{% endif %}>İş</option>
+          <option value="task" {% if mail_type_filter=='task' %}selected{% endif %}>Görev</option>
+          <option value="project" {% if mail_type_filter=='project' %}selected{% endif %}>Proje</option>
+          <option value="bulk" {% if mail_type_filter=='bulk' %}selected{% endif %}>Toplu</option>
+        </select>
+      </label>
+      <label style="flex:1; min-width:120px;">Durum
+        <select class="input" name="ok">
+          <option value="">Hepsi</option>
+          <option value="1" {% if ok_filter=='1' %}selected{% endif %}>Başarılı</option>
+          <option value="0" {% if ok_filter=='0' %}selected{% endif %}>Başarısız</option>
+        </select>
+      </label>
+      <label style="flex:2; min-width:200px;">Arama (Alıcı/Konu)
+        <input type="text" class="input" name="q" value="{{ q_filter }}" placeholder="email@, konu...">
+      </label>
+      <button class="btn primary" type="submit">🔍 Filtrele</button>
+      <button class="btn secondary" type="button" onclick="clearFilters()">Temizle</button>
+    </div>
+  </form>
+
+  <!-- Toplu İşlemler -->
+  <div id="bulkActions" class="bulk-actions">
+    <span style="font-weight:600;">Seçilen: <span id="selectedCount">0</span></span>
+    <button class="btn" style="background:var(--status-warning); color:white;" onclick="bulkResend()">🔄 Seçilenleri
+      Yeniden Gönder</button>
+    <button class="btn secondary" onclick="bulkDelete()">🗑️ Seçilenleri Sil</button>
+    <div style="flex:1;"></div>
+    <button class="btn ghost" onclick="selectAll()">Tümünü Seç</button>
+    <button class="btn ghost" onclick="deselectAll()">Seçimi Kaldır</button>
+  </div>
+
+  <div class="tablewrap" style="margin-top:12px;">
+    <table class="simple">
+      <thead>
+        <tr>
+          <th class="checkbox-cell">
+            <input type="checkbox" id="selectAllChk" onchange="toggleSelectAll()">
+          </th>
+          <th style="width:140px;">Tarih/Saat</th>
+          <th style="width:80px;">Tür</th>
+          <th style="width:80px;">Durum</th>
+          <th>Alıcı</th>
+          <th>Konu</th>
+          <th style="width:100px;">Ekip</th>
+          <th style="width:80px;">Boyut</th>
+          <th style="width:80px;">İşlem</th>
+        </tr>
+      </thead>
+      <tbody id="logTableBody">
+        {% for r in rows %}
+        <tr class="log-row" onclick="viewLogDetail({{ r.id }})">
+          <td class="checkbox-cell" onclick="event.stopPropagation()">
+            <input type="checkbox" class="logChk" data-id="{{ r.id }}" onchange="updateBulkActions()">
+          </td>
+          <td>{{ r.created_at.strftime('%d.%m.%Y %H:%M') if r.created_at else '-' }}</td>
+          <td>
+            <span style="font-size:11px; padding:2px 6px; background:var(--bg-soft); border-radius:4px;">
+              {{ r.mail_type or r.kind or '-' }}
+            </span>
+          </td>
+          <td>
+            {% if r.ok %}
+            <span class="status-badge status-ok">✓ OK</span>
+            {% elif r.kind == 'preview' %}
+            <span class="status-badge status-preview">👁 Ön</span>
+            {% else %}
+            <span class="status-badge status-err">✗ ERR</span>
+            {% endif %}
+          </td>
+          <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+            title="{{ r.to_addr }}">
+            {{ r.to_addr }}
+          </td>
+          <td style="max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+            title="{{ r.subject }}">
+            {{ r.subject }}
+          </td>
+          <td>{{ r.team_name or '' }}</td>
+          <td>{{ (r.body_size_bytes or 0) // 1024 }} KB</td>
+          <td onclick="event.stopPropagation()">
+            <button class="btn ghost small" onclick="viewLogDetail({{ r.id }})">👁</button>
+          </td>
+        </tr>
+        {% endfor %}
+        {% if not rows %}
+        <tr>
+          <td colspan="9" style="text-align:center; padding:30px; color:var(--text-muted);">
+            Kayıt bulunamadı
+          </td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Sayfalama -->
+  {% if total_pages > 1 %}
+  <div class="pagination" style="margin-top:16px; display:flex; justify-content:center; gap:8px;">
+    {% if page > 1 %}
+    <a class="btn secondary"
+      href="?page={{ page-1 }}&start_date={{ start_date }}&end_date={{ end_date }}&mail_type={{ mail_type_filter }}&ok={{ ok_filter }}&q={{ q_filter }}">«
+      Önceki</a>
+    {% endif %}
+    <span style="padding:8px 16px;">Sayfa {{ page }} / {{ total_pages }}</span>
+    {% if page < total_pages %} <a class="btn secondary"
+      href="?page={{ page+1 }}&start_date={{ start_date }}&end_date={{ end_date }}&mail_type={{ mail_type_filter }}&ok={{ ok_filter }}&q={{ q_filter }}">
+      Sonraki »</a>
+      {% endif %}
+  </div>
+  {% endif %}
+</section>
+
+<!-- Mail Detay Modal -->
+<div id="logDetailModal" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>📧 Mail Detayı</h3>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody">
+      <div style="text-align:center; padding:40px;">Yükleniyor...</div>
+    </div>
+    <div class="modal-footer">
+      <div class="action-buttons">
+        <button class="btn secondary" onclick="closeModal()">Kapat</button>
+        <button class="btn" onclick="editCurrentLog()">✏️ Düzenle & Yeniden Gönder</button>
+        <button class="btn" style="background:var(--status-danger); color:white;" onclick="deleteCurrentLog()">🗑️
+          Sil</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Düzenle Modal -->
+<div id="editModal" class="modal-overlay">
+  <div class="modal-card" style="width:600px;">
+    <div class="modal-header">
+      <h3>✏️ Mail Düzenle & Yeniden Gönder</h3>
+      <button class="modal-close" onclick="closeEditModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="editModalBody">
+      <div style="text-align:center; padding:40px;">Yükleniyor...</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeEditModal()">İptal</button>
+      <button class="btn primary" onclick="resendLog()">🚀 Yeniden Gönder</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentLogId = null;
+  let editData = null;
+
+  function esc(s) {
+    return String(s || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function clearFilters() {
+    window.location.href = window.location.pathname;
+  }
+
+  function toggleSelectAll() {
+    const master = document.getElementById('selectAllChk');
+    document.querySelectorAll('.logChk').forEach(x => x.checked = master.checked);
+    updateBulkActions();
+  }
+
+  function selectAll() {
+    document.querySelectorAll('.logChk').forEach(x => x.checked = true);
+    document.getElementById('selectAllChk').checked = true;
+    updateBulkActions();
+  }
+
+  function deselectAll() {
+    document.querySelectorAll('.logChk').forEach(x => x.checked = false);
+    document.getElementById('selectAllChk').checked = false;
+    updateBulkActions();
+  }
+
+  function updateBulkActions() {
+    const count = document.querySelectorAll('.logChk:checked').length;
+    document.getElementById('selectedCount').textContent = count;
+    const bulkDiv = document.getElementById('bulkActions');
+    if (count > 0) {
+      bulkDiv.classList.add('visible');
+    } else {
+      bulkDiv.classList.remove('visible');
+    }
+  }
+
+  function viewLogDetail(logId) {
+    currentLogId = logId;
+    document.getElementById('logDetailModal').classList.add('open');
+    document.getElementById('modalBody').innerHTML = '<div style="text-align:center; padding:40px;">Yükleniyor...</div>';
+
+    fetch(`/api/mail/log/detail/${logId}`)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.ok) {
+          document.getElementById('modalBody').innerHTML = '<div style="color:red; padding:20px;">Hata: ' + esc(data.error) + '</div>';
+          return;
+        }
+        const log = data.log;
+        document.getElementById('modalBody').innerHTML = `
+          <div class="detail-grid">
+            <div class="detail-label">Tarih</div>
+            <div class="detail-value">${log.created_at ? new Date(log.created_at).toLocaleString('tr-TR') : '-'}</div>
+            
+            <div class="detail-label">Tür</div>
+            <div class="detail-value">${esc(log.mail_type || log.kind || '-')}</div>
+            
+            <div class="detail-label">Durum</div>
+            <div class="detail-value">
+              ${log.ok ? '<span class="status-badge status-ok">✓ Başarılı</span>' : '<span class="status-badge status-err">✗ Başarısız</span>'}
+              ${log.error_code ? '<code style="font-size:11px; margin-left:8px;">' + esc(log.error_code) + '</code>' : ''}
+            </div>
+            
+            <div class="detail-label">Alıcı (To)</div>
+            <div class="detail-value">${esc(log.to_addr)}</div>
+            
+            <div class="detail-label">CC</div>
+            <div class="detail-value">${esc(log.cc_addr) || '-'}</div>
+            
+            <div class="detail-label">BCC</div>
+            <div class="detail-value">${esc(log.bcc_addr) || '-'}</div>
+            
+            <div class="detail-label">Konu</div>
+            <div class="detail-value" style="font-weight:600; font-size:14px;">${esc(log.subject)}</div>
+            
+            <div class="detail-label">Ekip</div>
+            <div class="detail-value">${esc(log.team_name) || '-'}</div>
+            
+            <div class="detail-label">Boyut</div>
+            <div class="detail-value">${(log.body_size_bytes || 0).toLocaleString('tr-TR')} bytes</div>
+            
+            <div class="detail-label">Ek Sayısı</div>
+            <div class="detail-value">${log.attachments_count || 0}</div>
+            
+            ${log.error ? `
+            <div class="detail-label" style="color:var(--status-danger);">Hata</div>
+            <div class="detail-value" style="color:var(--status-danger);">${esc(log.error)}</div>
+            ` : ''}
+          </div>
+          
+          <div class="tab-buttons">
+            <button class="tab-btn active" onclick="showTab('html')">📧 Görsel Önizleme</button>
+            <button class="tab-btn" onclick="showTab('preview')">📝 Metin Önizleme</button>
+            <button class="tab-btn" onclick="showTab('meta')">📋 Meta Bilgi</button>
+          </div>
+          
+          <div id="tabHtml">
+            <iframe class="email-preview-frame" srcdoc="${log.body_html ? log.body_html.replace(/"/g, '&quot;') : '<div style=\"padding:40px;text-align:center;color:#999;\">HTML içerik yok</div>'}"></iframe>
+          </div>
+          
+          <div id="tabPreview" style="display:none;">
+            <iframe class="email-preview-frame" srcdoc="${log.body_preview ? '<pre style=\"white-space:pre-wrap;padding:20px;font-family:monospace;\">' + esc(log.body_preview) + '</pre>' : '<div style=\"padding:40px;text-align:center;color:#999;\">Metin içerik yok</div>'}"></iframe>
+          </div>
+          
+          <div id="tabMeta" style="display:none;">
+            <pre style="background:var(--bg-soft); padding:16px; border-radius:8px; font-size:12px; overflow:auto; max-height:300px;">${JSON.stringify(log.meta || {}, null, 2)}</pre>
+          </div>
+        `;
+      })
+      .catch(e => {
+        document.getElementById('modalBody').innerHTML = '<div style="color:red; padding:20px;">Hata: ' + esc(e.message) + '</div>';
+      });
+  }
+
+  function showTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.tab-btn[onclick="showTab('${tab}')"]`).classList.add('active');
+    document.getElementById('tabHtml').style.display = tab === 'html' ? 'block' : 'none';
+    document.getElementById('tabPreview').style.display = tab === 'preview' ? 'block' : 'none';
+    document.getElementById('tabMeta').style.display = tab === 'meta' ? 'block' : 'none';
+  }
+
+  function closeModal() {
+    document.getElementById('logDetailModal').classList.remove('open');
+    currentLogId = null;
+  }
+
+  function editCurrentLog() {
+    if (!currentLogId) return;
+
+    document.getElementById('editModal').classList.add('open');
+    document.getElementById('editModalBody').innerHTML = '<div style="text-align:center; padding:40px;">Yükleniyor...</div>';
+
+    fetch(`/api/mail/log/detail/${currentLogId}`)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.ok) {
+          document.getElementById('editModalBody').innerHTML = '<div style="color:red; padding:20px;">Hata: ' + esc(data.error) + '</div>';
+          return;
+        }
+        editData = data.log;
+        document.getElementById('editModalBody').innerHTML = `
+          <label style="display:block; margin-bottom:12px;">Alıcı (To)
+            <input type="text" id="editTo" class="input" value="${esc(editData.to_addr)}" style="width:100%;">
+          </label>
+          <label style="display:block; margin-bottom:12px;">CC
+            <input type="text" id="editCc" class="input" value="${esc(editData.cc_addr || '')}" style="width:100%;">
+          </label>
+          <label style="display:block; margin-bottom:12px;">Konu
+            <input type="text" id="editSubject" class="input" value="${esc(editData.subject)}" style="width:100%;">
+          </label>
+          <label style="display:block;">İçerik (Düzenlenebilir)
+            <textarea id="editBody" class="input" style="width:100%; height:200px; font-family:monospace; resize:vertical;">${esc(editData.body_preview || '')}</textarea>
+          </label>
+        `;
+      });
+  }
+
+  function closeEditModal() {
+    document.getElementById('editModal').classList.remove('open');
+    editData = null;
+  }
+
+  function resendLog() {
+    if (!editData || !currentLogId) return;
+
+    const to = document.getElementById('editTo').value.trim();
+    const cc = document.getElementById('editCc').value.trim();
+    const subject = document.getElementById('editSubject').value.trim();
+    const body = document.getElementById('editBody').value.trim();
+
+    if (!to) {
+      alert('Alıcı adresi zorunludur');
+      return;
+    }
+
+    if (!confirm('Mail yeniden gönderilsin mi?')) return;
+
+    const btn = document.querySelector('#editModal .modal-footer .btn.primary');
+    const originalText = btn.textContent;
+    btn.textContent = 'Gönderiliyor...';
+    btn.disabled = true;
+
+    fetch(`/api/mail/log/resend/${currentLogId}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to_addr: to,
+        cc_addr: cc,
+        subject: subject,
+        body_preview: body
+      })
+    })
+      .then(r => r.json())
+      .then(data => {
+        btn.textContent = originalText;
+        btn.disabled = false;
+
+        if (data.ok) {
+          alert('✓ Mail başarıyla yeniden gönderildi');
+          closeEditModal();
+          closeModal();
+          location.reload();
+        } else {
+          alert('✗ Hata: ' + (data.error || 'Bilinmeyen hata'));
+        }
+      })
+      .catch(e => {
+        btn.textContent = originalText;
+        btn.disabled = false;
+        alert('✗ Hata: ' + e.message);
+      });
+  }
+
+  function deleteCurrentLog() {
+    if (!currentLogId) return;
+    if (!confirm('Bu log kaydı silinsin mi?')) return;
+
+    fetch(`/api/mail/log/delete/${currentLogId}`, { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          alert('✓ Log silindi');
+          closeModal();
+          location.reload();
+        } else {
+          alert('✗ Hata: ' + (data.error || 'Bilinmeyen hata'));
+        }
+      });
+  }
+
+  function bulkResend() {
+    const ids = Array.from(document.querySelectorAll('.logChk:checked')).map(x => x.dataset.id);
+    if (!ids.length) return;
+
+    if (!confirm(`${ids.length} adet mail yeniden gönderilsin mi?`)) return;
+
+    const btn = document.querySelector('#bulkActions .btn');
+    const originalText = btn.textContent;
+    btn.textContent = 'Gönderiliyor...';
+    btn.disabled = true;
+
+    fetch('/api/mail/log/bulk-resend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ log_ids: ids })
+    })
+      .then(r => r.json())
+      .then(data => {
+        btn.textContent = originalText;
+        btn.disabled = false;
+
+        if (data.ok) {
+          const { success_count, total_count } = data;
+          alert(`✓ ${success_count}/${total_count} mail başarıyla gönderildi`);
+          deselectAll();
+          location.reload();
+        } else {
+          alert('✗ Hata: ' + (data.error || 'Bilinmeyen hata'));
+        }
+      })
+      .catch(e => {
+        btn.textContent = originalText;
+        btn.disabled = false;
+        alert('✗ Hata: ' + e.message);
+      });
+  }
+
+  function bulkDelete() {
+    const ids = Array.from(document.querySelectorAll('.logChk:checked')).map(x => x.dataset.id);
+    if (!ids.length) return;
+
+    if (!confirm(`${ids.length} adet log kaydı silinsin mi? Bu işlem geri alınamaz.`)) return;
+
+    Promise.all(ids.map(id =>
+      fetch(`/api/mail/log/delete/${id}`, { method: 'POST' }).then(r => r.json())
+    ))
+      .then(results => {
+        const success = results.filter(r => r.ok).length;
+        alert(`✓ ${success}/${ids.length} log silindi`);
+        deselectAll();
+        location.reload();
+      });
+  }
+
+  // ESC tuşu ile modal kapatma
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      closeModal();
+      closeEditModal();
+    }
+  });
+
+  // Modal dışına tıklama ile kapatma
+  document.getElementById('logDetailModal').addEventListener('click', e => {
+    if (e.target.id === 'logDetailModal') closeModal();
+  });
+  document.getElementById('editModal').addEventListener('click', e => {
+    if (e.target.id === 'editModal') closeEditModal();
+  });
+</script>
+{% endblock %}

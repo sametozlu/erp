@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h2>Firma Tanımları</h2>
+
+  {% if session.get('role') != 'gözlemci' %}
+  <form method="post" class="filters" style="align-items: flex-end;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Firma Adı <input name="name" required></label>
+    <label>Cinsiyet
+      <select name="gender">
+        <option value="">-- Seçiniz --</option>
+        <option value="Erkek">Erkek</option>
+        <option value="Kadın">Kadın</option>
+      </select>
+    </label>
+    <label>Mail Adresi <input type="email" name="email" placeholder="ornek@firma.com"></label>
+    <label>Mail Atılacak Kişi <input name="mail_recipient_name" placeholder="Ad Soyad"></label>
+    <label>Durum
+      <select name="is_active">
+        <option value="1" selected>Aktif</option>
+        <option value="0">Pasif</option>
+      </select>
+    </label>
+    <button class="btn" type="submit" style="height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Ekle</button>
+  </form>
+
+  <div class="tablewrap" style="border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; overflow-y: visible; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <table class="simple" style="width: 100%; min-width: 800px;">
+      <thead>
+        <tr>
+          <th style="min-width: 150px;">Firma Adı</th>
+          <th style="min-width: 100px;">Cinsiyet</th>
+          <th style="min-width: 200px;">Mail Adresi</th>
+          <th style="min-width: 150px;">Mail Atılacak Kişi</th>
+          <th style="min-width: 100px;">Durum</th>
+          <th style="text-align: center; min-width: 150px;">İşlem</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in firmalar %}
+          <tr>
+            <td><strong>{{f.name}}</strong></td>
+            <td style="white-space: nowrap;">
+              {% if f.gender %}
+                <span style="color: var(--text-subtle); font-size: 13px;">{{f.gender}}</span>
+              {% else %}
+                <span style="color: var(--text-muted); font-size: 13px;">-</span>
+              {% endif %}
+            </td>
+            <td style="white-space: nowrap;">
+              {% if f.email %}
+                <span style="color: var(--text-subtle); font-size: 13px;">{{f.email}}</span>
+              {% else %}
+                <span style="color: var(--text-muted); font-size: 13px;">-</span>
+              {% endif %}
+            </td>
+            <td style="white-space: nowrap;">
+              {% if f.mail_recipient_name %}
+                <span style="color: var(--text-subtle); font-size: 13px;">{{f.mail_recipient_name}}</span>
+              {% else %}
+                <span style="color: var(--text-muted); font-size: 13px;">-</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if f.is_active %}
+                <span style="background: var(--status-success); color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Aktif</span>
+              {% else %}
+                <span style="background: var(--text-muted); color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Pasif</span>
+              {% endif %}
+            </td>
+            <td style="text-align: center;">
+              {% if session.get('role') != 'gözlemci' %}
+              <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
+                <a class="btn tiny" href="{{ url_for('firma_edit', firma_id=f.id) }}" style="background-color: var(--status-info); color: white; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-weight: 500; font-size: 12px;">Düzenle</a>
+                <form method="post" action="{{ url_for('firma_delete', firma_id=f.id) }}"
+                      onsubmit="return confirm('Firma silinsin mi?')" style="margin: 0; display: inline;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn danger tiny" type="submit" style="padding: 6px 12px; border-radius: 6px; font-size: 12px;">Sil</button>
+                </form>
+              </div>
+              {% else %}
+              <span style="color: var(--text-muted); font-size: 12px;">-</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        {% if not firmalar %}
+          <tr>
+            <td colspan="6" style="padding: 40px; text-align: center; color: var(--text-muted); font-size: 14px;">Henüz firma eklenmemiş.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}
+

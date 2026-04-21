@@ -1,0 +1,2084 @@
+{% extends "base.html" %}
+{% block content %}
+<script>
+  window.tailwind = {
+    config: {
+      important: '#map-wrapper',
+      corePlugins: { preflight: false }
+    }
+  }
+</script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  .leaflet-container {
+    z-index: 10 !important;
+  }
+
+  .custom-scroll::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .custom-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scroll::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+  }
+
+  /* Dark Mode Support for Map Modals */
+  html.dark-mode #map-wrapper .bg-white\/95 {
+    background: rgba(30, 41, 59, 0.95) !important;
+  }
+
+  html.dark-mode #map-wrapper .bg-white {
+    background: #1e293b !important;
+  }
+
+  html.dark-mode #map-wrapper .text-slate-800,
+  html.dark-mode #map-wrapper .text-slate-900 {
+    color: var(--bg-soft-2) !important;
+  }
+
+  html.dark-mode #map-wrapper .text-slate-700 {
+    color: var(--border) !important;
+  }
+
+  html.dark-mode #map-wrapper .text-slate-600 {
+    color: var(--text-muted) !important;
+  }
+
+  html.dark-mode #map-wrapper .text-slate-400 {
+    color: var(--text-muted) !important;
+  }
+
+  html.dark-mode #map-wrapper .border-slate-200 {
+    border-color: var(--text-subtle) !important;
+  }
+
+  html.dark-mode #map-wrapper .bg-slate-50 {
+    background: #1e293b !important;
+  }
+
+  html.dark-mode #map-wrapper .bg-slate-50\/50 {
+    background: rgba(30, 41, 59, 0.5) !important;
+  }
+
+  html.dark-mode #map-wrapper .divide-slate-100 {
+    border-color: var(--text-subtle) !important;
+  }
+
+  html.dark-mode #map-wrapper .bg-cyan-50 {
+    background: rgba(6, 78, 59, 0.3) !important;
+  }
+
+  html.dark-mode #map-wrapper .text-cyan-700 {
+    color: #5eead4 !important;
+  }
+
+  html.dark-mode #map-wrapper .border-cyan-100 {
+    border-color: #0891b2 !important;
+  }
+
+  html.dark-mode #map-wrapper .hover\:bg-cyan-50:hover {
+    background: rgba(6, 78, 59, 0.3) !important;
+  }
+
+  html.dark-mode #map-wrapper .hover\:text-cyan-700:hover {
+    color: #5eead4 !important;
+  }
+
+  html.dark-mode #map-wrapper .hover\:border-cyan-200:hover {
+    border-color: #22d3ee !important;
+  }
+
+  html.dark-mode #map-wrapper .bg-slate-800\/90 {
+    background: rgba(15, 23, 42, 0.9) !important;
+  }
+
+  html.dark-mode #map-wrapper .bg-slate-800\/80 {
+    background: rgba(15, 23, 42, 0.8) !important;
+  }
+
+  html.dark-mode #map-wrapper .border-slate-600 {
+    border-color: var(--text-subtle) !important;
+  }
+
+  html.dark-mode #map-wrapper .border-slate-700 {
+    border-color: var(--text-subtle) !important;
+  }
+
+  html.dark-mode #map-wrapper .text-white {
+    color: var(--bg-soft-2) !important;
+  }
+
+  html.dark-mode #map-wrapper input[type="date"],
+  html.dark-mode #map-wrapper select {
+    background: #1e293b !important;
+    color: var(--bg-soft-2) !important;
+    border-color: var(--text-subtle) !important;
+  }
+
+  html.dark-mode #map-wrapper input[type="date"]:focus,
+  html.dark-mode #map-wrapper select:focus {
+    border-color: #0891b2 !important;
+    outline: none;
+  }
+
+  html.dark-mode #map-wrapper .bg-slate-50.rounded-lg {
+    background: #1e293b !important;
+  }
+
+  html.dark-mode #map-wrapper .border-slate-200 {
+    border-color: var(--text-subtle) !important;
+  }
+
+  html.dark-mode #map-wrapper .hover\:border-slate-300:hover {
+    border-color: var(--text-subtle) !important;
+  }
+
+  html.dark-mode #map-wrapper .bg-white.rounded {
+    background: #1e293b !important;
+  }
+
+  html.dark-mode #map-wrapper .border-slate-100 {
+    border-color: var(--text-subtle) !important;
+  }
+
+  /* Modern Animated Markers */
+  /* Wrapper for larger hit area */
+  .modern-marker-wrapper {
+    background: transparent;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modern-marker {
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--status-info) 0%, var(--status-info) 100%);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    border: 3px solid white;
+  }
+
+  /* removed ::before pulse animation */
+
+  .modern-marker:hover {
+    transform: scale(1.2) translateY(-4px);
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.5);
+  }
+
+  .modern-marker.selected {
+    animation: marker-bounce 0.5s ease-out;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3), 0 8px 24px rgba(59, 130, 246, 0.5);
+  }
+
+  .modern-marker-icon {
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  /* Team-colored markers */
+  .modern-marker.team-1 {
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4);
+  }
+
+  .modern-marker.team-2 {
+    background: linear-gradient(135deg, var(--status-success) 0%, var(--status-success) 100%);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+  }
+
+  .modern-marker.team-3 {
+    background: linear-gradient(135deg, var(--status-warning) 0%, var(--status-warning) 100%);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+  }
+
+  .modern-marker.team-4 {
+    background: linear-gradient(135deg, var(--status-danger) 0%, var(--status-danger) 100%);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+  }
+
+  .modern-marker.team-5 {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+  }
+
+  .modern-marker.team-unassigned {
+    background: linear-gradient(135deg, var(--text-muted) 0%, var(--text-muted) 100%);
+    box-shadow: 0 4px 12px rgba(148, 163, 184, 0.4);
+  }
+
+  /* Start/Depot marker */
+  .modern-marker.start-marker {
+    background: linear-gradient(135deg, var(--status-online) 0%, var(--status-success) 100%);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+    width: 24px;
+    height: 24px;
+  }
+
+  @keyframes marker-pulse {
+    0% {
+      transform: scale(1);
+      opacity: 0.7;
+    }
+
+    50% {
+      transform: scale(1.5);
+      opacity: 0;
+    }
+
+    100% {
+      transform: scale(1);
+      opacity: 0;
+    }
+  }
+
+  @keyframes marker-bounce {
+
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+
+  /* Popup styling */
+  .modern-popup .leaflet-popup-content-wrapper {
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(8px);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  .modern-popup .leaflet-popup-content {
+    margin: 12px 16px;
+    min-width: 200px;
+  }
+
+  .modern-popup .leaflet-popup-tip {
+    background: rgba(255, 255, 255, 0.98);
+  }
+
+  /* Feasibility badges */
+  .feasibility-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  .feasibility-badge.uygun {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .feasibility-badge.dikkat {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  .feasibility-badge.riskli {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  /* Dark Mode Support for Map Modals */
+  html.dark-mode #map-wrapper {
+    background: var(--text-strong) !important;
+  }
+
+  html.dark-mode #map-wrapper .bg-white\/95,
+  html.dark-mode #map-wrapper .bg-white {
+    background: rgba(30, 41, 59, 0.95) !important;
+  }
+
+  html.dark-mode #map-wrapper .text-slate-800,
+  html.dark-mode #map-wrapper .text-slate-900 {
+    color: var(--bg-soft-2) !important;
+  }
+
+  html.dark-mode #map-wrapper .text-slate-700 {
+    color: var(--border) !important;
+  }
+
+  html.dark-mode #map-wrapper .text-slate-600 {
+    color: var(--text-muted) !important;
+  }
+
+  html.dark-mode #map-wrapper .text-slate-400 {
+    color: var(--text-muted) !important;
+  }
+
+  html.dark-mode #map-wrapper .border-slate-200,
+  html.dark-mode #map-wrapper .border-slate-100 {
+    border-color: var(--text-subtle) !important;
+  }
+
+  html.dark-mode #map-wrapper .bg-slate-50 {
+    background: #1e293b !important;
+  }
+
+  html.dark-mode #map-wrapper .bg-slate-50\/50 {
+    background: rgba(30, 41, 59, 0.5) !important;
+  }
+
+  html.dark-mode #map-wrapper .divide-slate-100 {
+    border-color: var(--text-subtle) !important;
+  }
+
+  html.dark-mode #map-wrapper .bg-cyan-50,
+  html.dark-mode #map-wrapper .hover\:bg-cyan-50:hover {
+    background: rgba(6, 78, 59, 0.3) !important;
+  }
+
+  html.dark-mode #map-wrapper .text-cyan-700,
+  html.dark-mode #map-wrapper .hover\:text-cyan-700:hover {
+    color: #5eead4 !important;
+  }
+
+  html.dark-mode #map-wrapper .border-cyan-100,
+  html.dark-mode #map-wrapper .hover\:border-cyan-200:hover {
+    border-color: #0891b2 !important;
+  }
+
+  html.dark-mode #map-wrapper .bg-slate-800\/90 {
+    background: rgba(15, 23, 42, 0.9) !important;
+  }
+
+  html.dark-mode #map-wrapper .bg-slate-800\/80 {
+    background: rgba(15, 23, 42, 0.8) !important;
+  }
+
+  html.dark-mode #map-wrapper .border-slate-600 {
+    border-color: var(--text-subtle) !important;
+  }
+
+  html.dark-mode #map-wrapper .border-slate-700 {
+    border-color: var(--text-subtle) !important;
+  }
+
+  html.dark-mode #map-wrapper .hover\:border-slate-300:hover {
+    border-color: var(--text-subtle) !important;
+  }
+
+  html.dark-mode #map-wrapper input[type="date"],
+  html.dark-mode #map-wrapper select {
+    background: #1e293b !important;
+    color: var(--bg-soft-2) !important;
+    border-color: var(--text-subtle) !important;
+  }
+
+  html.dark-mode #map-wrapper input[type="date"]:focus,
+  html.dark-mode #map-wrapper select:focus {
+    border-color: #0891b2 !important;
+    outline: none;
+  }
+
+  html.dark-mode #map-wrapper .bg-slate-50.rounded-lg {
+    background: #1e293b !important;
+  }
+
+  html.dark-mode #map-wrapper .bg-white.rounded {
+    background: #1e293b !important;
+  }
+
+  html.dark-mode #map-wrapper .ring-black\/5 {
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3) !important;
+  }
+
+  /* Dark Mode for Popups */
+  html.dark-mode .modern-popup .leaflet-popup-content-wrapper {
+    background: rgba(30, 41, 59, 0.98) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+
+  html.dark-mode .modern-popup .leaflet-popup-tip {
+    background: rgba(30, 41, 59, 0.98) !important;
+  }
+
+  html.dark-mode .modern-popup .leaflet-popup-content {
+    color: var(--bg-soft-2) !important;
+  }
+
+  /* Dark Mode for Feasibility Badges */
+  html.dark-mode .feasibility-badge.uygun {
+    background: rgba(6, 95, 70, 0.4) !important;
+    color: #86efac !important;
+  }
+
+  html.dark-mode .feasibility-badge.dikkat {
+    background: rgba(146, 64, 14, 0.4) !important;
+    color: #fde68a !important;
+  }
+
+  html.dark-mode .feasibility-badge.riskli {
+    background: rgba(185, 28, 28, 0.4) !important;
+    color: #fca5a5 !important;
+  }
+
+  /* Dark Mode for Map Background */
+  html.dark-mode #map-wrapper {
+    background: var(--text-strong) !important;
+  }
+</style>
+
+<div id="map-wrapper" class="relative w-full h-[calc(100vh-64px)] overflow-hidden bg-slate-200 dark-mode:bg-slate-900">
+
+  <!-- Map Container -->
+  <div id="map" class="absolute inset-0 z-0"></div>
+
+  <!-- Loading Overlay -->
+  <div id="mapLoadingOverlay" class="map-loading-overlay">
+    <div class="map-loading-content">
+      <div class="map-loading-text" id="mapLoadingText">İşaretler Yükleniyor...</div>
+      <div class="map-progress-bar">
+        <div class="map-progress-fill" id="mapProgressFill"></div>
+      </div>
+      <div class="map-loading-subtext" id="mapLoadingSubtext">0 / 0</div>
+    </div>
+  </div>
+
+  <!-- FLOATING CONTROLS (Desktop: Top Left, Mobile: Bottom Sheet logic) -->
+  <div id="leftPanelContainer"
+    class="absolute z-[500] transition-all duration-300 ease-in-out
+              md:top-4 md:left-4 md:w-72 md:h-auto md:max-h-[calc(100%-6rem)] md:flex md:flex-col md:gap-3
+              fixed bottom-0 left-0 w-full max-h-[85vh] overflow-y-auto bg-transparent pointer-events-none md:pointer-events-none">
+
+    <!-- Mobile Toggle Handle (Visible only on mobile/small screens) -->
+    <div id="mobilePanelToggle" class="md:hidden pointer-events-auto w-full flex justify-center pb-2">
+      <button onclick="toggleMobilePanel()"
+        class="bg-white/95 backdrop-blur shadow-lg border border-slate-200 text-slate-600 rounded-full px-4 py-2 flex items-center gap-2 font-bold text-xs ring-1 ring-black/5">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+        Menü & Panel
+      </button>
+    </div>
+
+    <!-- Main Content Wrapper (Hidden on mobile by default, slidable) -->
+    <div id="panelContentWrapper"
+      class="flex flex-col gap-3 transition-transform duration-300 transform translate-y-full md:translate-y-0 pointer-events-auto bg-transparent pb-4 md:pb-0 px-4 md:px-0">
+
+      <!-- Main Control Card -->
+      <div
+        class="bg-white/95 backdrop-blur-md shadow-xl rounded-xl border border-slate-200 p-4 pointer-events-auto ring-1 ring-black/5">
+        <div class="flex justify-between items-center mb-3">
+          <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-cyan-600 shadow-[0_0_8px_rgba(8,145,178,0.4)]"></span> Rota
+            Planlayıcı
+          </h2>
+          <a href="{{ url_for('planner.plan_week', date=selected_week) }}"
+            class="text-[10px] font-bold text-cyan-700 hover:text-cyan-800 bg-cyan-50 hover:bg-cyan-100 px-2.5 py-1.5 rounded-md transition-colors border border-cyan-100 shadow-sm">
+            Plan &rarr;
+          </a>
+        </div>
+
+        <div class="space-y-3">
+          <div class="grid grid-cols-1 gap-2">
+            <div
+              class="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200 shadow-sm group focus-within:ring-2 focus-within:ring-cyan-500/20 focus-within:border-cyan-500 transition-all">
+              <svg width="15" height="15" class="text-slate-400 group-focus-within:text-cyan-600 transition-colors"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <input id="mapWeek" type="date" value="{{ selected_week }}"
+                class="bg-transparent text-xs font-bold text-slate-700 w-full focus:outline-none placeholder-slate-400">
+            </div>
+
+            <div
+              class="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200 shadow-sm group focus-within:ring-2 focus-within:ring-cyan-500/20 focus-within:border-cyan-500 transition-all">
+              <svg width="15" height="15" class="text-slate-400 group-focus-within:text-cyan-600 transition-colors"
+                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+              <select id="singleTeamSelect"
+                class="bg-transparent text-xs font-bold text-slate-700 w-full focus:outline-none appearance-none cursor-pointer"></select>
+            </div>
+          </div>
+
+          <div class="flex gap-2">
+            <button onclick="drawSingleTeamRoute()"
+              class="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-bold py-2.5 rounded-lg shadow-lg shadow-cyan-500/20 transition-all active:scale-95 flex justify-center items-center gap-1.5 border border-transparent hover:border-cyan-500">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polygon points="10 8 16 12 10 16 10 8"></polygon>
+              </svg>
+              Çiz
+            </button>
+            <button onclick="sendTeamRoute()"
+              class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 rounded-lg shadow-lg shadow-emerald-500/20 transition-all active:scale-95 flex justify-center items-center gap-1.5 border border-transparent hover:border-emerald-500">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+              Gönder
+            </button>
+          </div>
+
+          <button onclick="drawAllRoutes()"
+            class="w-full bg-white hover:bg-cyan-50 text-slate-600 hover:text-cyan-700 border border-slate-200 hover:border-cyan-200 text-xs font-bold py-2.5 rounded-lg shadow-sm transition-all flex justify-center items-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+              </path>
+            </svg>
+            Tüm Ekipler
+          </button>
+
+          <!-- YENİ: İşaretleri Yükle Butonu -->
+          <button onclick="loadJobMarkers()" id="loadMarkersBtn"
+            class="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white text-xs font-bold py-2.5 rounded-lg shadow-lg shadow-purple-500/20 transition-all active:scale-95 flex justify-center items-center gap-2 border border-transparent mt-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            İşaretleri Yükle
+          </button>
+
+          <!-- ARVENTO: Araçları Göster Butonu -->
+          <button onclick="loadArventoVehicles()" id="arventoVehiclesBtn"
+            class="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-xs font-bold py-2.5 rounded-lg shadow-lg shadow-orange-500/25 transition-all active:scale-95 flex justify-center items-center gap-2 border border-transparent mt-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
+              <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
+              <path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2"></path>
+              <path d="M5 12h10l-4 -5"></path>
+            </svg>
+            <span id="arventoVehiclesBtnText">Araçları Göster</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Team Analysis Card Removed -->
+
+      <!-- Team Summary Floating Card (Hidden by default) -->
+      <div id="teamSummaryCard"
+        class="hidden bg-white/95 backdrop-blur-md shadow-xl rounded-xl border border-slate-200 p-4 pointer-events-auto ring-1 ring-black/5 mt-2">
+        <h3 class="flex justify-between items-center mb-2">
+          <span id="summaryTeamName" class="text-xs font-bold text-slate-900">Özet</span>
+          <span id="summaryDateRange"
+            class="font-medium opacity-75 text-[10px] text-cyan-700 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-100"></span>
+        </h3>
+        <div
+          class="flex divide-x divide-slate-100 border border-slate-200 rounded-lg bg-slate-50/50 overflow-hidden mb-2 shadow-sm">
+          <div class="flex-1 p-2 text-center">
+            <div id="summaryKm" class="text-sm font-black text-slate-800 tracking-tight">-</div>
+            <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wide">km</div>
+          </div>
+          <div class="flex-1 p-2 text-center">
+            <div id="summaryCount" class="text-sm font-black text-slate-800 tracking-tight">-</div>
+            <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wide">durak</div>
+          </div>
+          <div class="flex-1 p-2 text-center">
+            <div id="summaryHours" class="text-sm font-black text-slate-800 tracking-tight">-</div>
+            <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wide">süre</div>
+          </div>
+        </div>
+        <div class="flex justify-between items-center text-[10px]">
+          <span class="flex items-center gap-1.5 text-slate-600 font-medium"><span
+              class="w-2.5 h-2.5 rounded-full bg-cyan-500 border border-white shadow-sm ring-1 ring-black/5"></span>Müşteri</span>
+          <span class="flex items-center gap-1.5 text-slate-600 font-medium"><span
+              class="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-white shadow-sm ring-1 ring-black/5"></span>Başlangıç</span>
+        </div>
+      </div>
+
+      <!-- Route List Card -->
+      <div id="routeListContainer"
+        class="hidden bg-white/95 backdrop-blur-md shadow-xl rounded-xl border border-slate-200 overflow-y-auto custom-scroll p-2 text-xs text-slate-600 space-y-2 pointer-events-auto flex-1 md:block ring-1 ring-black/5 mt-2"
+        style="min-height: 80px;">
+        <div class="text-center text-slate-400 p-4 font-medium">
+          Rotayı görmek için bir ekip seçip "Çiz" butonuna basın.
+        </div>
+      </div>
+
+      <!-- Layer Control Panel (Katman Yönetimi) -->
+      <div id="layerControlPanel"
+        class="bg-white/95 backdrop-blur-md shadow-xl rounded-xl border border-slate-200 p-3 pointer-events-auto ring-1 ring-black/5 mt-2">
+        <div class="flex justify-between items-center mb-2">
+          <h3 class="text-xs font-bold text-slate-800 flex items-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 17 12 22 22 17"></polyline>
+              <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+            Katman Yönetimi
+          </h3>
+          <button onclick="toggleAllLayers()"
+            class="text-[10px] text-cyan-600 hover:text-cyan-800 font-medium px-2 py-0.5 rounded hover:bg-cyan-50 transition-colors">
+            Tümünü Aç/Kapat
+          </button>
+        </div>
+
+        <div class="space-y-1.5">
+          <!-- İş Noktaları -->
+          <label
+            class="flex items-center gap-2 p-1.5 rounded-md hover:bg-slate-50 cursor-pointer transition-colors group">
+            <input type="checkbox" id="layerJobMarkers" checked onchange="toggleLayer('jobMarkers', this.checked)"
+              class="w-4 h-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500 cursor-pointer">
+            <span
+              class="w-3 h-3 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 shadow-sm border border-white"></span>
+            <span class="text-xs text-slate-700 font-medium group-hover:text-slate-900">İş Noktaları</span>
+            <span id="jobMarkersCount" class="ml-auto text-[10px] text-slate-400 font-medium">0</span>
+          </label>
+
+          <!-- Araç Konumları -->
+          <label
+            class="flex items-center gap-2 p-1.5 rounded-md hover:bg-slate-50 cursor-pointer transition-colors group">
+            <input type="checkbox" id="layerVehicles" checked onchange="toggleLayer('vehicles', this.checked)"
+              class="w-4 h-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500 cursor-pointer">
+            <span
+              class="w-3 h-3 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 shadow-sm border border-white"></span>
+            <span class="text-xs text-slate-700 font-medium group-hover:text-slate-900">Araç Konumları</span>
+            <span id="vehiclesCount" class="ml-auto text-[10px] text-slate-400 font-medium">0</span>
+          </label>
+
+          <!-- Rotalar -->
+          <label
+            class="flex items-center gap-2 p-1.5 rounded-md hover:bg-slate-50 cursor-pointer transition-colors group">
+            <input type="checkbox" id="layerRoutes" checked onchange="toggleLayer('routes', this.checked)"
+              class="w-4 h-4 rounded border-slate-300 text-cyan-600 focus:ring-cyan-500 cursor-pointer">
+            <span
+              class="w-3 h-3 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 shadow-sm border border-white"></span>
+            <span class="text-xs text-slate-700 font-medium group-hover:text-slate-900">Rotalar</span>
+            <span id="routesCount" class="ml-auto text-[10px] text-slate-400 font-medium">0</span>
+          </label>
+
+          <!-- Başlangıç Noktaları -->
+          <label
+            class="flex items-center gap-2 p-1.5 rounded-md hover:bg-slate-50 cursor-pointer transition-colors group">
+            <input type="checkbox" id="layerStartPoints" checked onchange="toggleLayer('startPoints', this.checked)"
+              class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer">
+            <span
+              class="w-3 h-3 rounded-full bg-gradient-to-br from-emerald-500 to-green-600 shadow-sm border border-white"></span>
+            <span class="text-xs text-slate-700 font-medium group-hover:text-slate-900">Başlangıç Noktaları</span>
+            <span id="startPointsCount" class="ml-auto text-[10px] text-slate-400 font-medium">0</span>
+          </label>
+
+          <!-- Şehir Etiketleri -->
+          <label
+            class="flex items-center gap-2 p-1.5 rounded-md hover:bg-slate-50 cursor-pointer transition-colors group">
+            <input type="checkbox" id="layerCityLabels" checked onchange="toggleLayer('cityLabels', this.checked)"
+              class="w-4 h-4 rounded border-slate-300 text-slate-600 focus:ring-slate-500 cursor-pointer">
+            <span class="w-3 h-3 rounded border-2 border-slate-400 bg-white shadow-sm"></span>
+            <span class="text-xs text-slate-700 font-medium group-hover:text-slate-900">Şehir Etiketleri</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Simge Özelleştirme Kartı -->
+      <div id="iconSettingsCard"
+        class="bg-white/95 backdrop-blur-md shadow-xl rounded-xl border border-slate-200 p-3 pointer-events-auto ring-1 ring-black/5 mt-2">
+        <div class="flex justify-between items-center mb-2">
+          <h3 class="text-xs font-bold text-slate-800 flex items-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+              </path>
+            </svg>
+            Simge Ayarları
+          </h3>
+        </div>
+
+        <p class="text-[10px] text-slate-500 mb-2">Haritadaki simgelerin renk, boyut, animasyon ve görsellerini
+          özelleştirin.</p>
+
+        <button onclick="openIconCustomizer()"
+          class="w-full py-2 px-3 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white text-xs font-bold rounded-lg transition-all shadow-lg shadow-violet-500/20 hover:shadow-violet-500/30 flex items-center justify-center gap-2">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+          </svg>
+          Simgeleri Özelleştir
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Mobile Toggle Script -->
+  <script>
+    function toggleMobilePanel() {
+      const wrapper = document.getElementById('panelContentWrapper');
+      const isHidden = wrapper.classList.contains('translate-y-full');
+
+      if (isHidden) {
+        wrapper.classList.remove('translate-y-full'); // Show
+      } else {
+        wrapper.classList.add('translate-y-full'); // Hide
+      }
+    }
+  </script>
+
+
+
+  <!-- RIGHT TOP CONTROLS -->
+  <div class="absolute top-4 right-4 z-[500] flex flex-col gap-2 pointer-events-auto">
+    <div id="mapOverlay"
+      class="bg-slate-800/90 backdrop-blur px-3 py-2 rounded-lg shadow-xl border border-slate-700 text-xs text-white hidden md:block ring-1 ring-black/20">
+      <span class="font-bold text-cyan-300">İpucu:</span> İşaretçilere tıklayarak detayları görebilirsiniz.
+    </div>
+    <div class="flex justify-end gap-2">
+      <button onclick="toggleRouteCities(this)"
+        class="w-9 h-9 flex items-center justify-center bg-white rounded-lg shadow-lg border border-slate-200 text-slate-500 hover:text-cyan-600 hover:border-cyan-200 transition-all hover:scale-105 active:scale-95"
+        title="Şehir İsimleri">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+          <circle cx="12" cy="10" r="3"></circle>
+        </svg>
+      </button>
+      <button onclick="window.print()"
+        class="w-9 h-9 flex items-center justify-center bg-white rounded-lg shadow-lg border border-slate-200 text-slate-500 hover:text-cyan-600 hover:border-cyan-200 transition-all hover:scale-105 active:scale-95"
+        title="Yazdır">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="6 9 6 2 18 2 18 9"></polyline>
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+          <rect x="6" y="14" width="12" height="8"></rect>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- BOTTOM PANEL (Days) -->
+  <div
+    class="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[500] max-w-[95%] w-full md:w-auto pointer-events-auto">
+    <div id="dayTabsContainer"
+      class="flex items-center gap-3 p-2 bg-slate-800/80 backdrop-blur-md border border-slate-600 rounded-2xl shadow-2xl overflow-x-auto custom-scroll snap-x ring-1 ring-white/10">
+      <div class="text-[10px] font-medium text-slate-400 px-4 py-2 whitespace-nowrap min-w-[200px] text-center">Rota
+        çizildiğinde günler burada görünür.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Leaflet CSS/JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+
+<script>
+  function toggleSidebar() {
+    // Dummy function just in case
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    if (document.getElementById('map')) {
+      // Wait for app.js to load `ensureMap`
+      const checkFn = setInterval(() => {
+        if (typeof ensureMap === 'function') {
+          ensureMap();
+          clearInterval(checkFn);
+        }
+      }, 100);
+
+      // Safety timeout
+      setTimeout(() => clearInterval(checkFn), 5000);
+    }
+
+    // Initialize layer visibility from localStorage
+    initLayerVisibility();
+  });
+
+  // =============== LAYER VISIBILITY CONTROL ===============
+
+  // Layer groups - will be populated when markers/routes are loaded
+  const layerGroups = {
+    jobMarkers: null,
+    vehicles: null,
+    routes: null,
+    startPoints: null,
+    cityLabels: null
+  };
+
+  // Layer visibility state
+  const layerVisibility = {
+    jobMarkers: true,
+    vehicles: true,
+    routes: true,
+    startPoints: true,
+    cityLabels: true
+  };
+
+  // Initialize layer visibility from localStorage
+  function initLayerVisibility() {
+    const saved = localStorage.getItem('mapLayerVisibility');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        Object.assign(layerVisibility, parsed);
+
+        // Update checkboxes
+        Object.keys(layerVisibility).forEach(key => {
+          const checkbox = document.getElementById(`layer${key.charAt(0).toUpperCase() + key.slice(1)}`);
+          if (checkbox) {
+            checkbox.checked = layerVisibility[key];
+          }
+        });
+      } catch (e) {
+        console.warn('Could not parse saved layer visibility:', e);
+      }
+    }
+  }
+
+  // Save layer visibility to localStorage
+  function saveLayerVisibility() {
+    localStorage.setItem('mapLayerVisibility', JSON.stringify(layerVisibility));
+  }
+
+  // Toggle a specific layer
+  function toggleLayer(layerName, visible) {
+    layerVisibility[layerName] = visible;
+    saveLayerVisibility();
+
+    // Apply to actual layer if it exists
+    applyLayerVisibility(layerName, visible);
+
+    // Update UI
+    updateLayerCounts();
+  }
+
+  // Apply visibility to a layer
+  function applyLayerVisibility(layerName, visible) {
+    if (!window._map) return;
+
+    switch (layerName) {
+      case 'jobMarkers':
+        if (window.jobMarkersLayer) {
+          if (visible) {
+            if (!window._map.hasLayer(window.jobMarkersLayer)) {
+              window.jobMarkersLayer.addTo(window._map);
+            }
+          } else {
+            if (window._map.hasLayer(window.jobMarkersLayer)) {
+              window._map.removeLayer(window.jobMarkersLayer);
+            }
+          }
+        }
+        break;
+
+      case 'vehicles':
+        if (window.vehiclesLayer) {
+          if (visible) {
+            if (!window._map.hasLayer(window.vehiclesLayer)) {
+              window.vehiclesLayer.addTo(window._map);
+            }
+          } else {
+            if (window._map.hasLayer(window.vehiclesLayer)) {
+              window._map.removeLayer(window.vehiclesLayer);
+            }
+          }
+        }
+        break;
+
+      case 'routes':
+        if (window._layer) {
+          // Routes are polylines in the main layer
+          window._layer.eachLayer(function (layer) {
+            if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+              if (visible) {
+                layer.setStyle({ opacity: 1 });
+              } else {
+                layer.setStyle({ opacity: 0 });
+              }
+            }
+          });
+        }
+        break;
+
+      case 'startPoints':
+        if (window._layer) {
+          window._layer.eachLayer(function (layer) {
+            if (layer instanceof L.Marker) {
+              const el = layer.getElement();
+              if (el && el.querySelector('.start-marker')) {
+                el.style.display = visible ? '' : 'none';
+              }
+            }
+          });
+        }
+        break;
+
+      case 'cityLabels':
+        if (window.cityLabelsLayer) {
+          if (visible) {
+            if (!window._map.hasLayer(window.cityLabelsLayer)) {
+              window.cityLabelsLayer.addTo(window._map);
+            }
+          } else {
+            if (window._map.hasLayer(window.cityLabelsLayer)) {
+              window._map.removeLayer(window.cityLabelsLayer);
+            }
+          }
+        }
+        // Also toggle tooltips on markers
+        if (window._layer) {
+          window._layer.eachLayer(function (layer) {
+            if (layer instanceof L.Marker && layer.getTooltip()) {
+              if (visible) {
+                layer.openTooltip();
+              } else {
+                layer.closeTooltip();
+              }
+            }
+          });
+        }
+        break;
+    }
+  }
+
+  // Toggle all layers on/off
+  function toggleAllLayers() {
+    // Check if most layers are on
+    const onCount = Object.values(layerVisibility).filter(v => v).length;
+    const turnOn = onCount <= Object.keys(layerVisibility).length / 2;
+
+    Object.keys(layerVisibility).forEach(key => {
+      layerVisibility[key] = turnOn;
+      const checkbox = document.getElementById(`layer${key.charAt(0).toUpperCase() + key.slice(1)}`);
+      if (checkbox) {
+        checkbox.checked = turnOn;
+      }
+      applyLayerVisibility(key, turnOn);
+    });
+
+    saveLayerVisibility();
+    updateLayerCounts();
+  }
+
+  // Update layer counts in the panel
+  function updateLayerCounts() {
+    // Job markers count
+    const jobCount = window.jobMarkersLayer ? window.jobMarkersLayer.getLayers().length : 0;
+    const jobCountEl = document.getElementById('jobMarkersCount');
+    if (jobCountEl) jobCountEl.textContent = jobCount;
+
+    // Vehicles count
+    const vehCount = window.vehiclesLayer ? window.vehiclesLayer.getLayers().length : 0;
+    const vehCountEl = document.getElementById('vehiclesCount');
+    if (vehCountEl) vehCountEl.textContent = vehCount;
+
+    // Routes count
+    let routeCount = 0;
+    if (window._layer) {
+      window._layer.eachLayer(function (layer) {
+        if (layer instanceof L.Polyline && !(layer instanceof L.Polygon)) {
+          routeCount++;
+        }
+      });
+    }
+    const routeCountEl = document.getElementById('routesCount');
+    if (routeCountEl) routeCountEl.textContent = routeCount;
+
+    // Start points count
+    let startCount = 0;
+    if (window._layer) {
+      window._layer.eachLayer(function (layer) {
+        if (layer instanceof L.Marker) {
+          const el = layer.getElement();
+          if (el && el.querySelector('.start-marker')) {
+            startCount++;
+          }
+        }
+      });
+    }
+    const startCountEl = document.getElementById('startPointsCount');
+    if (startCountEl) startCountEl.textContent = startCount;
+  }
+
+  // Expose functions globally
+  window.toggleLayer = toggleLayer;
+  window.toggleAllLayers = toggleAllLayers;
+  window.updateLayerCounts = updateLayerCounts;
+  window.applyLayerVisibility = applyLayerVisibility;
+  window.layerVisibility = layerVisibility;
+
+
+  // =============== ARVENTO ARAÇ TAKİP ===============
+
+  // Araç katmanı (ayrı layer olarak yönetilir)
+  let vehiclesLayer = null;
+  let vehiclesVisible = false;
+
+  // Renk tonu ayarlama yardımcısı
+  function adjustColor(color, amount) {
+    return '#' + color.replace(/^#/, '').replace(/../g, color => ('0' + Math.min(255, Math.max(0, parseInt(color, 16) + amount)).toString(16)).substr(-2));
+  }
+
+  // Araç ikonu oluştur - Modern, Canlı ve Plakalı Tasarım
+  function createVehicleIcon(vehicle) {
+    const isMatched = vehicle.matched;
+    const isOnline = vehicle.ignition;
+
+    // Varsayılan renkler (Eşleşmemiş araçlar için)
+    let teamColor = 'var(--status-muted)'; // Gri (Slate-500)
+
+    if (isMatched && vehicle.team_id) {
+      // Ekip ID'sine göre canlı renk paleti (Backend team_color() ile senkronize)
+      const teamColors = [
+        '#e5484d', // Kırmızı
+        '#3b82f6', // Mavi
+        '#10b981', // Yeşil
+        '#f59e0b', // Turuncu
+        '#8b5cf6', // Mor
+        '#ec4899', // Pembe
+        '#06b6d4', // Cyan
+        '#f97316', // Turuncu-Koyu
+        '#84cc16', // Lime
+        '#6366f1', // Indigo
+        '#14b8a6', // Teal
+        '#f43f5e'  // Rose
+      ];
+      teamColor = teamColors[vehicle.team_id % teamColors.length];
+    }
+
+
+    // Kontak durumu için indikatör rengi
+    const statusColor = isOnline ? 'var(--status-online)' : 'var(--status-offline)';
+
+    // Plaka yazısı rengi (Koyu mod uyumlu kontrast)
+    const plateBg = 'rgba(255, 255, 255, 0.95)';
+    const plateTextColor = 'var(--text-strong)';
+    const plateBorder = teamColor;
+
+    const iconHtml = `
+      <div class="vehicle-marker-wrapper" style="position: relative; display: flex; flex-direction: column; align-items: center;">
+        
+        <!-- Ana Araç İkonu -->
+        <div class="arvento-vehicle-marker" style="
+          width: 36px;
+          height: 36px;
+          background: linear-gradient(135deg, ${teamColor}, ${adjustColor(teamColor, -20)});
+          border: 2px solid white;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 4px 12px ${teamColor}80, 0 2px 4px rgba(0,0,0,0.1);
+          z-index: 20;
+          transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        " onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'">
+          
+          <!-- Araç Simgesi -->
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 1px 1px rgba(0,0,0,0.2));">
+            <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
+            <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
+            <path d="M5 17h-2v-5l2 -4h8l4 4h1a2 2 0 0 1 2 2v3h-2"></path>
+            <path d="M5 11h10l-3 -4"></path>
+          </svg>
+
+          <!-- Kontak Durum Noktası -->
+          <div style="
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 10px;
+            height: 10px;
+            background-color: ${statusColor};
+            border: 2px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.05);
+          "></div>
+        </div>
+
+        <!-- Plaka Etiketi -->
+        <div class="vehicle-plate-label" style="
+          margin-top: 4px;
+          background-color: ${plateBg};
+          color: ${plateTextColor};
+          padding: 2px 8px;
+          border-radius: 6px;
+          font-size: 11px;
+          font-weight: 800;
+          white-space: nowrap;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+          border: 1px solid ${plateBorder};
+          border-left: 4px solid ${plateBorder};
+          z-index: 10;
+          font-family: 'Inter', system-ui, sans-serif;
+          pointer-events: none;
+        ">
+          ${vehicle.plate}
+        </div>
+
+      </div>
+    `;
+
+    return L.divIcon({
+      html: iconHtml,
+      className: 'arvento-vehicle-icon-container',
+      iconSize: [40, 60],
+      iconAnchor: [20, 20],
+      popupAnchor: [0, -24]
+    });
+  }
+
+  // Araç popup içeriği oluştur
+  function createVehiclePopup(vehicle) {
+    const isMatched = vehicle.matched;
+    const isUnregistered = vehicle.unregistered;
+    const lastUpdate = vehicle.last_update
+      ? new Date(vehicle.last_update).toLocaleString('tr-TR')
+      : '-';
+
+    // Ekip bilgisi
+    let teamHtml = '';
+    let teamMembersHtml = '';
+
+    // Ekip üyeleri bilgisini hazırla (vehicle.team_members varsa)
+    if (vehicle.team_members && vehicle.team_members.length > 0) {
+      const membersList = vehicle.team_members.map(name =>
+        `<div class="map-team-popup-member">${escapeHtml(name)}</div>`
+      ).join('');
+
+      teamMembersHtml = `
+        <div class="map-team-popup-members">
+          <div class="map-team-popup-members-title">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+            </svg>
+            Ekip Üyeleri (${vehicle.team_members.length} kişi)
+          </div>
+          <div class="map-team-popup-members-list">
+            ${membersList}
+          </div>
+        </div>
+      `;
+    }
+
+    if (isMatched && vehicle.team_name) {
+      teamHtml = `<div style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #dcfce7, #d1fae5); padding: 6px 12px; border-radius: 6px; margin-top: 8px; border: 1px solid #86efac;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+          <circle cx="9" cy="7" r="4"></circle>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+        </svg>
+        <span style="font-weight: 700; color: #15803d; font-size: 13px;">${escapeHtml(vehicle.team_name)}</span>
+      </div>${teamMembersHtml}`;
+    } else if (isUnregistered) {
+      teamHtml = `<div style="display: flex; align-items: center; gap: 6px; background: #fef3c7; padding: 6px 10px; border-radius: 6px; margin-top: 8px; border: 1px solid #fcd34d;">
+        <span style="font-size: 12px;">⚠️</span>
+        <span style="font-size: 11px; color: #92400e; font-weight: 500;">Kayıtsız cihaz - Arvento Ayarlarından ekleyin</span>
+      </div>`;
+    } else if (!isMatched) {
+      teamHtml = `<div style="display: flex; align-items: center; gap: 6px; background: #fee2e2; padding: 6px 10px; border-radius: 6px; margin-top: 8px; border: 1px solid #fca5a5;">
+        <span style="font-size: 12px;">ℹ️</span>
+        <span style="font-size: 11px; color: var(--status-danger); font-weight: 500;">Ekip bilgisi bulunamadı</span>
+      </div>`;
+    }
+
+    // Durum göstergesi
+    const statusColor = vehicle.ignition ? 'var(--status-online)' : 'var(--status-muted)';
+    const statusBg = vehicle.ignition ? 'var(--status-success-bg)' : 'var(--status-muted-bg)';
+    const statusText = vehicle.ignition ? 'Kontak Açık' : 'Kontak Kapalı';
+    const speedBadge = vehicle.speed > 0
+      ? `<span style="background: linear-gradient(135deg, #fef08a, #fde047); color: #854d0e; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; margin-left: 6px;">${vehicle.speed} km/s</span>`
+      : '';
+
+    // Adres bilgisi
+    let addressHtml = '';
+    if (vehicle.address || vehicle.city) {
+      const city = vehicle.city || '';
+      const town = vehicle.town || '';
+      const location = [town, city].filter(Boolean).join(', ');
+
+      addressHtml = `
+        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border);">
+          <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px; display: flex; align-items: center; gap: 4px;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+            <strong>Konum:</strong>
+          </div>
+          ${location ? `<div style="font-size: 12px; color: #1e293b; font-weight: 600; margin-bottom: 2px;">${escapeHtml(location)}</div>` : ''}
+          ${vehicle.address ? `<div style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">${escapeHtml(vehicle.address.substring(0, 80))}${vehicle.address.length > 80 ? '...' : ''}</div>` : ''}
+        </div>
+      `;
+    }
+
+    return `
+      <div style="min-width: 220px; max-width: 280px; font-family: system-ui, -apple-system, sans-serif;">
+        <!-- Header with plate -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+          <div style="font-weight: 800; font-size: 16px; color: var(--text-strong); display: flex; align-items: center; gap: 8px;">
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: ${statusColor}; box-shadow: 0 0 6px ${statusColor};"></span>
+            ${escapeHtml(vehicle.plate)}
+          </div>
+          ${speedBadge}
+        </div>
+        
+        <!-- Team info -->
+        ${teamHtml}
+        
+        <!-- Status row -->
+        <div style="display: flex; align-items: center; gap: 12px; margin-top: 10px;">
+          <div style="background: ${statusBg}; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; color: ${vehicle.ignition ? 'var(--status-success)' : 'var(--text-muted)'};">
+            ${statusText}
+          </div>
+        </div>
+        
+        <!-- Address -->
+        ${addressHtml}
+        
+        <!-- Last update -->
+        <div style="margin-top: 10px; font-size: 10px; color: var(--text-muted); display: flex; align-items: center; gap: 4px;">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          ${lastUpdate}
+        </div>
+      </div>
+    `;
+  }
+
+  // Escape HTML helper
+  function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // Global Vehicle Manager
+  window.vehicleManager = null;
+
+  // Araçları yükle ve haritada göster (Modernize edilmiş)
+  async function loadArventoVehicles() {
+    const btn = document.getElementById('arventoVehiclesBtn');
+    const btnText = document.getElementById('arventoVehiclesBtnText');
+
+    if (!_map) {
+      if (typeof ensureMap === 'function') ensureMap();
+      else return;
+    }
+
+    if (!window.vehicleManager) {
+      window.vehicleManager = new VehicleManager(_map);
+    }
+
+    const isVisible = window.vehicleManager.toggle();
+
+    if (isVisible) {
+      btnText.textContent = 'Yükleniyor...';
+      btn.classList.remove('from-amber-500', 'to-orange-500');
+      btn.classList.add('from-green-500', 'to-emerald-500');
+    } else {
+      btnText.textContent = 'Araçları Göster';
+      btn.classList.remove('from-green-500', 'to-emerald-500');
+      btn.classList.add('from-amber-500', 'to-orange-500');
+    }
+  }
+
+  // Export helpers for VehicleManager
+  window.createVehicleIcon = createVehicleIcon;
+  window.createVehiclePopup = createVehiclePopup;
+
+  // ===================== SİMGE ÖZELLEŞTİRME SİSTEMİ =====================
+
+
+  // Varsayılan simge ayarları
+  const defaultIconSettings = {
+    jobMarkers: {
+      color: '#8b5cf6',
+      size: 24,
+      borderColor: '#ffffff',
+      borderWidth: 3,
+      shadowOpacity: 40,
+      animation: 'none', // none, pulse, bounce
+      customIcon: null
+    },
+    vehicles: {
+      color: '#f59e0b',
+      size: 36,
+      borderColor: '#ffffff',
+      borderWidth: 2,
+      plateSize: 11,
+      plateBg: '#ffffff',
+      plateColor: '#1e293b',
+      animation: 'none',
+      customIcon: null
+    },
+    routes: {
+      color: '#3b82f6',
+      width: 4,
+      opacity: 80,
+      style: 'solid', // solid, dashed, dotted
+      animation: 'none' // none, flow
+    },
+    startPoints: {
+      color: '#10b981',
+      size: 28,
+      borderColor: '#ffffff',
+      borderWidth: 3,
+      animation: 'pulse',
+      customIcon: null
+    }
+  };
+
+  // Aktif simge ayarları
+  let iconSettings = JSON.parse(JSON.stringify(defaultIconSettings));
+
+  // localStorage'dan yükle
+  function loadIconSettings() {
+    try {
+      const saved = localStorage.getItem('mapIconSettings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        iconSettings = { ...defaultIconSettings, ...parsed };
+      }
+    } catch (e) {
+      console.error('Icon settings load error:', e);
+    }
+  }
+
+  // localStorage'a kaydet
+  function saveIconSettings() {
+    try {
+      localStorage.setItem('mapIconSettings', JSON.stringify(iconSettings));
+    } catch (e) {
+      console.error('Icon settings save error:', e);
+    }
+  }
+
+  // Simge özelleştirme modalını aç
+  function openIconCustomizer() {
+    const modal = document.getElementById('iconCustomizerModal');
+    if (modal) {
+      modal.style.display = 'flex';
+      loadIconSettingsToUI();
+    }
+  }
+
+  // Modalı kapat
+  function closeIconCustomizer() {
+    const modal = document.getElementById('iconCustomizerModal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  }
+
+  // Ayarları UI'a yükle
+  function loadIconSettingsToUI() {
+    // İş noktaları
+    setInputValue('iconJobColor', iconSettings.jobMarkers.color);
+    setInputValue('iconJobSize', iconSettings.jobMarkers.size);
+    setInputValue('iconJobBorderColor', iconSettings.jobMarkers.borderColor);
+    setInputValue('iconJobBorderWidth', iconSettings.jobMarkers.borderWidth);
+    setInputValue('iconJobAnimation', iconSettings.jobMarkers.animation);
+
+    // Araçlar
+    setInputValue('iconVehicleColor', iconSettings.vehicles.color);
+    setInputValue('iconVehicleSize', iconSettings.vehicles.size);
+    setInputValue('iconVehiclePlateSize', iconSettings.vehicles.plateSize);
+    setInputValue('iconVehicleAnimation', iconSettings.vehicles.animation);
+
+    // Rotalar
+    setInputValue('iconRouteColor', iconSettings.routes.color);
+    setInputValue('iconRouteWidth', iconSettings.routes.width);
+    setInputValue('iconRouteOpacity', iconSettings.routes.opacity);
+    setInputValue('iconRouteStyle', iconSettings.routes.style);
+
+    // Başlangıç noktaları
+    setInputValue('iconStartColor', iconSettings.startPoints.color);
+    setInputValue('iconStartSize', iconSettings.startPoints.size);
+    setInputValue('iconStartAnimation', iconSettings.startPoints.animation);
+
+    updateIconPreview();
+  }
+
+  function setInputValue(id, value) {
+    const el = document.getElementById(id);
+    if (el) el.value = value;
+  }
+
+  function getInputValue(id, defaultVal) {
+    const el = document.getElementById(id);
+    return el ? el.value : defaultVal;
+  }
+
+  // UI'dan ayarları oku
+  function readIconSettingsFromUI() {
+    iconSettings.jobMarkers.color = getInputValue('iconJobColor', '#8b5cf6');
+    iconSettings.jobMarkers.size = parseInt(getInputValue('iconJobSize', 24));
+    iconSettings.jobMarkers.borderColor = getInputValue('iconJobBorderColor', '#ffffff');
+    iconSettings.jobMarkers.borderWidth = parseInt(getInputValue('iconJobBorderWidth', 3));
+    iconSettings.jobMarkers.animation = getInputValue('iconJobAnimation', 'none');
+
+    iconSettings.vehicles.color = getInputValue('iconVehicleColor', '#f59e0b');
+    iconSettings.vehicles.size = parseInt(getInputValue('iconVehicleSize', 36));
+    iconSettings.vehicles.plateSize = parseInt(getInputValue('iconVehiclePlateSize', 11));
+    iconSettings.vehicles.animation = getInputValue('iconVehicleAnimation', 'none');
+
+    iconSettings.routes.color = getInputValue('iconRouteColor', '#3b82f6');
+    iconSettings.routes.width = parseInt(getInputValue('iconRouteWidth', 4));
+    iconSettings.routes.opacity = parseInt(getInputValue('iconRouteOpacity', 80));
+    iconSettings.routes.style = getInputValue('iconRouteStyle', 'solid');
+
+    iconSettings.startPoints.color = getInputValue('iconStartColor', '#10b981');
+    iconSettings.startPoints.size = parseInt(getInputValue('iconStartSize', 28));
+    iconSettings.startPoints.animation = getInputValue('iconStartAnimation', 'pulse');
+  }
+
+  // Önizlemeyi güncelle
+  function updateIconPreview() {
+    readIconSettingsFromUI();
+
+    // İş noktası önizleme
+    const jobPreview = document.getElementById('jobMarkerPreview');
+    if (jobPreview) {
+      jobPreview.style.width = iconSettings.jobMarkers.size + 'px';
+      jobPreview.style.height = iconSettings.jobMarkers.size + 'px';
+      jobPreview.style.background = iconSettings.jobMarkers.color;
+      jobPreview.style.border = iconSettings.jobMarkers.borderWidth + 'px solid ' + iconSettings.jobMarkers.borderColor;
+      jobPreview.className = 'rounded-full transition-all ' + (iconSettings.jobMarkers.animation === 'pulse' ? 'animate-pulse' : '');
+    }
+
+    // Araç önizleme
+    const vehiclePreview = document.getElementById('vehicleMarkerPreview');
+    if (vehiclePreview) {
+      vehiclePreview.style.width = iconSettings.vehicles.size + 'px';
+      vehiclePreview.style.height = iconSettings.vehicles.size + 'px';
+      vehiclePreview.style.background = iconSettings.vehicles.color;
+    }
+
+    // Rota önizleme
+    const routePreview = document.getElementById('routePreview');
+    if (routePreview) {
+      routePreview.style.height = iconSettings.routes.width + 'px';
+      routePreview.style.background = iconSettings.routes.color;
+      routePreview.style.opacity = iconSettings.routes.opacity / 100;
+      if (iconSettings.routes.style === 'dashed') {
+        routePreview.style.backgroundImage = `repeating-linear-gradient(90deg, ${iconSettings.routes.color}, ${iconSettings.routes.color} 10px, transparent 10px, transparent 15px)`;
+        routePreview.style.background = 'transparent';
+      }
+    }
+
+    // Başlangıç önizleme
+    const startPreview = document.getElementById('startMarkerPreview');
+    if (startPreview) {
+      startPreview.style.width = iconSettings.startPoints.size + 'px';
+      startPreview.style.height = iconSettings.startPoints.size + 'px';
+      startPreview.style.background = iconSettings.startPoints.color;
+      startPreview.className = 'rounded-full transition-all ' + (iconSettings.startPoints.animation === 'pulse' ? 'animate-pulse' : '');
+    }
+  }
+
+  // Ayarları kaydet
+  function saveIconCustomization() {
+    readIconSettingsFromUI();
+    saveIconSettings();
+    closeIconCustomizer();
+
+    // Bildirim göster
+    if (typeof toast === 'function') {
+      toast('Simge ayarları kaydedildi. Yeni işaretler bu ayarlarla oluşturulacak.');
+    }
+  }
+
+  // Varsayılana sıfırla
+  function resetIconSettings() {
+    if (confirm('Tüm simge ayarlarını varsayılana sıfırlamak istediğinizden emin misiniz?')) {
+      iconSettings = JSON.parse(JSON.stringify(defaultIconSettings));
+      saveIconSettings();
+      loadIconSettingsToUI();
+
+      if (typeof toast === 'function') {
+        toast('Simge ayarları sıfırlandı.');
+      }
+    }
+  }
+
+  // Özel ikon yükle
+  function uploadCustomIcon(iconType) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/png,image/svg+xml,image/webp';
+
+    input.onchange = async function (e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // Boyut kontrolü (500KB max)
+      if (file.size > 500 * 1024) {
+        alert('Dosya boyutu 500KB\'dan küçük olmalıdır.');
+        return;
+      }
+
+      // FormData oluştur
+      const formData = new FormData();
+      formData.append('icon', file);
+      formData.append('icon_type', iconType);
+
+      try {
+        const res = await fetch('/api/map/upload-icon', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await res.json();
+
+        if (data.ok) {
+          iconSettings[iconType].customIcon = data.icon_url;
+          saveIconSettings();
+          updateIconPreview();
+
+          // Önizleme görseli güncelle
+          const previewImg = document.getElementById(iconType + 'CustomIconPreview');
+          if (previewImg) {
+            previewImg.src = data.icon_url;
+            previewImg.style.display = 'block';
+          }
+
+          if (typeof toast === 'function') {
+            toast('Özel simge yüklendi.');
+          }
+        } else {
+          alert(data.error || 'Yükleme hatası');
+        }
+      } catch (err) {
+        console.error('Icon upload error:', err);
+        alert('Simge yüklenirken hata oluştu.');
+      }
+    };
+
+    input.click();
+  }
+
+  // Özel ikonu sil
+  function removeCustomIcon(iconType) {
+    iconSettings[iconType].customIcon = null;
+    saveIconSettings();
+
+    const previewImg = document.getElementById(iconType + 'CustomIconPreview');
+    if (previewImg) {
+      previewImg.style.display = 'none';
+    }
+
+    if (typeof toast === 'function') {
+      toast('Özel simge kaldırıldı.');
+    }
+  }
+
+  // Export to global
+  window.openIconCustomizer = openIconCustomizer;
+  window.closeIconCustomizer = closeIconCustomizer;
+  window.updateIconPreview = updateIconPreview;
+  window.saveIconCustomization = saveIconCustomization;
+  window.resetIconSettings = resetIconSettings;
+  window.uploadCustomIcon = uploadCustomIcon;
+  window.removeCustomIcon = removeCustomIcon;
+  window.iconSettings = iconSettings;
+
+  // Sayfa yüklendiğinde simge ayarlarını yükle
+  document.addEventListener('DOMContentLoaded', loadIconSettings);
+</script>
+
+<style>
+  /* Arvento araç marker stil - Leaflet varsayılan stillerini ezmek için */
+  .arvento-vehicle-icon-container {
+    background: transparent !important;
+    border: none !important;
+  }
+
+  /* Marker hover efekti için z-index yönetimi */
+  .vehicle-marker-wrapper:hover {
+    z-index: 1000 !important;
+  }
+
+  /* Dark mode desteği */
+  html.dark-mode .leaflet-popup-content-wrapper {
+    background: rgba(30, 41, 59, 0.98) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  html.dark-mode .leaflet-popup-content {
+    color: var(--bg-soft-2) !important;
+  }
+
+  html.dark-mode .leaflet-popup-tip {
+    background: rgba(30, 41, 59, 0.98) !important;
+  }
+
+  /* Plaka etiketi için font */
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@600;800&display=swap');
+
+  /* ===== MarkerCluster Stilleri ===== */
+  .marker-cluster {
+    background-clip: padding-box;
+    border-radius: 50%;
+  }
+
+  .marker-cluster div {
+    width: 32px;
+    height: 32px;
+    margin-left: 4px;
+    margin-top: 4px;
+    text-align: center;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 700;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .marker-cluster-small {
+    background-color: rgba(16, 185, 129, 0.6);
+  }
+
+  .marker-cluster-small div {
+    background-color: rgba(16, 185, 129, 0.9);
+  }
+
+  .marker-cluster-medium {
+    background-color: rgba(245, 158, 11, 0.6);
+  }
+
+  .marker-cluster-medium div {
+    background-color: rgba(245, 158, 11, 0.9);
+  }
+
+  .marker-cluster-large {
+    background-color: rgba(239, 68, 68, 0.6);
+  }
+
+  .marker-cluster-large div {
+    background-color: rgba(239, 68, 68, 0.9);
+  }
+
+  /* ===== Loading Progress Bar ===== */
+  .map-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(2px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+  }
+
+  .map-loading-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .map-loading-content {
+    background: white;
+    border-radius: 16px;
+    padding: 24px 32px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    min-width: 280px;
+  }
+
+  html.dark-mode .map-loading-content {
+    background: #1e293b;
+    color: #f1f5f9;
+  }
+
+  .map-progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 12px;
+  }
+
+  html.dark-mode .map-progress-bar {
+    background: #334155;
+  }
+
+  .map-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #06b6d4);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    width: 0%;
+  }
+
+  .map-loading-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 8px;
+  }
+
+  html.dark-mode .map-loading-text {
+    color: #e2e8f0;
+  }
+
+  .map-loading-subtext {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 8px;
+  }
+
+  html.dark-mode .map-loading-subtext {
+    color: #94a3b8;
+  }
+</style>
+
+<!-- Simge Özelleştirme Modal -->
+<div id="iconCustomizerModal"
+  style="display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center;">
+
+  <div
+    class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col"
+    style="background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);">
+
+    <!-- Modal Header -->
+    <div
+      class="p-4 border-b border-slate-200 flex justify-between items-center bg-gradient-to-r from-violet-500 to-purple-600">
+      <h2 class="text-lg font-bold text-white flex items-center gap-3">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path
+            d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4">
+          </path>
+        </svg>
+        Simge Özelleştirme Ayarları
+      </h2>
+      <button onclick="closeIconCustomizer()" class="text-white/80 hover:text-white transition-colors">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="p-4 overflow-y-auto flex-1" style="max-height: 60vh;">
+
+      <!-- Tabs -->
+      <div class="flex gap-2 mb-4 border-b border-slate-200 pb-2">
+        <button onclick="showIconTab('jobMarkers')" id="tabJobMarkers"
+          class="px-3 py-1.5 text-xs font-bold rounded-lg bg-violet-100 text-violet-700 border border-violet-200">
+          📍 İş Noktaları
+        </button>
+        <button onclick="showIconTab('vehicles')" id="tabVehicles"
+          class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-600 border border-slate-200 hover:bg-amber-100 hover:text-amber-700 transition-colors">
+          🚗 Araçlar
+        </button>
+        <button onclick="showIconTab('routes')" id="tabRoutes"
+          class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-600 border border-slate-200 hover:bg-cyan-100 hover:text-cyan-700 transition-colors">
+          🗺️ Rotalar
+        </button>
+        <button onclick="showIconTab('startPoints')" id="tabStartPoints"
+          class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-600 border border-slate-200 hover:bg-emerald-100 hover:text-emerald-700 transition-colors">
+          🏁 Başlangıç
+        </button>
+      </div>
+
+      <!-- İş Noktaları Panel -->
+      <div id="panelJobMarkers" class="icon-tab-panel">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Renk</label>
+            <input type="color" id="iconJobColor" value="#8b5cf6" onchange="updateIconPreview()"
+              class="w-full h-10 rounded-lg border border-slate-200 cursor-pointer">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Boyut (px)</label>
+            <input type="range" id="iconJobSize" min="16" max="48" value="24" onchange="updateIconPreview()"
+              class="w-full h-10">
+            <div class="text-xs text-slate-500 text-center" id="iconJobSizeVal">24px</div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Kenarlık Rengi</label>
+            <input type="color" id="iconJobBorderColor" value="#ffffff" onchange="updateIconPreview()"
+              class="w-full h-10 rounded-lg border border-slate-200 cursor-pointer">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Kenarlık Kalınlığı</label>
+            <input type="range" id="iconJobBorderWidth" min="0" max="6" value="3" onchange="updateIconPreview()"
+              class="w-full h-10">
+          </div>
+          <div class="col-span-2">
+            <label class="block text-xs font-bold text-slate-700 mb-1">Animasyon</label>
+            <select id="iconJobAnimation" onchange="updateIconPreview()"
+              class="w-full p-2 rounded-lg border border-slate-200 text-sm">
+              <option value="none">Yok</option>
+              <option value="pulse">Pulse (Nabız)</option>
+              <option value="bounce">Bounce (Zıplama)</option>
+            </select>
+          </div>
+          <div class="col-span-2 border-t border-slate-200 pt-3">
+            <label class="block text-xs font-bold text-slate-700 mb-2">Özel Simge</label>
+            <div class="flex gap-2 items-center">
+              <button onclick="uploadCustomIcon('jobMarkers')"
+                class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg border border-slate-200 transition-colors">
+                📤 Görsel Yükle
+              </button>
+              <img id="jobMarkersCustomIconPreview" src=""
+                style="display:none; width:32px; height:32px; object-fit:contain; border-radius:6px; border:1px solid #e2e8f0;">
+              <button onclick="removeCustomIcon('jobMarkers')"
+                class="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-[10px] font-medium rounded transition-colors">
+                Sil
+              </button>
+            </div>
+            <p class="text-[10px] text-slate-400 mt-1">PNG, SVG, WEBP - Max 500KB</p>
+          </div>
+        </div>
+        <!-- Önizleme -->
+        <div class="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+          <div class="text-xs font-bold text-slate-600 mb-2">Önizleme</div>
+          <div class="flex items-center justify-center">
+            <div id="jobMarkerPreview" class="rounded-full"
+              style="width:24px; height:24px; background:#8b5cf6; border:3px solid white; box-shadow: 0 4px 12px rgba(139,92,246,0.4);">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Araçlar Panel -->
+      <div id="panelVehicles" class="icon-tab-panel" style="display:none;">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Araç Rengi</label>
+            <input type="color" id="iconVehicleColor" value="#f59e0b" onchange="updateIconPreview()"
+              class="w-full h-10 rounded-lg border border-slate-200 cursor-pointer">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Boyut (px)</label>
+            <input type="range" id="iconVehicleSize" min="24" max="56" value="36" onchange="updateIconPreview()"
+              class="w-full h-10">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Plaka Yazı Boyutu</label>
+            <input type="range" id="iconVehiclePlateSize" min="8" max="16" value="11" onchange="updateIconPreview()"
+              class="w-full h-10">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Animasyon</label>
+            <select id="iconVehicleAnimation" onchange="updateIconPreview()"
+              class="w-full p-2 rounded-lg border border-slate-200 text-sm">
+              <option value="none">Yok</option>
+              <option value="pulse">Pulse (Nabız)</option>
+            </select>
+          </div>
+          <div class="col-span-2 border-t border-slate-200 pt-3">
+            <label class="block text-xs font-bold text-slate-700 mb-2">Özel Araç Simgesi</label>
+            <div class="flex gap-2 items-center">
+              <button onclick="uploadCustomIcon('vehicles')"
+                class="px-3 py-2 bg-amber-100 hover:bg-amber-200 text-amber-700 text-xs font-medium rounded-lg border border-amber-200 transition-colors">
+                📤 Araç Görseli Yükle
+              </button>
+              <img id="vehiclesCustomIconPreview" src=""
+                style="display:none; width:32px; height:32px; object-fit:contain; border-radius:6px; border:1px solid #e2e8f0;">
+              <button onclick="removeCustomIcon('vehicles')"
+                class="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-[10px] font-medium rounded transition-colors">
+                Sil
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- Önizleme -->
+        <div class="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+          <div class="text-xs font-bold text-slate-600 mb-2">Önizleme</div>
+          <div class="flex items-center justify-center">
+            <div id="vehicleMarkerPreview" class="rounded-full flex items-center justify-center"
+              style="width:36px; height:36px; background:#f59e0b; border:2px solid white; box-shadow: 0 4px 12px rgba(245,158,11,0.4);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <path d="M7 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
+                <path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"></path>
+                <path d="M5 17h-2v-5l2 -4h8l4 4h1a2 2 0 0 1 2 2v3h-2"></path>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rotalar Panel -->
+      <div id="panelRoutes" class="icon-tab-panel" style="display:none;">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Rota Rengi</label>
+            <input type="color" id="iconRouteColor" value="#3b82f6" onchange="updateIconPreview()"
+              class="w-full h-10 rounded-lg border border-slate-200 cursor-pointer">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Çizgi Kalınlığı (px)</label>
+            <input type="range" id="iconRouteWidth" min="1" max="10" value="4" onchange="updateIconPreview()"
+              class="w-full h-10">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Şeffaflık (%)</label>
+            <input type="range" id="iconRouteOpacity" min="20" max="100" value="80" onchange="updateIconPreview()"
+              class="w-full h-10">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Çizgi Stili</label>
+            <select id="iconRouteStyle" onchange="updateIconPreview()"
+              class="w-full p-2 rounded-lg border border-slate-200 text-sm">
+              <option value="solid">Düz</option>
+              <option value="dashed">Kesik Çizgi</option>
+              <option value="dotted">Noktalı</option>
+            </select>
+          </div>
+        </div>
+        <!-- Önizleme -->
+        <div class="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+          <div class="text-xs font-bold text-slate-600 mb-2">Önizleme</div>
+          <div class="flex items-center justify-center">
+            <div id="routePreview" style="width:150px; height:4px; background:#3b82f6; border-radius:2px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Başlangıç Noktaları Panel -->
+      <div id="panelStartPoints" class="icon-tab-panel" style="display:none;">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Renk</label>
+            <input type="color" id="iconStartColor" value="#10b981" onchange="updateIconPreview()"
+              class="w-full h-10 rounded-lg border border-slate-200 cursor-pointer">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Boyut (px)</label>
+            <input type="range" id="iconStartSize" min="20" max="48" value="28" onchange="updateIconPreview()"
+              class="w-full h-10">
+          </div>
+          <div class="col-span-2">
+            <label class="block text-xs font-bold text-slate-700 mb-1">Animasyon</label>
+            <select id="iconStartAnimation" onchange="updateIconPreview()"
+              class="w-full p-2 rounded-lg border border-slate-200 text-sm">
+              <option value="none">Yok</option>
+              <option value="pulse" selected>Pulse (Nabız)</option>
+              <option value="bounce">Bounce (Zıplama)</option>
+            </select>
+          </div>
+          <div class="col-span-2 border-t border-slate-200 pt-3">
+            <label class="block text-xs font-bold text-slate-700 mb-2">Özel Simge</label>
+            <div class="flex gap-2 items-center">
+              <button onclick="uploadCustomIcon('startPoints')"
+                class="px-3 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-xs font-medium rounded-lg border border-emerald-200 transition-colors">
+                📤 Görsel Yükle
+              </button>
+              <img id="startPointsCustomIconPreview" src=""
+                style="display:none; width:32px; height:32px; object-fit:contain; border-radius:6px; border:1px solid #e2e8f0;">
+              <button onclick="removeCustomIcon('startPoints')"
+                class="px-2 py-1 bg-red-100 hover:bg-red-200 text-red-700 text-[10px] font-medium rounded transition-colors">
+                Sil
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- Önizleme -->
+        <div class="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+          <div class="text-xs font-bold text-slate-600 mb-2">Önizleme</div>
+          <div class="flex items-center justify-center">
+            <div id="startMarkerPreview" class="rounded-full animate-pulse"
+              style="width:28px; height:28px; background:#10b981; border:3px solid white; box-shadow: 0 4px 12px rgba(16,185,129,0.4);">
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Modal Footer -->
+    <div class="p-4 border-t border-slate-200 flex justify-between items-center bg-slate-50">
+      <button onclick="resetIconSettings()"
+        class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-medium rounded-lg transition-colors">
+        Varsayılana Sıfırla
+      </button>
+      <div class="flex gap-2">
+        <button onclick="closeIconCustomizer()"
+          class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-medium rounded-lg transition-colors">
+          İptal
+        </button>
+        <button onclick="saveIconCustomization()"
+          class="px-6 py-2 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-violet-500/30">
+          💾 Kaydet
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Tab değiştirme fonksiyonu
+  function showIconTab(tabName) {
+    // Tüm panelleri gizle
+    document.querySelectorAll('.icon-tab-panel').forEach(p => p.style.display = 'none');
+    // Tüm tab'ları pasif yap
+    document.querySelectorAll('[id^="tab"]').forEach(t => {
+      t.className = 'px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 transition-colors';
+    });
+
+    // Seçilen paneli göster
+    const panel = document.getElementById('panel' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
+    if (panel) panel.style.display = 'block';
+
+    // Tab'ı aktif yap
+    const tab = document.getElementById('tab' + tabName.charAt(0).toUpperCase() + tabName.slice(1));
+    if (tab) {
+      const colors = {
+        jobMarkers: 'violet',
+        vehicles: 'amber',
+        routes: 'cyan',
+        startPoints: 'emerald'
+      };
+      const color = colors[tabName] || 'violet';
+      tab.className = `px-3 py-1.5 text-xs font-bold rounded-lg bg-${color}-100 text-${color}-700 border border-${color}-200`;
+    }
+  }
+
+  // Size değerlerini göster
+  document.querySelectorAll('input[type="range"]').forEach(range => {
+    range.addEventListener('input', function () {
+      const valEl = document.getElementById(this.id + 'Val');
+      if (valEl) valEl.textContent = this.value + 'px';
+    });
+  });
+</script>
+
+<!-- Modernization Scripts -->
+<script src="{{ url_for('static', filename='js/networking/retry-helper.js') }}"></script>
+<script src="{{ url_for('static', filename='js/networking/routing-cache.js') }}"></script>
+<script src="{{ url_for('static', filename='js/ui/loading-manager.js') }}"></script>
+<script src="{{ url_for('static', filename='js/offline/offline-manager.js') }}"></script>
+<script src="{{ url_for('static', filename='js/map/vehicle-manager.js') }}"></script>
+
+{% endblock %}

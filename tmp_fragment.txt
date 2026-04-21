@@ -1,0 +1,86 @@
+2880:        if 'user_id' not in session:
+2881:            return redirect(url_for('login'))
+2882:        # Check if user is kivanc by email or username
+2883:        current_user = get_current_user()
+2884:        if not current_user or (current_user.email != 'kivancozcan@netmon.com.tr' and current_user.username != 'kivanc'):
+2885:            flash("Bu sayfaya erişim yetkiniz yok.", "danger")
+2886:            return redirect(url_for("plan_week"))
+2887:        return f(*args, **kwargs)
+2888:    return decorated_function
+2889:
+2890:
+2891:# ---------- FILES (UPLOAD/DOWNLOAD) ----------
+2892:@app.get("/files/<path:filename>")
+2893:@login_required
+2894:def download_file(filename: str):
+2895:    try:
+2896:        return send_from_directory(app.config["UPLOAD_FOLDER"], filename, as_attachment=True)
+2897:    except Exception:
+2898:        flash("Dosya bulunamadı.", "danger")
+2899:        return redirect(request.referrer or url_for("plan_week"))
+2900:
+2901:
+2902:@app.get("/files/view/<path:filename>")
+2903:@login_required
+2904:def view_file_inline(filename: str):
+2905:    try:
+2906:        return send_from_directory(app.config["UPLOAD_FOLDER"], filename, as_attachment=False)
+2907:    except Exception:
+2908:        flash("Dosya bulunamadi.", "danger")
+2909:        return redirect(request.referrer or url_for("plan_week"))
+2910:
+2911:def get_current_user():
+2912:    """Get current logged in user"""
+2913:    if 'user_id' not in session:
+2914:        return None
+2915:    return User.query.get(session['user_id'])
+2916:
+2917:
+2918:@socketio.on("connect")
+2919:def _socket_connect():
+2920:    try:
+2921:        uid = session.get("user_id")
+2922:        if not uid:
+2923:            return
+2924:        user = User.query.get(uid)
+2925:        if not user:
+2926:            return
+2927:        try:
+2928:            join_room(f"chat_user_{int(uid)}")
+2929:        except Exception:
+2930:            pass
+2931:        now = datetime.now()
+2932:        _touch_user_activity(user, now=now)
+2933:        session["_last_seen_touch_ts"] = now.timestamp()
+2934:    except Exception:
+2935:        try:
+2936:            db.session.rollback()
+2937:        except Exception:
+2938:            pass
+2939:
+2940:
+2941:@socketio.on("heartbeat")
+2942:def _socket_heartbeat(_data=None):
+2943:    try:
+2944:        uid = session.get("user_id")
+2945:        if not uid:
+2946:            return
+2947:        user = User.query.get(uid)
+2948:        if not user:
+2949:            return
+2950:        now = datetime.now()
+2951:        _touch_user_activity(user, now=now)
+2952:        session["_last_seen_touch_ts"] = now.timestamp()
+2953:    except Exception:
+2954:        try:
+2955:            db.session.rollback()
+2956:        except Exception:
+2957:            pass
+2958:
+2959:
+2960:@socketio.on("chat_join")
+2961:def _socket_chat_join(data=None):
+2962:    try:
+2963:        uid = session.get("user_id")
+2964:        if not uid:
+2965:            return

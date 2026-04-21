@@ -1,0 +1,1042 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <!-- Tek satır: Sayaç + arama + filtre + ekle -->
+  <div
+    style="margin-bottom: 16px; padding: 12px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 8px;">
+    <form method="get" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center;">
+      <div style="font-weight: 600; color: var(--text-strong); font-size: 14px; white-space: nowrap;">
+        Açık Ana Proje Sayısı: <span style="color: var(--status-info);">{{ open_main_projects_count }}</span>
+      </div>
+      <div style="font-weight: 600; color: var(--text-strong); font-size: 14px; white-space: nowrap;">
+        Açık Kapalı Proje Sayısı: <span style="color: var(--status-info);">{{ open_closed_projects_count }}</span>
+      </div>
+      <label style="flex: 0 1 320px; min-width: 260px; margin: 0;">
+        <input type="text" id="searchInput" name="search" value="{{ search_query or '' }}" placeholder="Ara..."
+          style="width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; height: 32px; box-sizing: border-box;">
+      </label>
+      <button type="submit" class="btn"
+        style="height: 32px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px;">Ara</button>
+      <label style="display: flex; align-items: center; gap: 6px; margin: 0; cursor: pointer; white-space: nowrap;">
+        <input type="checkbox" name="show_inactive" value="1" {% if show_inactive %}checked{% endif %}
+          onchange="this.form.submit()" style="width: 16px; height: 16px; cursor: pointer;">
+        <span style="font-size: 13px; color: var(--text-subtle);">PASİF Projeler Göster</span>
+      </label>
+      {% if search_query %}
+      <a href="{{ url_for('planner.projects_page') }}{% if show_inactive %}?show_inactive=1{% endif %}"
+        class="btn secondary"
+        style="height: 32px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; font-size: 13px;">Temizle</a>
+      {% endif %}
+      {% if session.get('role') != 'gözlemci' %}
+      <button type="button" class="btn" onclick="openAddProjectModal()"
+        style="height: 32px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px;">Ekle</button>
+      <div style="position: relative; display: inline-block;">
+        <button type="button" id="excelBtn" onclick="toggleExcelDropdown()"
+          style="height: 32px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; background: var(--status-online); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+          📊 Excel
+        </button>
+        <div id="excelDropdown"
+          style="display: none; position: absolute; top: 100%; left: 0; margin-top: 4px; background: white; border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; min-width: 160px; overflow: hidden;">
+          <button type="button" onclick="exportProjectsExcel('main')" onmouseover="this.style.background='#f1f5f9'"
+            onmouseout="this.style.background='white'"
+            style="width: 100%; padding: 10px 14px; text-align: left; border: none; background: white; cursor: pointer; font-size: 13px; color: var(--text-strong); transition: background 0.2s; display: flex; align-items: center; gap: 8px;">
+            📋 Ana Projeler
+          </button>
+          <button type="button" onclick="exportProjectsExcel('sub')" onmouseover="this.style.background='#f1f5f9'"
+            onmouseout="this.style.background='white'"
+            style="width: 100%; padding: 10px 14px; text-align: left; border: none; background: white; cursor: pointer; font-size: 13px; color: var(--text-strong); transition: background 0.2s; display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--border);">
+            📄 Alt Projeler
+          </button>
+        </div>
+      </div>
+      {% endif %}
+    </form>
+  </div>
+
+  <div class="tablewrap projects-table"
+    style="border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <table class="simple">
+      <thead>
+        <tr>
+          <th width="90" class="sortable" data-sort="project_code" style="cursor: pointer; user-select: none;">
+            <a href="?sort=project_code&order={% if sort_column == 'project_code' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if show_inactive %}&show_inactive=1{% endif %}"
+              style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 6px;">
+              Kod
+              <span style="opacity: 0.5;">{% if sort_column == 'project_code' %}{% if sort_order == 'asc' %}↑{% else
+                %}↓{% endif %}{% else %}↕{% endif %}</span>
+            </a>
+          </th>
+          <th class="sortable" data-sort="project_name" style="cursor: pointer; user-select: none;">
+            <a href="?sort=project_name&order={% if sort_column == 'project_name' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if show_inactive %}&show_inactive=1{% endif %}"
+              style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 6px;">
+              Proje Adı
+              <span style="opacity: 0.5;">{% if sort_column == 'project_name' %}{% if sort_order == 'asc' %}↑{% else
+                %}↓{% endif %}{% else %}↕{% endif %}</span>
+            </a>
+          </th>
+          <th width="140" class="sortable" data-sort="responsible" style="cursor: pointer; user-select: none;">
+            <a href="?sort=responsible&order={% if sort_column == 'responsible' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if show_inactive %}&show_inactive=1{% endif %}"
+              style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 6px;">
+              Sorumlu
+              <span style="opacity: 0.5;">{% if sort_column == 'responsible' %}{% if sort_order == 'asc' %}↑{% else
+                %}↓{% endif %}{% else %}↕{% endif %}</span>
+            </a>
+          </th>
+          <th width="140" class="sortable" data-sort="karsi_firma_sorumlusu"
+            style="cursor: pointer; user-select: none;">
+            <a href="?sort=karsi_firma_sorumlusu&order={% if sort_column == 'karsi_firma_sorumlusu' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if show_inactive %}&show_inactive=1{% endif %}"
+              style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 6px;">
+              Karşı Firma
+              <span style="opacity: 0.5;">{% if sort_column == 'karsi_firma_sorumlusu' %}{% if sort_order == 'asc' %}↑{%
+                else %}↓{% endif %}{% else %}↕{% endif %}</span>
+            </a>
+          </th>
+          <th width="200" style="min-width: 180px;">Yorum</th>
+          <th width="110" style="text-align: center;">Alt Projeler</th>
+          <th width="90" class="sortable" data-sort="is_active"
+            style="cursor: pointer; user-select: none; text-align: center;">
+            <a href="?sort=is_active&order={% if sort_column == 'is_active' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}{% if show_inactive %}&show_inactive=1{% endif %}"
+              style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 6px; justify-content: center;">
+              Durum
+              <span style="opacity: 0.5;">{% if sort_column == 'is_active' %}{% if sort_order == 'asc' %}↑{% else %}↓{%
+                endif %}{% else %}↕{% endif %}</span>
+            </a>
+          </th>
+          <th width="60" style="text-align: center;">İşlem</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% include "partials/projects_table_body.html" %}
+
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const searchInput = document.getElementById('searchInput');
+    // Using a more specific selector to avoid targeting potential inner tables
+    const tableBody = document.querySelector('.projects-table table tbody');
+    let debounceTimer;
+
+    if (searchInput) {
+      // Focus on input if search param exists (optional, keeping it simple for now)
+      if (searchInput.value.trim() !== '') {
+        searchInput.focus();
+        // Move cursor to end
+        const val = searchInput.value;
+        searchInput.value = '';
+        searchInput.value = val;
+      }
+
+      searchInput.addEventListener('input', function (e) {
+        clearTimeout(debounceTimer);
+        const query = e.target.value;
+
+        debounceTimer = setTimeout(() => {
+          const url = new URL(window.location.href);
+          if (query) {
+            url.searchParams.set('search', query);
+          } else {
+            url.searchParams.delete('search');
+          }
+          url.searchParams.set('partial', '1');
+
+          // Update browser history (URL bar)
+          const displayUrl = new URL(window.location.href);
+          if (query) {
+            displayUrl.searchParams.set('search', query);
+          } else {
+            displayUrl.searchParams.delete('search');
+          }
+          window.history.pushState({}, '', displayUrl);
+
+          // Update Sort Links
+          document.querySelectorAll('th.sortable a').forEach(link => {
+            try {
+              const linkUrl = new URL(link.href, window.location.origin);
+              if (query) {
+                linkUrl.searchParams.set('search', query);
+              } else {
+                linkUrl.searchParams.delete('search');
+              }
+              link.href = linkUrl.toString();
+            } catch (e) { console.error(e); }
+          });
+
+          // Fetch partial results
+          fetch(url)
+            .then(response => {
+              if (!response.ok) throw new Error('Network response was not ok');
+              return response.text();
+            })
+            .then(html => {
+              if (tableBody) {
+                tableBody.innerHTML = html;
+              }
+            })
+            .catch(err => console.error('Search failed:', err));
+        }, 300); // 300ms delay
+      });
+    }
+  });
+</script>
+
+<style>
+  /* Tablo ve Genel Stil Güncellemeleri */
+  .tablewrap.projects-table {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    background: white;
+  }
+
+  .simple thead th {
+    background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .simple tbody td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+    color: var(--text-base);
+    font-size: 13px;
+  }
+
+  .simple tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .simple tbody tr:hover {
+    background-color: var(--bg-soft);
+  }
+
+  /* Status Badge Modernizasyonu */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    line-height: 1;
+  }
+
+  .status-badge.active {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+  }
+
+  .status-badge.inactive {
+    background: linear-gradient(135deg, #94a3b8, #64748b);
+    color: white;
+  }
+
+  .status-badge.info {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+  }
+
+  /* Subproject Toggle Button */
+  .subproject-toggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    transition: all 0.2s ease;
+    border-radius: 4px;
+  }
+
+  .subproject-toggle:hover {
+    color: var(--text-strong);
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+
+  .subproject-toggle svg {
+    transition: transform 0.2s ease;
+  }
+
+  /* Subprojects Row Styling */
+  .subprojects-row {
+    background-color: #f8fafc;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+  }
+
+  .subprojects-row>td {
+    border-bottom: 1px solid var(--border);
+    padding-top: 16px !important;
+    padding-bottom: 16px !important;
+  }
+
+  /* Modal Inputs */
+  #modal_project_code:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-alpha);
+  }
+
+  #modal_project_code[value^="P-"] {
+    font-family: monospace;
+    letter-spacing: 1px;
+  }
+
+  /* Dropdown Menu */
+  .actions-menu-container {
+    position: relative;
+  }
+
+  .actions-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .actions-btn:hover {
+    background: var(--bg-soft);
+    border-color: var(--border);
+    color: var(--text-strong);
+  }
+
+  .actions-dropdown {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    min-width: 150px;
+    overflow: hidden;
+    animation: fadeIn 0.1s ease;
+  }
+
+  .actions-dropdown button,
+  .actions-dropdown a {
+    width: 100%;
+    padding: 10px 14px;
+    text-align: left;
+    border: none;
+    background: white;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-base);
+    text-decoration: none;
+    transition: background 0.1s;
+    font-family: inherit;
+    box-sizing: border-box;
+  }
+
+  .actions-dropdown button:hover,
+  .actions-dropdown a:hover {
+    background: var(--bg-soft);
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-5px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>
+
+<!-- Modal: Yeni Proje Ekle -->
+<div class="modal" id="addProjectModal" style="display: none;">
+  <div class="modalCard" style="max-width: 600px;">
+    <h3>Yeni Proje Ekle</h3>
+    <form id="addProjectForm" method="post" onsubmit="return submitAddProject(event)">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <label>Proje Kodu
+        <input name="project_code" id="modal_project_code" required placeholder="Örn: P-042"
+          style="transition: border-color 0.2s;">
+      </label>
+      <label>Proje Adı <input name="project_name" id="modal_project_name" required></label>
+      <label>Sorumlu
+        <select name="responsible" id="modal_responsible" required>
+          <option value="">-- Seçiniz --</option>
+          {% for u in users %}
+          <option value="{{ u.full_name or u.username }}">{{ u.full_name or u.username }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Karşı Firma Sorumlusu <input name="karsi_firma_sorumlusu" id="modal_karsi_firma_sorumlusu"></label>
+      <label>Durum
+        <select name="is_active" id="modal_is_active">
+          <option value="" selected>-- Seçiniz --</option>
+          <option value="1">Aktif</option>
+          <option value="0">Pasif</option>
+        </select>
+      </label>
+      <label style="display:flex; align-items:center; gap:8px; margin-top:8px; cursor:pointer;">
+        <input type="checkbox" name="notification_enabled" value="1" checked style="width:16px; height:16px;">
+        <span style="font-size:14px; color:var(--text-subtle);">Mail Bildirimi Gönder</span>
+      </label>
+
+      <!-- Proje Başlangıç Dosyası Alanı -->
+      <div
+        style="margin-top: 16px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background-color: var(--bg-soft);">
+        <label
+          style="font-weight: 600; color: var(--text-strong); font-size: 13px; margin-bottom: 8px; display: block;">
+          Proje Başlangıç Dosyası (Zorunlu)
+        </label>
+
+        <input type="file" id="modal_initiation_file" name="initiation_file"
+          style="font-size: 13px; width: 100%; margin-bottom: 8px;" required>
+
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-bottom: 8px;">
+          <input type="checkbox" id="modal_no_initiation_file" name="no_initiation_file" value="1"
+            onchange="toggleInitiationFileRequirement()">
+          <span style="font-size:13px; color:var(--text-subtle);">Dosya ekleme yapılmayacak</span>
+        </label>
+
+        <div id="reason_container" style="display: none;">
+          <label
+            style="font-weight: 500; color: var(--text-strong); font-size: 13px; margin-bottom: 4px; display: block;">
+            Neden Ekleme Yapılmadı?
+          </label>
+          <textarea id="modal_no_file_reason" name="no_file_reason"
+            placeholder="Lütfen neden dosya eklemediğinizi belirtiniz..."
+            style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 13px; min-height: 60px; resize: vertical; box-sizing: border-box;"></textarea>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px;">
+        <button type="button" class="btn secondary" onclick="closeAddProjectModal()">İptal</button>
+        <button type="submit" class="btn">Kaydet</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // =================== PASTE EVENT HANDLER ===================
+  document.addEventListener('paste', function (event) {
+    const addCommentModal = document.getElementById('addCommentModal');
+
+    // Sadece yorum modal'ı açıkken çalış
+    if (!addCommentModal || addCommentModal.style.display === 'none') {
+      return;
+    }
+
+    // Eğer focus bir input veya textarea üzerindeyse ve bu commentText değilse, normal paste işlemine karışma
+    const activeElement = document.activeElement;
+    if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA') && activeElement.id !== 'commentText') {
+      return;
+    }
+
+    const items = (event.clipboardData || event.originalEvent.clipboardData).items;
+
+    for (let index in items) {
+      const item = items[index];
+
+      // Resim dosyası kontrolü
+      if (item.kind === 'file' && item.type.startsWith('image/')) {
+        event.preventDefault();
+
+        const blob = item.getAsFile();
+        const reader = new FileReader();
+
+        reader.onload = function (event) {
+          const base64Data = event.target.result;
+
+          // File input'u güncelle (filename için)
+          const fileInput = document.getElementById('commentFileInput');
+          const dt = new DataTransfer();
+          const newFile = new File([blob], `pasted_image_${Date.now()}.${item.type.split('/')[1]}`, { type: item.type });
+          dt.items.add(newFile);
+          fileInput.files = dt.files;
+
+          // Preview göster
+          const preview = document.getElementById('commentFilePreview');
+          if (preview) {
+            preview.innerHTML = `
+              <div style="position: relative; display: inline-block;">
+                <img src="${base64Data}" style="max-width: 200px; max-height: 150px; border-radius: 6px; border: 2px solid var(--status-success);">
+                <div style="position: absolute; top: -8px; right: -8px; background: var(--status-success); color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 12px;">✓</div>
+              </div>
+              <div style="font-size: 12px; color: var(--status-success); margin-top: 4px;">📋 Panodan yapıştırıldı</div>
+            `;
+          }
+
+          // Global değişkene kaydet
+          window.pastedImageData = {
+            data: base64Data,
+            filename: newFile.name,
+            filetype: item.type
+          };
+        };
+
+        reader.readAsDataURL(blob);
+        break;
+      }
+    }
+  });
+
+  // =================== ACTIONS MENU ===================
+  function toggleActionsMenu(projectId) {
+    const menu = document.getElementById(`actionsMenu-${projectId}`);
+    if (!menu) return;
+
+    const isVisible = menu.style.display === 'block';
+
+    // Tüm menüleri kapat
+    document.querySelectorAll('.actions-dropdown').forEach(m => m.style.display = 'none');
+
+    // Seçili menüyü aç/kapat
+    if (!isVisible) {
+      menu.style.display = 'block';
+    }
+  }
+
+  // Dışarı tıklanınca menüleri kapat
+  document.addEventListener('click', function (event) {
+    if (!event.target.closest('.actions-menu-container')) {
+      document.querySelectorAll('.actions-dropdown').forEach(m => m.style.display = 'none');
+    }
+  });
+
+  function toggleSubprojects(projectId) {
+    const subprojectsRow = document.querySelector(`tr.subprojects-row[data-project-id="${projectId}"]`);
+    const toggleBtn = document.querySelector(`button.subproject-toggle[data-project-id="${projectId}"]`);
+    const svg = toggleBtn ? toggleBtn.querySelector('svg') : null;
+
+    if (!subprojectsRow || !toggleBtn) return;
+
+    const isVisible = subprojectsRow.style.display !== 'none';
+
+    if (isVisible) {
+      subprojectsRow.style.display = 'none';
+      if (svg) svg.style.transform = 'rotate(0deg)';
+      toggleBtn.setAttribute('aria-expanded', 'false');
+    } else {
+      subprojectsRow.style.display = 'table-row'; // table-row olarak değiştirildi
+      if (svg) svg.style.transform = 'rotate(90deg)';
+      toggleBtn.setAttribute('aria-expanded', 'true');
+    }
+  }
+
+  function openAddProjectModal() {
+    const modal = document.getElementById('addProjectModal');
+    if (modal) {
+      modal.style.display = 'flex';
+      modal.classList.add('open');
+
+      // Form alanlarını temizle
+      document.getElementById('modal_project_name').value = '';
+      document.getElementById('modal_responsible').value = '';
+      document.getElementById('modal_karsi_firma_sorumlusu').value = '';
+      document.getElementById('modal_is_active').value = '';
+
+      // Son proje kodunu al ve input'a yaz
+      fetch('/api/next-project-code')
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('modal_project_code').value = data.next_code || '';
+        })
+        .catch(error => {
+          console.error('Proje kodu alınamadı:', error);
+          document.getElementById('modal_project_code').value = '';
+        });
+
+      // Reset initiation file fields
+      document.getElementById('modal_initiation_file').value = '';
+      document.getElementById('modal_no_initiation_file').checked = false;
+      document.getElementById('modal_no_file_reason').value = '';
+      toggleInitiationFileRequirement(); // Reset visibility/requirements
+    }
+  }
+
+  function toggleInitiationFileRequirement() {
+    const fileInput = document.getElementById('modal_initiation_file');
+    const noFileCheckbox = document.getElementById('modal_no_initiation_file');
+    const reasonContainer = document.getElementById('reason_container');
+    const reasonInput = document.getElementById('modal_no_file_reason');
+
+    if (noFileCheckbox.checked) {
+      // Dosya yok seçildi: Dosya input disabled, Reason required ve visible
+      fileInput.disabled = true;
+      fileInput.required = false;
+      fileInput.value = ''; // Clear file if any
+
+      reasonContainer.style.display = 'block';
+      reasonInput.required = true;
+    } else {
+      // Dosya var (default): Dosya input required ve enabled, Reason hidden
+      fileInput.disabled = false;
+      fileInput.required = true;
+
+      reasonContainer.style.display = 'none';
+      reasonInput.required = false;
+      reasonInput.value = '';
+    }
+  }
+
+  function closeAddProjectModal() {
+    const modal = document.getElementById('addProjectModal');
+    if (modal) {
+      modal.style.display = 'none';
+      modal.classList.remove('open');
+    }
+  }
+
+  async function submitAddProject(event) {
+    event.preventDefault();
+    const form = event.target;
+    // Form validasyonu (HTML5 validation zaten çalışıyor ama ek kontrol)
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return false;
+    }
+
+    const formData = new FormData(form);
+
+    try {
+      const response = await fetch('/projects', {
+        method: 'POST',
+        body: formData
+      });
+
+      // JSON yanıtı bekle
+      const data = await response.json();
+
+      if (response.ok && data.ok) {
+        // Mail gönderme işlemi artık backend (projects_page) içinde otomatik yapılıyor.
+        // Frontend'den ayrıca istek yapmaya gerek yok.
+
+        // Sayfayı yenile
+        window.location.reload();
+      } else {
+        alert(data.error || 'Proje eklenirken bir hata oluştu.');
+      }
+    } catch (error) {
+      console.error('Hata:', error);
+      alert('Proje eklenirken bir hata oluştu.');
+    }
+
+    return false;
+  }
+
+  // Modal dışına tıklanınca kapat
+  document.addEventListener('click', function (event) {
+    const modal = document.getElementById('addProjectModal');
+    if (modal && event.target === modal) {
+      closeAddProjectModal();
+    }
+
+    // Excel dropdown dışına tıklanınca kapat
+    const excelBtn = document.getElementById('excelBtn');
+    const excelDropdown = document.getElementById('excelDropdown');
+    if (excelDropdown && excelBtn && !excelBtn.contains(event.target) && !excelDropdown.contains(event.target)) {
+      excelDropdown.style.display = 'none';
+    }
+  });
+
+  function toggleExcelDropdown() {
+    const dropdown = document.getElementById('excelDropdown');
+    if (dropdown) {
+      dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+    }
+  }
+
+  function exportProjectsExcel(type) {
+    const dropdown = document.getElementById('excelDropdown');
+    if (dropdown) {
+      dropdown.style.display = 'none';
+    }
+
+    // PASİF Projeler Göster checkbox'ının durumunu al
+    const showInactive = document.querySelector('input[name="show_inactive"]')?.checked || false;
+    const searchQuery = document.querySelector('input[name="search"]')?.value || '';
+
+    // URL oluştur
+    let url = `/projects/export/excel?type=${type}`;
+    if (showInactive) {
+      url += '&show_inactive=1';
+    }
+    if (searchQuery) {
+      url += `&search=${encodeURIComponent(searchQuery)}`;
+    }
+
+    // Excel dosyasını indir
+    window.location.href = url;
+  }
+
+  // =================== PROJE YORUM İŞLEMLERİ ===================
+  let currentProjectId = null;
+  let currentSubprojectId = null;
+
+  function openAddCommentModal(projectId, subprojectId) {
+    currentProjectId = projectId;
+    currentSubprojectId = subprojectId;
+    const modal = document.getElementById('addCommentModal');
+    if (modal) {
+      document.getElementById('commentText').value = '';
+      document.getElementById('commentFileInput').value = ''; // Reset file input
+      const preview = document.getElementById('commentFilePreview');
+      if (preview) preview.innerHTML = ''; // Reset preview
+
+      // Reset pasted data
+      window.pastedImageData = null;
+
+      modal.style.display = 'flex';
+      modal.classList.add('open');
+
+      // Yorum alanına odaklan (paste için önemli)
+      setTimeout(() => {
+        document.getElementById('commentText').focus();
+      }, 100);
+    }
+  }
+
+  function closeAddCommentModal() {
+    const modal = document.getElementById('addCommentModal');
+    if (modal) {
+      modal.style.display = 'none';
+      modal.classList.remove('open');
+    }
+    currentProjectId = null;
+    currentSubprojectId = null;
+    window.pastedImageData = null;
+  }
+
+  async function submitComment() {
+    const commentText = document.getElementById('commentText').value.trim();
+    if (!commentText && !window.pastedImageData) {
+      alert('Lütfen yorum yazın veya resim yapıştırın.');
+      return;
+    }
+
+    const fileInput = document.getElementById('commentFileInput');
+    let fileDataUrl = null;
+    let fileName = null;
+
+    // Önce pasted data'yı kontrol et
+    if (window.pastedImageData) {
+      fileDataUrl = window.pastedImageData.data;
+      fileName = window.pastedImageData.filename;
+    }
+    // Sonra file input'u kontrol et
+    else if (fileInput && fileInput.files.length > 0) {
+      const file = fileInput.files[0];
+      fileName = file.name;
+      try {
+        fileDataUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      } catch (e) {
+        console.error("Dosya okunurken hata:", e);
+        alert("Dosya okunamadı.");
+        return;
+      }
+    }
+
+    const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
+
+    try {
+      const response = await fetch('/api/project_comment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          csrf_token: csrfToken,
+          project_id: currentProjectId,
+          subproject_id: currentSubprojectId,
+          comment: commentText,
+          file_data: fileDataUrl,
+          file_name: fileName
+        })
+      });
+
+      const data = await response.json();
+      if (data.ok) {
+        closeAddCommentModal();
+        window.location.reload();
+      } else {
+        alert(data.error || 'Yorum eklenirken bir hata oluştu.');
+      }
+    } catch (error) {
+      console.error('Hata:', error);
+      alert('Yorum eklenirken bir hata oluştu.');
+    }
+  }
+
+  function handleCommentFileSelect(input) {
+    const preview = document.getElementById('commentFilePreview');
+    if (!preview) return;
+    preview.innerHTML = '';
+
+    // Paste verisini temizle, çünkü kullanıcı manuel dosya seçti
+    window.pastedImageData = null;
+
+    if (input.files.length > 0) {
+      const file = input.files[0];
+      if (file.type.startsWith('image/')) {
+        const img = document.createElement('img');
+        img.style.maxWidth = '100%';
+        img.style.maxHeight = '150px';
+        img.style.borderRadius = '6px';
+        img.style.marginTop = '8px';
+
+        const reader = new FileReader();
+        reader.onload = (e) => img.src = e.target.result;
+        reader.readAsDataURL(file);
+
+        preview.appendChild(img);
+      } else {
+        preview.innerHTML = `<div style="font-size:13px; color:var(--text-subtle); margin-top:5px;">📄 ${file.name} (${(file.size / 1024).toFixed(1)} KB)</div>`;
+      }
+    }
+  }
+
+  async function openViewDetailsModal(projectId, subprojectId) {
+    currentProjectId = projectId;
+    currentSubprojectId = subprojectId;
+    const modal = document.getElementById('viewDetailsModal');
+    const detailsList = document.getElementById('detailsList');
+
+    if (!modal || !detailsList) return;
+
+    detailsList.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">Yükleniyor...</div>';
+    modal.style.display = 'flex';
+    modal.classList.add('open');
+
+    // Dropdown menüleri kapat
+    document.querySelectorAll('.actions-dropdown').forEach(m => m.style.display = 'none');
+
+    try {
+      const response = await fetch(`/api/project_comments?project_id=${projectId || 0}&subproject_id=${subprojectId || 0}`);
+      const data = await response.json();
+
+      if (data.ok) {
+        let contentHtml = '';
+
+        // 1. Proje Başlangıç Bilgisi (Sadece ana projelerde ve veri varsa)
+        if (data.initiation) {
+          const init = data.initiation;
+          let initContent = '';
+          let initIcon = '📁';
+          let headerText = 'Proje Başlangıç Dosyası';
+          let bgStyle = 'background: var(--bg-soft); border-left: 3px solid var(--primary);';
+
+          if (init.no_file) {
+            initIcon = '⚠️';
+            headerText = 'Dosya Eklenmedi';
+            bgStyle = 'background: #fff4e5; border-left: 3px solid var(--status-warning);'; // Light orange background
+            initContent = `
+                    <div style="color:var(--text-subtle); font-size:13px; margin-top:4px;">
+                        <span style="font-weight:600;">Nedeni:</span> ${escapeHtml(init.reason || '-')}
+                    </div>
+                 `;
+          } else if (init.file_path) {
+            const isImage = (init.file_type || '').startsWith('image/');
+            if (isImage) {
+              initContent = `<img src="/uploads/${init.file_path}" onclick="window.open(this.src)" style="max-height:120px; max-width:100%; border-radius:4px; cursor:pointer; border:1px solid var(--border); margin-top:8px;">`;
+            } else {
+              initContent = `
+                        <a href="/uploads/${init.file_path}" target="_blank" style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--primary); text-decoration:none; margin-top:8px; padding:8px; background:white; border-radius:6px; border:1px solid var(--border);">
+                            <span style="font-size:18px;">📎</span> 
+                            <span style="font-weight:500;">${escapeHtml(init.file_name || 'Başlangıç Dosyası')}</span>
+                        </a>`;
+            }
+          }
+
+          contentHtml += `
+                <div style="padding: 12px; margin-bottom: 20px; border-radius: 6px; ${bgStyle}">
+                    <div style="font-weight: 600; color: var(--text-strong); font-size: 13px; display:flex; align-items:center; gap:6px;">
+                        <span style="font-size:16px;">${initIcon}</span> ${headerText}
+                    </div>
+                    ${initContent}
+                </div>
+            `;
+        }
+
+        // 2. Yorumlar/Tarihçe
+        if (data.comments && data.comments.length > 0) {
+          contentHtml += '<div style="font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:10px; text-transform:uppercase; letter-spacing:0.5px;">Proje Tarihçesi</div>';
+          contentHtml += data.comments.map(c => {
+            const date = new Date(c.created_at);
+            const dateStr = date.toLocaleString('tr-TR', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit'
+            });
+            let fileHtml = '';
+            if (c.file_path) {
+              // file_type null olabilir, basit kontrol
+              const isImg = (c.file_type && c.file_type.startsWith('image')) || (c.file_path.match(/\.(jpeg|jpg|gif|png)$/) != null);
+
+              if (isImg) {
+                fileHtml = `
+                        <div style="margin-top:8px;">
+                          <img src="/uploads/${c.file_path}" onclick="window.open(this.src)" style="max-height:100px; max-width:100%; border-radius:4px; cursor:pointer; border:1px solid var(--border);">
+                        </div>`;
+              } else {
+                fileHtml = `
+                        <div style="margin-top:8px;">
+                          <a href="/uploads/${c.file_path}" target="_blank" style="font-size:12px; color:var(--status-info); text-decoration:none; display:inline-flex; align-items:center; gap:4px;">
+                            📎 Dosyayı İndir (${c.file_name || 'Dosya'})
+                          </a>
+                        </div>`;
+              }
+            }
+
+            return `
+              <div style="padding: 12px; border: 1px solid var(--border); background: white; border-radius: 8px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 6px;">
+                    <div style="font-weight: 600; color: var(--text-strong); font-size: 13px;">
+                      ${escapeHtml(c.created_by_name || 'Bilinmeyen')}
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-subtle);">
+                      ${escapeHtml(dateStr)}
+                    </div>
+                </div>
+                <div style="color: var(--text-normal); font-size: 13px; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(c.comment || '')}</div>
+                ${fileHtml}
+              </div>
+            `;
+          }).join('');
+        } else if (!data.initiation) {
+          contentHtml = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">Henüz yorum veya detay eklenmemiş.</div>';
+        } else if (!data.comments || data.comments.length === 0) {
+          contentHtml += '<div style="padding: 12px; text-align: center; color: var(--text-muted); font-size:13px; background:var(--bg-soft); border-radius:6px;">Henüz yorum eklenmemiş.</div>';
+        }
+
+        detailsList.innerHTML = contentHtml;
+      } else {
+        detailsList.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--text-muted);">Veri yüklenemedi.</div>';
+      }
+    } catch (error) {
+      console.error('Hata:', error);
+      detailsList.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--status-danger);">Yorumlar yüklenirken bir hata oluştu.</div>';
+    }
+  }
+
+  function closeViewDetailsModal() {
+    const modal = document.getElementById('viewDetailsModal');
+    if (modal) {
+      modal.style.display = 'none';
+      modal.classList.remove('open');
+    }
+    currentProjectId = null;
+    currentSubprojectId = null;
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // Modal dışına tıklanınca kapat (yorum modalları için)
+  document.addEventListener('click', function (event) {
+    const addCommentModal = document.getElementById('addCommentModal');
+    const viewDetailsModal = document.getElementById('viewDetailsModal');
+
+    if (addCommentModal && event.target === addCommentModal) {
+      closeAddCommentModal();
+    }
+    if (viewDetailsModal && event.target === viewDetailsModal) {
+      closeViewDetailsModal();
+    }
+  });
+
+  // Alt Proje Aktiflik Validasyonu (Ana proje ekleme/düzenleme modalında)
+  const modalIsActive = document.getElementById('modal_is_active');
+  if (modalIsActive) {
+    modalIsActive.addEventListener('change', async function () {
+      if (this.value === '0') { // Pasif yapılmak isteniyor
+        // Yeni ekleme modunda proje ID'si yoktur, bu yüzden kontrol edemeyiz (zaten alt projesi olamaz)
+        // Ancak düzenleme sayfasında da bu kontrol yapılmalı.
+        // Şimdilik sadece proje listesi sayfasındayız, burada "Ekle" modalı var.
+        // Projeyi düzenle linki ayrı sayfaya gidiyor (project_edit).
+        // Burada sadece yeni proje ekleniyor, yeni projenin alt projesi olamaz.
+        // DO NOTHING here for Add Project Modal.
+      }
+    });
+  }
+</script>
+
+<!-- Modal: Yorum Ekle -->
+<div class="modal" id="addCommentModal" style="display: none;">
+  <div class="modalCard" style="max-width: 500px;">
+    <h3>
+      Yorum Ekle
+      <span style="font-size: 11px; color: var(--text-muted); font-weight: normal; margin-left: 8px;">
+        (Ctrl+V ile resim yapıştırabilirsiniz)
+      </span>
+    </h3>
+    <div style="margin-bottom: 16px;">
+      <label
+        style="font-weight: 500; color: var(--text-strong); font-size: 14px; margin-bottom: 8px; display: block;">Yorum</label>
+      <textarea id="commentText" placeholder="Proje hakkında yorum yazın..."
+        style="width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 14px; min-height: 120px; resize: vertical; font-family: inherit; box-sizing: border-box;"></textarea>
+    </div>
+    <div style="margin-bottom: 16px;">
+      <label
+        style="font-weight: 500; color: var(--text-strong); font-size: 14px; margin-bottom: 8px; display: block;">Dosya
+        /
+        Fotoğraf Ekle</label>
+      <input type="file" id="commentFileInput" onchange="handleCommentFileSelect(this)" style="font-size:13px;">
+      <div id="commentFilePreview" style="margin-top:10px;"></div>
+    </div>
+    <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px;">
+      <button type="button" class="btn secondary" onclick="closeAddCommentModal()">İptal</button>
+      <button type="button" class="btn" onclick="submitComment()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Detay Gör -->
+<div class="modal" id="viewDetailsModal" style="display: none;">
+  <div class="modalCard" style="max-width: 700px; max-height: 80vh;">
+    <h3>Detaylar</h3>
+    <div id="detailsList" style="max-height: calc(80vh - 100px); overflow-y: auto; margin-top: 16px;">
+      <!-- Yorumlar buraya yüklenecek -->
+    </div>
+    <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+      <button type="button" class="btn secondary" onclick="closeViewDetailsModal()">Kapat</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <div class="rowline" style="justify-content: space-between; align-items: center;">
+    <h2 style="margin:0;">{% if tpl %}Şablon Düzenle{% else %}Yeni Şablon{% endif %}</h2>
+    <a class="btn" href="{{ url_for('admin.mail_templates_page') }}" style="text-decoration:none;">Geri</a>
+  </div>
+
+  <form method="post" style="margin-top:12px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label style="display:block; font-weight:600; margin-top:10px;">Ad</label>
+    <input name="name" value="{{ tpl.name if tpl else '' }}" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:6px;">
+
+    <label style="display:block; font-weight:600; margin-top:10px;">Konu Şablonu</label>
+    <input name="subject_template" value="{{ tpl.subject_template if tpl else '' }}" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:6px;">
+
+    <label style="display:block; font-weight:600; margin-top:10px;">Govde (HTML/Jinja)</label>
+    <textarea name="body_template" rows="16" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:6px; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size:12px;">{{ tpl.body_template if tpl else '' }}</textarea>
+
+    <label style="display:flex; gap:8px; align-items:center; margin-top:10px;">
+      <input type="checkbox" name="is_default" value="1" {% if tpl and tpl.is_default %}checked{% endif %}>
+      Varsayilan yap
+    </label>
+
+    <div class="rowline" style="margin-top:12px; gap:10px;">
+      <button class="btn" type="submit" style="background:var(--text-strong); color:white; border:none;">Kaydet</button>
+      <a class="btn" href="{{ url_for('admin.mail_templates_page') }}" style="text-decoration:none;">İptal</a>
+    </div>
+
+    <div style="margin-top:14px; color:var(--text-subtle); font-size:13px;">
+      Degiskenler:<br>
+      <code>{{ "{{ project_code }}" }}</code>, <code>{{ "{{ site_code }}" }}</code>, <code>{{ "{{ date }}" }}</code>, <code>{{ "{{ team_name }}" }}</code><br>
+      <code>{{ "{{ short_summary }}" }}</code> (string)<br>
+      <code>{{ "{{ job_details_list }}" }}</code> (list of strings)<br>
+      <code>{{ "{{ checklist }}" }}</code> (list of {label, checked})<br>
+      <code>{{ "{{ links }}" }}</code> (list of {label, url})<br>
+      <code>{{ "{{ people }}" }}</code> (list of {full_name, phone, email})
+    </div>
+  </form>
+</div>
+{% endblock %}

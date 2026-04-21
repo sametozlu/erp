@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="portal-job-detail card" style="max-width: 1200px; margin: 0 auto;">
+  {# Üst: Başlık + meta + sağda son güncelleme / Status History / Mail Geçmişi #}
+  <div class="portal-job-header" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+    <div>
+      <h2 style="margin:0; font-size:1.25rem;">{{ project.project_code if project else '' }} - {{ project.project_name if project else 'İş' }}</h2>
+      <div class="hint" style="margin-top:6px;">
+        Saha: {{ project.region if project else '-' }} | Tarih: {{ job.work_date.strftime('%d.%m.%Y') }} | Ekip: {{ job.team_name or '-' }} | Vardiya: {{ job.shift or '-' }}
+      </div>
+      <div class="rowline" style="gap:8px; margin-top:8px;">
+        <a class="btn secondary" href="{{ url_for('planner.portal_home') }}" style="text-decoration:none;">Geri</a>
+        <a class="btn secondary" href="{{ url_for('auth.logout') }}" style="text-decoration:none;">Çıkış</a>
+      </div>
+    </div>
+    <div style="text-align:right;">
+      <div class="hint" style="font-size:12px;">Son güncelleme {{ last_update.strftime('%d.%m %H:%M') if last_update else '-' }}</div>
+      <div style="margin-top:8px; font-weight:700; color:var(--text-strong);">Status History</div>
+      <div class="hint" style="font-size:12px;">{{ 'Kayıt yok' if not status_history else '' }}</div>
+      {% for h in status_history %}
+      <div class="hint" style="font-size:12px;">{{ h.changed_at.strftime('%d.%m %H:%M') if h.changed_at else '' }} {{ h.from_status or '' }} → {{ h.to_status }}</div>
+      {% endfor %}
+      <div style="margin-top:10px; font-weight:700; color:var(--text-strong);">Mail Geçmişi</div>
+      <div class="hint" style="font-size:12px;">{{ 'Mail kaydı yok' if not mail_history else '' }}</div>
+      {% for m in mail_history %}
+      <div class="hint" style="font-size:12px;">{{ m.created_at.strftime('%d.%m %H:%M') if m.created_at else '' }} {{ m.subject or '' }}</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="portal-job-grid" style="display:grid; grid-template-columns: 1fr 1fr 280px; gap:14px;">
+    {# Sol: Personel, LLD/HHD, Fotoğraflar+QC, Geri Bildirim #}
+    <div class="portal-job-left" style="display:flex; flex-direction:column; gap:14px;">
+      <div class="card" style="border:1px solid var(--border); border-radius:12px; padding:14px;">
+        <div style="font-weight:900; color:var(--text-strong);">Personel</div>
+        {% if personnel %}
+        <ul style="margin:8px 0 0; padding-left:20px;">
+          {% for p in personnel %}
+          <li style="margin:4px 0;">{{ p.full_name }} ({{ p.phone or '-' }})</li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <div class="hint" style="margin-top:6px;">Atama yok.</div>
+        {% endif %}
+      </div>
+
+      <div class="card" style="border:1px solid var(--border); border-radius:12px; padding:14px;">
+        <div style="font-weight:900; color:var(--text-strong);">Ekler LLD/HHD</div>
+        <div class="hint" style="margin-top:4px;">Genel planda bu işe eklenen belgeleri görüntüleyebilir veya indirebilirsiniz.</div>
+        {% if lld_files %}
+        <ul style="margin:10px 0 0; padding-left:20px; list-style:none;">
+          {% for f in lld_files %}
+          <li style="margin:8px 0; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <span style="font-size:13px;">{{ f }}</span>
+            <a href="{{ url_for('view_file_inline', filename=f) }}" target="_blank" rel="noopener" class="btn secondary" style="text-decoration:none; padding:6px 12px; font-size:12px;">Görüntüle</a>
+            <a href="{{ url_for('download_file', filename=f) }}" download class="btn" style="text-decoration:none; padding:6px 12px; font-size:12px; background:var(--primary); color:white;">İndir</a>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <div class="hint" style="margin-top:8px;">Bu iş için henüz LLD/HHD belgesi eklenmemiş.</div>
+        {% endif %}
+      </div>
+
+      <div class="card" style="border:1px solid var(--border); border-radius:12px; padding:14px;">
+        <div style="font-weight:900; color:var(--text-strong);">Fotoğraflar + QC</div>
+        <div class="hint" style="margin-top:4px;">{{ 'Fotoğraf yok' if not photo_files else '' }}</div>
+        {% if photo_files %}
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;">
+          {% for f in photo_files %}
+          <a href="{{ url_for('view_file_inline', filename=f) }}"><img src="{{ url_for('view_file_inline', filename=f) }}" style="width:80px; height:80px; object-fit:cover; border-radius:8px; border:1px solid var(--border);"></a>
+          {% endfor %}
+        </div>
+        {% endif %}
+        <div style="margin-top:10px; font-size:13px;">Fotoğraf Yükle</div>
+        <div style="margin-top:6px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <input type="file" id="photoFile" multiple accept="image/*" style="font-size:12px;">
+          <span class="hint" id="photoFileLabel">Dosya seçilmedi</span>
+          <button type="button" class="btn" id="photoUploadBtn" style="background:var(--primary); color:white; border:none; padding:8px 14px;">Yükle</button>
+        </div>
+        <div style="margin-top:12px; font-size:13px;">QC Sonucu</div>
+        <textarea id="qcResult" rows="3" placeholder="QC notları / sonuçları..." style="width:100%; margin-top:6px; padding:8px; border:1px solid var(--border); border-radius:8px; font-size:13px;">{{ qc_result }}</textarea>
+        <div style="margin-top:8px; text-align:right;"><button type="button" class="btn" id="qcSaveBtn" style="background:var(--primary); color:white; border:none; padding:8px 14px;">Kaydet</button></div>
+      </div>
+
+      <div class="card" style="border:1px solid var(--border); border-radius:12px; padding:14px;">
+        <div style="font-weight:900; color:var(--text-strong);">Geri Bildirim</div>
+        <div style="margin-top:10px; font-size:13px;">ISPD Bilgisi</div>
+        <select id="feedbackOutcome" style="margin-top:6px; width:100%; padding:10px 36px 10px 12px; border:1px solid var(--border); border-radius:8px; box-sizing:border-box; font-size:1rem; min-height:42px;">
+          <option value="">Seçiniz</option>
+          <option value="completed">Yapıldı</option>
+          <option value="not_completed">Yapılmadı</option>
+          <option value="issue">Sorun var</option>
+        </select>
+        <div id="feedbackUploadWrap" style="margin-top:12px; display:none;">
+          <div style="font-size:13px;">Doküman / fotoğraf ekleyin (neden yapılmadığı veya sorunu göstermek için)</div>
+          <div style="margin-top:6px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <input type="file" id="feedbackMediaFiles" multiple accept=".jpg,.jpeg,.png,.webp,.mp4,.mov,.pdf" style="font-size:12px;">
+            <span class="hint" id="feedbackMediaLabel">Dosya seçilmedi</span>
+          </div>
+        </div>
+        <div style="margin-top:10px; font-size:13px;">Not</div>
+        <textarea id="feedbackNote" rows="2" placeholder="Geri bildirim notu..." style="width:100%; margin-top:6px; padding:8px; border:1px solid var(--border); border-radius:8px; font-size:13px;"></textarea>
+        <div style="margin-top:12px;"><button type="button" class="btn" id="feedbackSubmitBtn" style="background:var(--primary); color:white; border:none; padding:10px 20px;">Gönder</button></div>
+      </div>
+    </div>
+
+    {# Orta: Durum, Tutanak #}
+    <div class="portal-job-center" style="display:flex; flex-direction:column; gap:14px;">
+      <div class="card" style="border:1px solid var(--border); border-radius:12px; padding:14px;">
+        <div style="font-weight:900; color:var(--text-strong);">Durum</div>
+        <select id="kanbanStatus" style="margin-top:8px; width:100%; padding:10px 36px 10px 12px; border:1px solid var(--border); border-radius:8px; box-sizing:border-box; font-size:1rem; min-height:42px;">
+          {% for col in kanban_columns %}
+          <option value="{{ col }}" {{ 'selected' if (job.kanban_status or 'PLANNED') == col else '' }}>{{ kanban_labels.get(col, col) }}</option>
+          {% endfor %}
+        </select>
+        <button type="button" class="btn" id="statusSaveBtn" style="margin-top:10px; background:var(--primary); color:white; border:none; padding:8px 14px;">Kaydet</button>
+        <div style="margin-top:10px; font-size:13px;">İş Durumu</div>
+        <div class="hint" style="font-size:12px;">{{ job.status or 'pending' }}</div>
+      </div>
+
+      <div class="card" style="border:1px solid var(--border); border-radius:12px; padding:14px;">
+        <div style="font-weight:900; color:var(--text-strong);">Tutanak</div>
+        <div class="hint" style="margin-top:4px;">{{ 'Yok' if not tutanak_files else '' }}</div>
+        {% for f in tutanak_files %}
+        <div><a href="{{ url_for('download_file', filename=f) }}">{{ f }}</a></div>
+        {% endfor %}
+        <div style="margin-top:10px; font-size:13px;">Tutanak Ekle</div>
+        <div style="margin-top:6px; display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <input type="file" id="tutanakFile" multiple accept="*/*" style="font-size:12px;">
+          <span class="hint" id="tutanakFileLabel">Dosya seçilmedi</span>
+          <button type="button" class="btn" id="tutanakUploadBtn" style="background:var(--primary); color:white; border:none; padding:8px 14px;">Yükle</button>
+        </div>
+      </div>
+    </div>
+
+    {# Sağ: Status History & Mail (üstte zaten küçük gösterdik; burada da tekrarlanabilir veya boş) #}
+    <div class="portal-job-right" style="display:flex; flex-direction:column; gap:14px;">
+      <div class="card" style="border:1px solid var(--border); border-radius:12px; padding:14px;">
+        <div style="font-weight:900; color:var(--text-strong);">Status History</div>
+        <div class="hint" style="margin-top:6px;">{{ 'Kayıt yok' if not status_history else '' }}</div>
+        {% for h in status_history %}
+        <div class="hint" style="font-size:12px; margin-top:4px;">{{ h.changed_at.strftime('%d.%m %H:%M') if h.changed_at else '' }} {{ h.from_status or '' }} → {{ h.to_status }}</div>
+        {% endfor %}
+      </div>
+      <div class="card" style="border:1px solid var(--border); border-radius:12px; padding:14px;">
+        <div style="font-weight:900; color:var(--text-strong);">Mail Geçmişi</div>
+        <div class="hint" style="margin-top:6px;">{{ 'Mail kaydı yok' if not mail_history else '' }}</div>
+        {% for m in mail_history %}
+        <div class="hint" style="font-size:12px; margin-top:4px;">{{ m.created_at.strftime('%d.%m %H:%M') if m.created_at else '' }} {{ m.subject or '' }}</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {# Alt: Planlanma Tarihi + Rapor butonu #}
+  <div class="card" style="margin-top:16px; border:1px solid var(--border); border-radius:12px; padding:14px;">
+    <div style="font-weight:900; color:var(--text-strong);">Planlanma Tarihi</div>
+    <div class="hint" style="margin-top:4px;">Bu işi ileri tarihe kopyala veya taşı.</div>
+    <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+      <label style="display:flex; flex-direction:column; gap:6px; min-width:180px;">Yeni Tarih
+        <input type="date" id="rescheduleTargetDate">
+      </label>
+      <label style="display:flex; flex-direction:column; gap:6px; min-width:160px;">İşlem
+        <select id="rescheduleMode">
+          <option value="copy">Kopyala</option>
+          <option value="move">Taşı</option>
+        </select>
+      </label>
+      <label id="rescheduleMarkWrap" style="display:flex; align-items:center; gap:8px; padding:10px 0;"><input type="checkbox" id="rescheduleMarkOldPending"><span>Eski kaydı beklemeye al</span></label>
+      <button class="btn" id="rescheduleBtn" type="button" style="background:var(--text-strong); color:white; border:none; height:40px; padding:0 14px;">Kopyala / Taşı</button>
+    </div>
+    <div class="hint" id="rescheduleHint" style="margin-top:8px; display:none;"></div>
+  </div>
+  <div style="margin-top:14px;">
+    <a class="btn" href="{{ url_for('planner.portal_job_report', job_id=job.id) }}" style="text-decoration:none; background:var(--status-success); color:white; border:none; width:100%; text-align:center; padding:14px; font-weight:700;">Rapor / Geri Bildirim Gönder</a>
+  </div>
+</section>
+
+<script>
+(function(){
+  const jobId = {{ job.id }};
+  const fromDate = "{{ job.work_date.strftime('%Y-%m-%d') }}";
+  const csrfToken = (document.getElementById('csrfTokenGlobal') && document.getElementById('csrfTokenGlobal').value) || '';
+
+  function toast(msg){ try { window.toast && window.toast(msg); } catch(e) { alert(msg); } }
+
+  // Tutanak upload
+  const tutanakFile = document.getElementById('tutanakFile');
+  const tutanakFileLabel = document.getElementById('tutanakFileLabel');
+  const tutanakUploadBtn = document.getElementById('tutanakUploadBtn');
+  if(tutanakFile && tutanakUploadBtn){
+    tutanakFile.addEventListener('change', function(){ tutanakFileLabel.textContent = tutanakFile.files.length ? tutanakFile.files.length + ' dosya' : 'Dosya seçilmedi'; });
+    tutanakUploadBtn.addEventListener('click', async function(){
+      if(!tutanakFile.files.length){ toast('Dosya seçin.'); return; }
+      const fd = new FormData();
+      fd.append('csrf_token', csrfToken);
+      for(let i=0;i<tutanakFile.files.length;i++) fd.append('tutanak', tutanakFile.files[i]);
+      tutanakUploadBtn.disabled = true;
+      try {
+        const r = await fetch('/me/job/'+jobId+'/upload/tutanak', { method:'POST', body: fd });
+        const d = await r.json().catch(()=>{});
+        if(r.ok && d.ok){ toast('Yüklendi'); window.location.reload(); }
+        else toast(d.error || 'Hata');
+      }finally{ tutanakUploadBtn.disabled = false; }
+    });
+  }
+
+  // Photo upload
+  const photoFile = document.getElementById('photoFile');
+  const photoFileLabel = document.getElementById('photoFileLabel');
+  const photoUploadBtn = document.getElementById('photoUploadBtn');
+  if(photoFile && photoUploadBtn){
+    photoFile.addEventListener('change', function(){ photoFileLabel.textContent = photoFile.files.length ? photoFile.files.length + ' dosya' : 'Dosya seçilmedi'; });
+    photoUploadBtn.addEventListener('click', async function(){
+      if(!photoFile.files.length){ toast('Dosya seçin.'); return; }
+      const fd = new FormData();
+      fd.append('csrf_token', csrfToken);
+      for(let i=0;i<photoFile.files.length;i++) fd.append('photos', photoFile.files[i]);
+      photoUploadBtn.disabled = true;
+      try {
+        const r = await fetch('/me/job/'+jobId+'/upload/photos', { method:'POST', body: fd });
+        const d = await r.json().catch(()=>{});
+        if(r.ok && d.ok){ toast('Yüklendi'); window.location.reload(); }
+        else toast(d.error || 'Hata');
+      }finally{ photoUploadBtn.disabled = false; }
+    });
+  }
+
+  // QC save
+  const qcResult = document.getElementById('qcResult');
+  const qcSaveBtn = document.getElementById('qcSaveBtn');
+  if(qcSaveBtn && qcResult){
+    qcSaveBtn.addEventListener('click', async function(){
+      const fd = new FormData();
+      fd.append('csrf_token', csrfToken);
+      fd.append('qc_result', qcResult.value);
+      qcSaveBtn.disabled = true;
+      try {
+        const r = await fetch('/me/job/'+jobId+'/qc', { method:'POST', body: fd });
+        const d = await r.json().catch(()=>{});
+        if(r.ok && d.ok){ toast('QC kaydedildi'); }
+        else toast(d.error || 'Hata');
+      }finally{ qcSaveBtn.disabled = false; }
+    });
+  }
+
+  // Status save
+  const kanbanStatus = document.getElementById('kanbanStatus');
+  const statusSaveBtn = document.getElementById('statusSaveBtn');
+  if(statusSaveBtn && kanbanStatus){
+    statusSaveBtn.addEventListener('click', async function(){
+      const r = await fetch('/me/job/'+jobId+'/status', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ csrf_token: csrfToken, kanban_status: kanbanStatus.value })
+      });
+      const d = await r.json().catch(()=>{});
+      if(r.ok && d.ok){ toast('Durum kaydedildi'); window.location.reload(); }
+      else toast(d.error || 'Hata');
+    });
+  }
+
+  // Geri bildirim: dropdown + Yapılmadı/Sorun var ise dosya yükleme
+  const feedbackOutcome = document.getElementById('feedbackOutcome');
+  const feedbackUploadWrap = document.getElementById('feedbackUploadWrap');
+  const feedbackMediaFiles = document.getElementById('feedbackMediaFiles');
+  const feedbackMediaLabel = document.getElementById('feedbackMediaLabel');
+  const feedbackNote = document.getElementById('feedbackNote');
+  const feedbackSubmitBtn = document.getElementById('feedbackSubmitBtn');
+  if(feedbackOutcome){
+    feedbackOutcome.addEventListener('change', function(){
+      const v = (feedbackOutcome.value || '').toLowerCase();
+      if(feedbackUploadWrap) feedbackUploadWrap.style.display = (v === 'not_completed' || v === 'issue') ? 'block' : 'none';
+    });
+  }
+  if(feedbackMediaFiles && feedbackMediaLabel){
+    feedbackMediaFiles.addEventListener('change', function(){
+      feedbackMediaLabel.textContent = feedbackMediaFiles.files.length ? feedbackMediaFiles.files.length + ' dosya seçildi' : 'Dosya seçilmedi';
+    });
+  }
+  if(feedbackSubmitBtn){
+    feedbackSubmitBtn.addEventListener('click', async function(){
+      const outcome = (feedbackOutcome && feedbackOutcome.value) || '';
+      if(!outcome){ toast('İş sonucu seçin.'); return; }
+      const fd = new FormData();
+      fd.append('csrf_token', csrfToken);
+      fd.append('outcome', outcome);
+      fd.append('note', (feedbackNote && feedbackNote.value) || '');
+      if(feedbackMediaFiles && feedbackMediaFiles.files.length){
+        for(var i = 0; i < feedbackMediaFiles.files.length; i++) fd.append('media_files', feedbackMediaFiles.files[i]);
+      }
+      feedbackSubmitBtn.disabled = true;
+      try {
+        const r = await fetch('/me/job/'+jobId+'/feedback', { method: 'POST', body: fd });
+        const d = await r.json().catch(()=>{});
+        if(r.ok && d.ok){ toast('Geri bildirim kaydedildi'); window.location.reload(); }
+        else toast(d.error || 'Hata');
+      }finally{ feedbackSubmitBtn.disabled = false; }
+    });
+  }
+
+  // Reschedule (existing logic)
+  const rescheduleBtn = document.getElementById('rescheduleBtn');
+  const rescheduleTargetDate = document.getElementById('rescheduleTargetDate');
+  const rescheduleMode = document.getElementById('rescheduleMode');
+  const rescheduleMarkOldPending = document.getElementById('rescheduleMarkOldPending');
+  const rescheduleHint = document.getElementById('rescheduleHint');
+  const rescheduleMarkWrap = document.getElementById('rescheduleMarkWrap');
+  if(rescheduleBtn && rescheduleTargetDate && rescheduleMode){
+    if(rescheduleMarkWrap && rescheduleMarkOldPending){
+      rescheduleMode.addEventListener('change', function(){
+        const isCopy = (rescheduleMode.value || '').toLowerCase() === 'copy';
+        rescheduleMarkOldPending.disabled = !isCopy;
+        if(!isCopy) rescheduleMarkOldPending.checked = false;
+        rescheduleMarkWrap.style.opacity = isCopy ? '1' : '0.55';
+      });
+      rescheduleMode.dispatchEvent(new Event('change'));
+    }
+    rescheduleBtn.addEventListener('click', async function(){
+      const targetDate = (rescheduleTargetDate.value || '').trim();
+      const mode = (rescheduleMode.value || 'copy').toLowerCase();
+      if(!targetDate){ toast('Yeni tarih seçin.'); return; }
+      if(targetDate === fromDate){ toast('Hedef tarih mevcut tarihle aynı.'); return; }
+      if(!window.confirm('Şu işi '+fromDate+' tarihinden '+targetDate+' tarihine '+(mode==='move'?'taşıyacaksın':'kopyalayacaksın')+'. Onaylıyor musun?')) return;
+      rescheduleBtn.disabled = true;
+      const prevText = rescheduleBtn.textContent;
+      rescheduleBtn.textContent = 'İşleniyor...';
+      try {
+        const res = await fetch('/api/jobs/'+jobId+'/reschedule', {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify({ target_date: targetDate, mode: mode, mark_old_pending: !!(rescheduleMarkOldPending && rescheduleMarkOldPending.checked), csrf_token: csrfToken })
+        });
+        const data = await res.json().catch(()=>{});
+        if(!res.ok || !data.ok){ toast(data.error || 'İşlem başarısız'); return; }
+        if((data.mode||'')==='copy' && data.new_job_id){ toast('Kopyalandı'); window.location.href = '/me/job/'+data.new_job_id; return; }
+        toast('Taşındı');
+        window.location.reload();
+      }finally{ rescheduleBtn.disabled = false; rescheduleBtn.textContent = prevText; }
+    });
+  }
+})();
+</script>
+{% endblock %}

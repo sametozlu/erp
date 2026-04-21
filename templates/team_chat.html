@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card" style="max-width: 1100px; margin: 0 auto;">
+  <div class="rowline" style="justify-content:space-between; gap:10px; flex-wrap:wrap;">
+    <div>
+      <h2 style="margin:0;">Ekip Sohbeti</h2>
+      <div class="hint" style="margin-top:4px;">{{ user.full_name or user.email }}</div>
+    </div>
+    <div class="rowline" style="gap:8px;">
+      <a class="btn secondary" href="{{ url_for('chat.chat_page') }}" style="text-decoration:none;">Online Sohbet</a>
+      {% if session.get('role') == 'field' %}
+        <a class="btn secondary" href="{{ url_for('planner.portal_home') }}" style="text-decoration:none;">Benim İşlerim</a>
+      {% else %}
+        <a class="btn secondary" href="{{ url_for('planner.plan_week') }}" style="text-decoration:none;">Plan</a>
+      {% endif %}
+      <a class="btn secondary" href="{{ url_for('auth.logout') }}" style="text-decoration:none;">Çıkış</a>
+    </div>
+  </div>
+</section>
+
+<section class="card" style="max-width: 1100px; margin: 12px auto 0;">
+  {% if not teams %}
+    <div class="hint">Ekip bulunamadı. Sohbet için kullanıcıya ekip atayın.</div>
+  {% else %}
+    <div class="chatLayout" data-user-id="{{ user.id }}" data-selected-team-id="{{ selected_team_id }}">
+      <aside class="chatSidebar">
+        <div class="chatSidebarTitle">Odalar</div>
+        <div class="chatTeamList">
+          {% for t in teams %}
+            <button type="button"
+                    class="chatTeamBtn {% if t.id == selected_team_id %}active{% endif %}"
+                    data-team-id="{{ t.id }}"
+                    data-team-name="{{ t.name|e }}">
+              {{ t.name }}
+            </button>
+          {% endfor %}
+        </div>
+        <div class="hint" style="margin-top:10px;">
+          {% if is_admin or is_planner %}
+            Tüm ekipleri görebilirsiniz.
+          {% else %}
+            Sadece kendi ekibiniz.
+          {% endif %}
+        </div>
+      </aside>
+
+      <div class="chatMain">
+        <div class="chatMainHeader">
+          <div style="font-weight:900; color:var(--text-strong);" id="chatRoomTitle">-</div>
+          <div class="hint" id="chatRoomHint"></div>
+        </div>
+
+        <div class="chatMessages" id="chatMessages"></div>
+
+        <form class="chatComposer" id="chatForm">
+          <textarea id="chatText" rows="2" placeholder="Mesaj yaz..." maxlength="2000"></textarea>
+          <button class="btn" type="submit" style="background:var(--text-strong); color:white; border:none;">Gönder</button>
+        </form>
+
+        <div class="hint" id="chatStatus" style="margin-top:8px;"></div>
+      </div>
+    </div>
+  {% endif %}
+</section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+  const root = document.querySelector('.chatLayout');
+  if(!root) return;
+
+  const escapeHtml = window.escapeHtml || ((s) => (s ?? '').toString().replace(/[&<>"']/g, (ch) => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+  }[ch])));
+  const toast = window.toast || ((msg) => { try{ alert(msg); }catch(_){ } });
+
+  const csrfToken = (document.getElementById('csrfTokenGlobal') || {}).value || '';
+  const userId = Number(root.getAttribute('data-user-id') || '0') || 0;
+  const selectedTeamId = Number(root.getAttribute('data-selected-team-id') || '0') || 0;
+  const messagesEl = document.getElementById('chatMessages');
+  const form = document.getElementById('chatForm');
+  const textEl = document.getElementById('chatText');
+  const roomTitle = document.getElementById('chatRoomTitle');
+  const roomHint = document.getElementById('chatRoomHint');
+  const statusEl = document.getElementById('chatStatus');
+  const teamBtns = Array.from(document.querySelectorAll('.chatTeamBtn'));
+
+  let currentTeamId = selectedTeamId || (teamBtns[0] ? Number(teamBtns[0].getAttribute('data-team-id')||'0') : 0);
+  let joinedTeamId = 0;
+  let lastMessageId = 0;
+  const seenIds = new Set();
+
+  let pollTimer = null;
+  let sharedSocket = window.__socket;
+
+  const fmtTime = (isoStr) => {
+    if(!isoStr) return '';
+    try{
+      const d = new Date(isoStr);
+      return d.toLocaleString('tr-TR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }).replace(',', '');
+    }catch(_){ return isoStr; }
+  };
+
+  const clearMessages = () => {
+    if(messagesEl) messagesEl.innerHTML = '';
+    seenIds.clear();
+    lastMessageId = 0;
+  };
+
+  const scrollToBottom = () => {
+    if(!messagesEl) return;
+    try{ messagesEl.scrollTop = messagesEl.scrollHeight; }catch(_){}
+  };
+
+  const appendMessage = (m) => {
+    if(!m || !m.id) return;
+    const id = Number(m.id) || 0;
+    if(!id || seenIds.has(id)) return;
+    seenIds.add(id);
+    lastMessageId = Math.max(lastMessageId, id);
+
+    const mine = (Number(m.user_id) || 0) === userId;
+    const wrap = document.createElement('div');
+    wrap.className = 'chatMsg' + (mine ? ' mine' : '');
+    wrap.innerHTML = `
+      <div class="chatMsgHeader">
+        <div class="chatMsgUser">${escapeHtml(m.user_name || '')}</div>
+        <div class="chatMsgTime">${escapeHtml(fmtTime(m.created_at))}</div>
+      </div>
+      <div class="chatMsgText">${escapeHtml(m.text || '').replace(/\\n/g, '<br>')}</div>
+    `;
+    messagesEl.appendChild(wrap);
+  };
+
+  const loadMessages = async (opts) => {
+    const reset = !!(opts && opts.reset);
+    const incremental = !!(opts && opts.incremental);
+    if(!currentTeamId) return;
+
+    if(reset){
+      clearMessages();
+      if(roomHint) roomHint.textContent = 'Yükleniyor...';
+    }
+
+    const url = incremental && lastMessageId > 0
+      ? `/api/team_chat/messages?team_id=${encodeURIComponent(currentTeamId)}&after_id=${encodeURIComponent(lastMessageId)}`
+      : `/api/team_chat/messages?team_id=${encodeURIComponent(currentTeamId)}&limit=200`;
+
+    try{
+      const res = await fetch(url);
+      const data = await res.json().catch(()=>({ok:false}));
+      if(!res.ok || !data.ok){
+        if(roomHint) roomHint.textContent = 'Mesajlar yüklenemedi';
+        return;
+      }
+      const items = data.messages || [];
+      items.forEach(appendMessage);
+      if(reset) scrollToBottom();
+      if(roomHint) roomHint.textContent = `${items.length ? '' : 'Henüz mesaj yok'}`;
+    }catch(_){
+      if(roomHint) roomHint.textContent = 'Mesajlar yüklenemedi';
+    }
+  };
+
+  const joinRoom = () => {
+    if(!sharedSocket || !currentTeamId) return;
+    try{
+      if(joinedTeamId && joinedTeamId !== currentTeamId){
+        sharedSocket.emit('chat_leave', { team_id: joinedTeamId });
+      }
+      sharedSocket.emit('chat_join', { team_id: currentTeamId });
+      joinedTeamId = currentTeamId;
+    }catch(_){}
+  };
+
+  const setActiveTeam = async (teamId) => {
+    const tid = Number(teamId) || 0;
+    if(!tid) return;
+    currentTeamId = tid;
+
+    teamBtns.forEach(b => {
+      const id = Number(b.getAttribute('data-team-id')||'0') || 0;
+      b.classList.toggle('active', id === currentTeamId);
+    });
+
+    const btn = teamBtns.find(b => (Number(b.getAttribute('data-team-id')||'0')||0) === currentTeamId);
+    const name = btn ? (btn.getAttribute('data-team-name') || btn.textContent || '').trim() : '';
+    if(roomTitle) roomTitle.textContent = name || '-';
+
+    joinRoom();
+    await loadMessages({ reset:true });
+  };
+
+  const stopPolling = () => {
+    if(pollTimer){
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+  };
+  const startPolling = () => {
+    stopPolling();
+    pollTimer = setInterval(() => loadMessages({ incremental:true }), 5000);
+  };
+
+  teamBtns.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const tid = Number(btn.getAttribute('data-team-id')||'0') || 0;
+      await setActiveTeam(tid);
+    });
+  });
+
+  // SocketIO if available, else polling
+  try{
+    if(sharedSocket){
+      sharedSocket.on('connect', () => {
+        if(statusEl) statusEl.textContent = 'Bağlandı';
+        joinRoom();
+      });
+      sharedSocket.on('disconnect', () => {
+        if(statusEl) statusEl.textContent = 'Bağlantı koptu, polling devrede';
+        startPolling();
+      });
+      sharedSocket.on('chat_message', (m) => {
+        try{
+          if(Number(m.team_id)||0 !== currentTeamId) return;
+          appendMessage(m);
+          scrollToBottom();
+        }catch(_){}
+      });
+      stopPolling();
+    }else{
+      startPolling();
+      if(statusEl) statusEl.textContent = 'Polling (5sn)';
+    }
+  }catch(_){
+    startPolling();
+    if(statusEl) statusEl.textContent = 'Polling (5sn)';
+  }
+
+  setActiveTeam(currentTeamId);
+
+  if(form){
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if(!currentTeamId) return;
+      const text = (textEl ? textEl.value : '').toString().trim();
+      if(!text) return;
+      if(text.length > 2000){
+        toast('Mesaj çok uzun');
+        return;
+      }
+
+      try{
+        const res = await fetch('/api/team_chat/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ team_id: currentTeamId, text, csrf_token: csrfToken })
+        });
+        const data = await res.json().catch(()=>({ok:false}));
+        if(!res.ok || !data.ok){
+          toast('Gönderilemedi');
+          return;
+        }
+        if(textEl) textEl.value = '';
+        if(data.message){
+          appendMessage(data.message);
+          scrollToBottom();
+        }
+      }catch(_){
+        toast('Gönderilemedi');
+      }
+    });
+  }
+});
+</script>
+{% endblock %}

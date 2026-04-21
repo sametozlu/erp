@@ -1,0 +1,543 @@
+/* ============================================
+   COMPREHENSIVE THEME SYSTEM
+   Netmon Proje Takip - Multi-Theme Support
+   ============================================ */
+
+/* ============================================
+   ROOT TOKENS (Default Light Theme)
+   ============================================ */
+
+:root {
+    /* Theme Metadata */
+    --theme-id: "light";
+    --theme-name: "Light";
+
+    /* ============================================
+     SEMANTIC COLOR VARIABLES
+     ============================================ */
+
+    /* Background Colors - 5 levels */
+    --bg-primary: var(--theme-bg-primary, #f3f6fc);
+    --bg-secondary: var(--theme-bg-secondary, #ffffff);
+    --bg-tertiary: var(--theme-bg-tertiary, #f8fafc);
+    --bg-elevated: var(--theme-bg-tertiary, #f8fafc);
+    --bg-overlay: rgba(0, 0, 0, 0.5);
+
+    /* Text Colors - 4 levels */
+    --text-primary: var(--theme-text-primary, #1e293b);
+    --text-secondary: var(--theme-text-secondary, #64748b);
+    --text-tertiary: var(--theme-text-tertiary, #94a3b8);
+    --text-inverted: #ffffff;
+
+    /* Accent Colors */
+    --accent-primary: var(--theme-accent-primary, #3b82f6);
+    --accent-primary-hover: var(--theme-accent-primary-hover, #2563eb);
+    --accent-primary-active: var(--theme-accent-primary-active, #1d4ed8);
+    --accent-secondary: var(--theme-accent-secondary, #6366f1);
+
+    /* Border Colors - 3 levels */
+    --border-light: var(--theme-border-light, #f1f5f9);
+    --border-default: var(--theme-border, #e2e8f0);
+    --border-dark: var(--theme-border-dark, #cbd5e1);
+
+    /* Status Colors - Consistent across themes */
+    --status-success: #10b981;
+    --status-success-bg: #ecfdf5;
+    --status-success-text: #065f46;
+
+    --status-warning: #f59e0b;
+    --status-warning-bg: #fffbeb;
+    --status-warning-text: #92400e;
+
+    --status-danger: #ef4444;
+    --status-danger-bg: #fef2f2;
+    --status-danger-text: #b91c1c;
+
+    --status-info: #3b82f6;
+    --status-info-bg: #eff6ff;
+    --status-info-text: #1e40af;
+
+    --status-online: #22c55e;
+    --status-offline: #94a3b8;
+
+    /* ============================================
+     COMPONENT VARIABLES
+     ============================================ */
+
+    /* Cards */
+    --card-bg: var(--bg-secondary);
+    --card-border: var(--border-default);
+    --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+
+    /* Glass/Acrylic Effects */
+    --glass-bg: var(--theme-glass-bg, rgba(255, 255, 255, 0.85));
+    --glass-border: var(--theme-glass-border, rgba(255, 255, 255, 0.5));
+    --glass-blur: var(--theme-glass-blur, 16px);
+    --glass-opacity: 0.85;
+    --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.1);
+
+    /* Buttons */
+    --btn-primary-bg: var(--accent-primary);
+    --btn-primary-text: #ffffff;
+    --btn-primary-hover: var(--accent-primary-hover);
+    --btn-secondary-bg: var(--bg-tertiary);
+    --btn-secondary-text: var(--text-primary);
+    --btn-secondary-border: var(--border-default);
+
+    /* Inputs */
+    --input-bg: var(--bg-secondary);
+    --input-border: var(--border-default);
+    --input-text: var(--text-primary);
+    --input-placeholder: var(--text-tertiary);
+    --input-focus-border: var(--accent-primary);
+    --input-focus-shadow: rgba(59, 130, 246, 0.25);
+
+    /* Tables */
+    --table-header-bg: var(--bg-tertiary);
+    --table-header-text: var(--text-primary);
+    --table-row-bg: var(--bg-secondary);
+    --table-row-alt: var(--bg-tertiary);
+    --table-row-hover: var(--bg-tertiary);
+    --table-cell-border: var(--border-light);
+
+    /* ============================================
+     CUSTOMIZABLE ACCENT COLOR (User Override)
+     ============================================ */
+    --custom-primary: var(--custom-primary-color, var(--accent-primary));
+    --custom-primary-hover: var(--custom-primary-color-hover, var(--accent-primary-hover));
+    --custom-primary-active: var(--custom-primary-color-active, var(--accent-primary-active));
+
+    /* ============================================
+     SHADOWS
+     ============================================ */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
+
+    /* ============================================
+     ANIMATION & TRANSITIONS
+     ============================================ */
+    --transition-fast: 150ms ease;
+    --transition-normal: 300ms ease;
+    --transition-slow: 500ms ease;
+
+    /* ============================================
+     RADIUS
+     ============================================ */
+    --radius-sm: 6px;
+    --radius: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+}
+
+/* ============================================
+   THEME DATA ATTRIBUTES
+   ============================================ */
+
+/* Light Theme (Default) */
+html[data-theme="light"] {
+    --theme-bg-primary: #f3f6fc;
+    --theme-bg-secondary: #ffffff;
+    --theme-bg-tertiary: #f8fafc;
+    --theme-text-primary: #1e293b;
+    --theme-text-secondary: #64748b;
+    --theme-text-tertiary: #94a3b8;
+    --theme-accent-primary: #3b82f6;
+    --theme-accent-primary-hover: #2563eb;
+    --theme-accent-primary-active: #1d4ed8;
+    --theme-accent-secondary: #6366f1;
+    --theme-border: #e2e8f0;
+    --theme-border-light: #f1f5f9;
+    --theme-border-dark: #cbd5e1;
+    --theme-glass-bg: rgba(255, 255, 255, 0.85);
+    --theme-glass-border: rgba(255, 255, 255, 0.5);
+    --theme-glass-blur: 16px;
+    color-scheme: light;
+}
+
+/* Dark Theme (Neutral Gray) */
+html[data-theme="dark"] {
+    --theme-bg-primary: #1a1a1a;
+    --theme-bg-secondary: #2d2d2d;
+    --theme-bg-tertiary: #3d3d3d;
+    --theme-text-primary: #f5f5f5;
+    --theme-text-secondary: #a3a3a3;
+    --theme-text-tertiary: #737373;
+    --theme-accent-primary: #60a5fa;
+    --theme-accent-primary-hover: #3b82f6;
+    --theme-accent-primary-active: #2563eb;
+    --theme-accent-secondary: #818cf8;
+    --theme-border: #404040;
+    --theme-border-light: #525252;
+    --theme-border-dark: #171717;
+    --theme-glass-bg: rgba(45, 45, 45, 0.85);
+    --theme-glass-border: rgba(255, 255, 255, 0.1);
+    --theme-glass-blur: 16px;
+    color-scheme: dark;
+
+    /* Status Colors for Dark Theme */
+    --status-success-bg: rgba(16, 185, 129, 0.2);
+    --status-success-text: #6ee7b7;
+    --status-warning-bg: rgba(245, 158, 11, 0.2);
+    --status-warning-text: #fcd34d;
+    --status-danger-bg: rgba(239, 68, 68, 0.2);
+    --status-danger-text: #fca5a5;
+    --status-info-bg: rgba(59, 130, 246, 0.2);
+    --status-info-text: #93c5fd;
+}
+
+/* Navy Theme */
+html[data-theme="navy"] {
+    --theme-bg-primary: #0f172a;
+    --theme-bg-secondary: #1e3a8a;
+    --theme-bg-tertiary: #1e40af;
+    --theme-text-primary: #eff6ff;
+    --theme-text-secondary: #bfdbfe;
+    --theme-text-tertiary: #60a5fa;
+    --theme-accent-primary: #3b82f6;
+    --theme-accent-primary-hover: #2563eb;
+    --theme-accent-primary-active: #1d4ed8;
+    --theme-accent-secondary: #4f46e5;
+    --theme-border: #1e3a8a;
+    --theme-border-light: #1e40af;
+    --theme-border-dark: #172554;
+    --theme-glass-bg: rgba(30, 58, 138, 0.85);
+    --theme-glass-border: rgba(191, 219, 254, 0.1);
+    --theme-glass-blur: 16px;
+    color-scheme: dark;
+
+    /* Status Colors copied from dark */
+    --status-success-bg: rgba(16, 185, 129, 0.2);
+    --status-success-text: #6ee7b7;
+    --status-warning-bg: rgba(245, 158, 11, 0.2);
+    --status-warning-text: #fcd34d;
+    --status-danger-bg: rgba(239, 68, 68, 0.2);
+    --status-danger-text: #fca5a5;
+    --status-info-bg: rgba(59, 130, 246, 0.2);
+    --status-info-text: #93c5fd;
+}
+
+/* Slate Theme */
+html[data-theme="slate"] {
+    --theme-bg-primary: #020617;
+    --theme-bg-secondary: #0f172a;
+    --theme-bg-tertiary: #1e293b;
+    --theme-text-primary: #f8fafc;
+    --theme-text-secondary: #94a3b8;
+    --theme-text-tertiary: #64748b;
+    --theme-accent-primary: #64748b;
+    --theme-accent-primary-hover: #475569;
+    --theme-accent-primary-active: #334155;
+    --theme-accent-secondary: #94a3b8;
+    --theme-border: #1e293b;
+    --theme-border-light: #334155;
+    --theme-border-dark: #0f172a;
+    --theme-glass-bg: rgba(15, 23, 42, 0.85);
+    --theme-glass-border: rgba(255, 255, 255, 0.1);
+    --theme-glass-blur: 16px;
+    color-scheme: dark;
+
+    /* Status Colors copied from dark */
+    --status-success-bg: rgba(16, 185, 129, 0.2);
+    --status-success-text: #6ee7b7;
+    --status-warning-bg: rgba(245, 158, 11, 0.2);
+    --status-warning-text: #fcd34d;
+    --status-danger-bg: rgba(239, 68, 68, 0.2);
+    --status-danger-text: #fca5a5;
+    --status-info-bg: rgba(59, 130, 246, 0.2);
+    --status-info-text: #93c5fd;
+}
+
+/* Pure Black Theme (OLED) */
+html[data-theme="pure-black"] {
+    --theme-bg-primary: #000000;
+    --theme-bg-secondary: #0a0a0a;
+    --theme-bg-tertiary: #171717;
+    --theme-text-primary: #ffffff;
+    --theme-text-secondary: #a3a3a3;
+    --theme-text-tertiary: #737373;
+    --theme-accent-primary: #3b82f6;
+    --theme-accent-primary-hover: #60a5fa;
+    --theme-accent-primary-active: #2563eb;
+    --theme-accent-secondary: #6366f1;
+    --theme-border: #262626;
+    --theme-border-light: #262626;
+    --theme-border-dark: #000000;
+    --theme-glass-bg: rgba(0, 0, 0, 0.9);
+    --theme-glass-border: rgba(255, 255, 255, 0.08);
+    --theme-glass-blur: 16px;
+    color-scheme: dark;
+
+    /* Status Colors for Pure Black Theme */
+    --status-success-bg: rgba(16, 185, 129, 0.15);
+    --status-success-text: #6ee7b7;
+    --status-warning-bg: rgba(245, 158, 11, 0.15);
+    --status-warning-text: #fcd34d;
+    --status-danger-bg: rgba(239, 68, 68, 0.15);
+    --status-danger-text: #fca5a5;
+    --status-info-bg: rgba(59, 130, 246, 0.15);
+    --status-info-text: #93c5fd;
+}
+
+/* Pure White Theme */
+html[data-theme="pure-white"] {
+    --theme-bg-primary: #ffffff;
+    --theme-bg-secondary: #ffffff;
+    --theme-bg-tertiary: #f5f5f5;
+    --theme-text-primary: #171717;
+    --theme-text-secondary: #525252;
+    --theme-text-tertiary: #737373;
+    --theme-accent-primary: #2563eb;
+    --theme-accent-primary-hover: #1d4ed8;
+    --theme-accent-primary-active: #1e40af;
+    --theme-accent-secondary: #4f46e5;
+    --theme-border: #e5e5e5;
+    --theme-border-light: #f5f5f5;
+    --theme-border-dark: #d4d4d4;
+    --theme-glass-bg: rgba(255, 255, 255, 0.95);
+    --theme-glass-border: rgba(0, 0, 0, 0.05);
+    --theme-glass-blur: 16px;
+    color-scheme: light;
+}
+
+/* Ocean Theme */
+html[data-theme="ocean"] {
+    --theme-bg-primary: #f0f9ff;
+    --theme-bg-secondary: #ffffff;
+    --theme-bg-tertiary: #e0f2fe;
+    --theme-text-primary: #0c4a6e;
+    --theme-text-secondary: #0369a1;
+    --theme-text-tertiary: #0284c7;
+    --theme-accent-primary: #0284c7;
+    --theme-accent-primary-hover: #0369a1;
+    --theme-accent-primary-active: #075985;
+    --theme-accent-secondary: #0891b2;
+    --theme-border: #bae6fd;
+    --theme-border-light: #e0f2fe;
+    --theme-border-dark: #7dd3fc;
+    --theme-glass-bg: rgba(255, 255, 255, 0.85);
+    --theme-glass-border: rgba(186, 230, 253, 0.5);
+    --theme-glass-blur: 16px;
+    color-scheme: light;
+}
+
+/* Forest Theme */
+html[data-theme="forest"] {
+    --theme-bg-primary: #f0fdf4;
+    --theme-bg-secondary: #ffffff;
+    --theme-bg-tertiary: #dcfce7;
+    --theme-text-primary: #14532d;
+    --theme-text-secondary: #166534;
+    --theme-text-tertiary: #15803d;
+    --theme-accent-primary: #16a34a;
+    --theme-accent-primary-hover: #15803d;
+    --theme-accent-primary-active: #166534;
+    --theme-accent-secondary: #22c55e;
+    --theme-border: #bbf7d0;
+    --theme-border-light: #dcfce7;
+    --theme-border-dark: #86efac;
+    --theme-glass-bg: rgba(255, 255, 255, 0.85);
+    --theme-glass-border: rgba(187, 247, 208, 0.5);
+    --theme-glass-blur: 16px;
+    color-scheme: light;
+}
+
+/* Sunset Theme */
+html[data-theme="sunset"] {
+    --theme-bg-primary: #fff7ed;
+    --theme-bg-secondary: #ffffff;
+    --theme-bg-tertiary: #ffedd5;
+    --theme-text-primary: #7c2d12;
+    --theme-text-secondary: #c2410c;
+    --theme-text-tertiary: #ea580c;
+    --theme-accent-primary: #ea580c;
+    --theme-accent-primary-hover: #c2410c;
+    --theme-accent-primary-active: #9a3412;
+    --theme-accent-secondary: #f97316;
+    --theme-border: #fed7aa;
+    --theme-border-light: #ffedd5;
+    --theme-border-dark: #fdba74;
+    --theme-glass-bg: rgba(255, 255, 255, 0.85);
+    --theme-glass-border: rgba(254, 215, 170, 0.5);
+    --theme-glass-blur: 16px;
+    color-scheme: light;
+}
+
+/* Purple Theme */
+html[data-theme="purple"] {
+    --theme-bg-primary: #faf5ff;
+    --theme-bg-secondary: #ffffff;
+    --theme-bg-tertiary: #f3e8ff;
+    --theme-text-primary: #581c87;
+    --theme-text-secondary: #7e22ce;
+    --theme-text-tertiary: #9333ea;
+    --theme-accent-primary: #9333ea;
+    --theme-accent-primary-hover: #7e22ce;
+    --theme-accent-primary-active: #6b21a8;
+    --theme-accent-secondary: #a855f7;
+    --theme-border: #e9d5ff;
+    --theme-border-light: #f3e8ff;
+    --theme-border-dark: #d8b4fe;
+    --theme-glass-bg: rgba(255, 255, 255, 0.85);
+    --theme-glass-border: rgba(233, 213, 255, 0.5);
+    --theme-glass-blur: 16px;
+    color-scheme: light;
+}
+
+/* ============================================
+   THEME TRANSITIONS
+   ============================================ */
+
+html[data-theme] {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html[data-theme] body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Smooth theme transition for all elements */
+html {
+    --theme-transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+html[data-theme] *:not(.no-transition) {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Disable transitions during theme change to prevent flash */
+html.theme-transitioning * {
+    transition: none !important;
+}
+
+/* Disable transitions for reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+
+    html,
+    html[data-theme],
+    html[data-theme] * {
+        transition: none !important;
+    }
+}
+
+/* ============================================
+   BACKWARD COMPATIBILITY WITH html.dark-mode
+   ============================================ */
+
+/* Map old dark-mode class to new theme system */
+html.dark-mode:not([data-theme]) {
+    --theme-bg-primary: #0f172a;
+    --theme-bg-secondary: #1e293b;
+    --theme-bg-tertiary: #334155;
+    --theme-text-primary: #f1f5f9;
+    --theme-text-secondary: #94a3b8;
+    --theme-text-tertiary: #64748b;
+    --theme-accent-primary: #60a5fa;
+    --theme-accent-secondary: #818cf8;
+    --theme-border: #334155;
+    --theme-border-light: #475569;
+    --theme-border-dark: #1e293b;
+    --theme-glass-bg: rgba(30, 41, 59, 0.85);
+    --theme-glass-border: rgba(255, 255, 255, 0.1);
+    color-scheme: dark;
+}
+
+/* ============================================
+   THEME-SPECIFIC BODY BACKGROUNDS
+   ============================================ */
+
+html[data-theme="light"] body,
+html[data-theme="pure-white"] body {
+    background-image:
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.05) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.05) 0px, transparent 50%);
+}
+
+html[data-theme="dark"] body,
+html[data-theme="pure-black"] body {
+    background-image:
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.03) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.03) 0px, transparent 50%);
+}
+
+html[data-theme="ocean"] body {
+    background-image:
+        radial-gradient(at 0% 0%, rgba(2, 132, 199, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(8, 145, 178, 0.08) 0px, transparent 50%);
+}
+
+html[data-theme="forest"] body {
+    background-image:
+        radial-gradient(at 0% 0%, rgba(22, 163, 74, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(34, 197, 94, 0.08) 0px, transparent 50%);
+}
+
+html[data-theme="sunset"] body {
+    background-image:
+        radial-gradient(at 0% 0%, rgba(234, 88, 12, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(249, 115, 22, 0.08) 0px, transparent 50%);
+}
+
+html[data-theme="purple"] body {
+    background-image:
+        radial-gradient(at 0% 0%, rgba(147, 51, 234, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.08) 0px, transparent 50%);
+}
+
+/* ============================================
+   LOGO DARK MODE FILTER
+   ============================================ */
+
+html[data-theme="dark"] .brandLogo,
+html[data-theme="pure-black"] .brandLogo {
+    filter: brightness(1.2);
+}
+
+/* ============================================
+   SCROLLBAR THEMING
+   ============================================ */
+
+html[data-theme="dark"],
+html[data-theme="pure-black"] {
+    scrollbar-color: var(--theme-border-light) var(--theme-bg-secondary);
+}
+
+html[data-theme="dark"] ::-webkit-scrollbar,
+html[data-theme="pure-black"] ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+html[data-theme="dark"] ::-webkit-scrollbar-track,
+html[data-theme="pure-black"] ::-webkit-scrollbar-track {
+    background: var(--theme-bg-secondary);
+    border-radius: 8px;
+}
+
+html[data-theme="dark"] ::-webkit-scrollbar-thumb,
+html[data-theme="pure-black"] ::-webkit-scrollbar-thumb {
+    background: var(--theme-border-light);
+    border-radius: 8px;
+    border: 2px solid var(--theme-bg-secondary);
+}
+
+html[data-theme="dark"] ::-webkit-scrollbar-thumb:hover,
+html[data-theme="pure-black"] ::-webkit-scrollbar-thumb:hover {
+    background: var(--theme-text-tertiary);
+}
+
+/* ============================================
+   INPUT DATE/TIME DARK MODE
+   ============================================ */
+
+html[data-theme="dark"] input[type="date"],
+html[data-theme="dark"] input[type="time"],
+html[data-theme="dark"] input[type="datetime-local"],
+html[data-theme="pure-black"] input[type="date"],
+html[data-theme="pure-black"] input[type="time"],
+html[data-theme="pure-black"] input[type="datetime-local"] {
+    color-scheme: dark;
+}

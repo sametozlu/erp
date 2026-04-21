@@ -1,0 +1,400 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <!-- Tek satır: Hafta seçimi + arama + özet -->
+  <div
+    style="margin-bottom: 16px; padding: 12px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 8px;">
+    <form method="get" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <a href="{{ url_for('planner.tools_page', week_start=prev_week_start.isoformat()) }}" class="btn secondary"
+          style="padding: 8px 12px; font-size: 13px;">◀ Önceki</a>
+        <a href="{{ url_for('planner.tools_page') }}" class="btn" style="padding: 8px 16px; font-size: 13px;">Bu
+          Hafta</a>
+        <a href="{{ url_for('planner.tools_page', week_start=next_week_start.isoformat()) }}" class="btn secondary"
+          style="padding: 8px 12px; font-size: 13px;">Sonraki ▶</a>
+      </div>
+      <div style="flex: 1; text-align: center;">
+        <span style="font-size: 16px; font-weight: 700; color: var(--text-strong);">
+          📅 {{ current_week_start.strftime('%d.%m.%Y') }} - {{ current_week_end.strftime('%d.%m.%Y') }}
+        </span>
+        {% set today = current_week_start.__class__.today() %}
+        {% if current_week_start <= today <=current_week_end %} <span class="status-badge active"
+          style="margin-left: 8px;">Bu Hafta</span>
+          {% elif current_week_start > today %}
+          <span class="status-badge info" style="margin-left: 8px;">Gelecek</span>
+          {% else %}
+          <span class="status-badge inactive" style="margin-left: 8px;">Geçmiş</span>
+          {% endif %}
+      </div>
+      <label style="flex: 0 1 320px; min-width: 260px; margin: 0;">
+        <input type="text" id="vehicleSearch" placeholder="Ara..."
+          style="width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; height: 32px; box-sizing: border-box;"
+          oninput="filterVehicles()">
+      </label>
+      <div style="font-weight: 600; color: var(--text-strong); font-size: 14px; white-space: nowrap;">
+        Toplam: <span style="color: var(--status-info);">{{ vehicles_with_teams|length }}</span>
+      </div>
+      {% if session.get('role') != 'gözlemci' %}
+      <details style="display: inline-block;">
+        <summary
+          style="cursor: pointer; padding: 6px 12px; background: var(--bg); border-radius: 6px; font-size: 13px; font-weight: 500; list-style: none;">
+          ➕ Ekle</summary>
+        <div
+          style="position: absolute; top: 100%; right: 0; margin-top: 4px; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; padding: 16px; min-width: 300px;">
+          <form method="post" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label style="grid-column: span 2;">Plaka <input name="plate" required
+                style="width: 100%; height: 32px; box-sizing: border-box;"></label>
+            <label>Marka <input name="brand" required
+                style="width: 100%; height: 32px; box-sizing: border-box;"></label>
+            <label>Model <input name="model" style="width: 100%; height: 32px; box-sizing: border-box;"></label>
+            <label>Araç Tipi
+              <select name="vehicle_type" style="width: 100%; height: 32px; box-sizing: border-box;">
+                <option value="">Seçiniz</option>
+                <option value="Araba">Araba</option>
+                <option value="Kamyon">Kamyon</option>
+                <option value="Minibüs">Minibüs</option>
+                <option value="Pick-up">Pick-up</option>
+                <option value="Van">Van</option>
+                <option value="Diğer">Diğer</option>
+              </select>
+            </label>
+            <label>Durum
+              <select name="status" style="width: 100%; height: 32px; box-sizing: border-box;">
+                <option value="available">Kullanılabilir</option>
+                <option value="maintenance">Bakımda</option>
+                <option value="out_of_service">Hizmet Dışı</option>
+              </select>
+            </label>
+            <button class="btn" type="submit" style="grid-column: span 2; height: 32px;">Ekle</button>
+          </form>
+        </div>
+      </details>
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- Özet bilgi kutusu -->
+  <div
+    style="margin-bottom: 16px; padding: 12px 16px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 8px; display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; font-size: 13px;">
+    <div style="font-weight: 600; color: var(--text-strong);">
+      Bu Hafta Atanan: <span style="color: var(--status-success);">{{
+        vehicles_with_teams|selectattr('assigned_person')|list|length }}</span>
+    </div>
+    <div style="font-weight: 600; color: var(--text-strong);">
+      Atanmamış: <span style="color: var(--status-warning);">{{
+        vehicles_with_teams|rejectattr('assigned_person')|list|length }}</span>
+    </div>
+    <div style="font-weight: 600; color: var(--text-strong);">
+      Sabit Ekip: <span style="color: var(--status-info);">{{ vehicles_with_teams|selectattr('team')|list|length
+        }}</span>
+    </div>
+  </div>
+
+  <!-- Araç listesi -->
+  <div class="tablewrap projects-table"
+    style="border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+    <table class="simple" id="vehiclesTable">
+      <thead>
+        <tr>
+          <th width="100" class="sortable" data-sort="plate" style="cursor: pointer; user-select: none;">
+            Plaka
+          </th>
+          <th class="sortable" data-sort="brand" style="cursor: pointer; user-select: none;">
+            Marka/Model
+          </th>
+          <th width="120" style="text-align: center;">Durum</th>
+          <th width="180" style="background: linear-gradient(135deg, #dbeafe, #e0f2fe); text-align: center;">
+            📅 Bu Hafta
+          </th>
+          <th width="150" style="background: #fef3c7; text-align: center;">
+            📋 Geçen Hafta
+          </th>
+          <th width="130" style="text-align: center;">Sabit Ekip</th>
+          <th width="80" style="text-align: center;">Vodafone</th>
+          {% if session.get('role') != 'gözlemci' %}
+          <th width="80" style="text-align: center;"></th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody id="vehiclesTableBody">
+        {% for item in vehicles_with_teams %}
+        {% set v = item.vehicle %}
+        {% set team = item.team %}
+        {% set assignment = item.assignment %}
+        {% set assigned_person = item.assigned_person %}
+        {% set prev_person = item.prev_person %}
+        <tr class="vehicle-row" data-vehicle-id="{{ v.id }}" data-plate="{{ v.plate|lower }}"
+          data-brand="{{ v.brand|lower }}" data-team="{{ team.name|lower if team else '' }}"
+          data-person="{{ assigned_person.full_name|lower if assigned_person else '' }}">
+          <td><strong>{{ v.plate }}</strong></td>
+          <td>{{ v.brand }} {{ v.model or "" }}</td>
+          <td style="text-align: center;">
+            {% if v.status == "available" %}
+            <span class="status-badge active">Kullanılabilir</span>
+            {% elif v.status == "maintenance" %}
+            <span class="status-badge" style="background: linear-gradient(135deg, #f59e0b, #d97706);">Bakımda</span>
+            {% elif v.status == "out_of_service" %}
+            <span class="status-badge inactive">Hizmet Dışı</span>
+            {% else %}
+            {{ v.status or "-" }}
+            {% endif %}
+          </td>
+          <td style="text-align: center;">
+            {% if assigned_person %}
+            <span class="status-badge active">
+              👤 {{ assigned_person.full_name }}
+            </span>
+            {% else %}
+            <span style="color: var(--text-muted); font-size: 12px;">Atanmamış</span>
+            {% endif %}
+          </td>
+          <td style="text-align: center;">
+            {% if prev_person %}
+            <span class="status-badge inactive">
+              {{ prev_person.full_name }}
+            </span>
+            {% else %}
+            <span style="color: var(--text-muted); font-size: 12px;">-</span>
+            {% endif %}
+          </td>
+          <td style="text-align: center;">
+            {% if team %}
+            <span class="status-badge info">
+              {{ team.name }}
+            </span>
+            {% else %}
+            <span style="color: var(--text-muted); font-size: 12px;">-</span>
+            {% endif %}
+          </td>
+          <td style="text-align: center;">
+            {% if v.vodafone_approval %}
+            <span class="status-badge active">✓</span>
+            {% else %}
+            <span class="status-badge inactive" style="background: linear-gradient(135deg, #f97316, #ea580c);">✗</span>
+            {% endif %}
+          </td>
+          {% if session.get('role') != 'gözlemci' %}
+          <td style="text-align: center;">
+            <div class="actions-menu-container">
+              <button class="actions-btn" onclick="toggleVehicleActionsMenu({{ v.id }})">
+                ⋮
+              </button>
+              <div id="vehicleActionsMenu-{{ v.id }}" class="actions-dropdown">
+                <a href="{{ url_for('planner.vehicle_edit', vehicle_id=v.id) }}">
+                  ✏️ Düzenle
+                </a>
+              </div>
+            </div>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+        {% if not vehicles_with_teams %}
+        <tr>
+          <td colspan="{{ 8 if session.get('role') != 'gözlemci' else 7 }}"
+            style="padding: 40px; text-align: center; color: var(--text-muted); font-size: 14px;">Henüz araç eklenmemiş.
+          </td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<style>
+  /* Tablo ve Genel Stil Güncellemeleri */
+  .tablewrap.projects-table {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    background: white;
+  }
+
+  .simple thead th {
+    background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .simple tbody td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+    color: var(--text-base);
+    font-size: 13px;
+  }
+
+  .simple tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .simple tbody tr:hover {
+    background-color: var(--bg-soft);
+  }
+
+  /* Status Badge Modernizasyonu */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    line-height: 1;
+  }
+
+  .status-badge.active {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+  }
+
+  .status-badge.inactive {
+    background: linear-gradient(135deg, #94a3b8, #64748b);
+    color: white;
+  }
+
+  .status-badge.info {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+  }
+
+  /* Dropdown Menu */
+  .actions-menu-container {
+    position: relative;
+  }
+
+  .actions-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .actions-btn:hover {
+    background: var(--bg-soft);
+    border-color: var(--border);
+    color: var(--text-strong);
+  }
+
+  .actions-dropdown {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    min-width: 150px;
+    overflow: hidden;
+    animation: fadeIn 0.1s ease;
+  }
+
+  .actions-dropdown button,
+  .actions-dropdown a {
+    width: 100%;
+    padding: 10px 14px;
+    text-align: left;
+    border: none;
+    background: white;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-base);
+    text-decoration: none;
+    transition: background 0.1s;
+    font-family: inherit;
+    box-sizing: border-box;
+  }
+
+  .actions-dropdown button:hover,
+  .actions-dropdown a:hover {
+    background: var(--bg-soft);
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-5px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Details/Summary styling */
+  details {
+    position: relative;
+  }
+
+  details>summary {
+    list-style: none;
+  }
+
+  details>summary::-webkit-details-marker {
+    display: none;
+  }
+</style>
+
+<script>
+  function filterVehicles() {
+    const searchValue = document.getElementById('vehicleSearch').value.toLowerCase().trim();
+    const rows = document.querySelectorAll('.vehicle-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+      const plate = row.getAttribute('data-plate') || '';
+      const brand = row.getAttribute('data-brand') || '';
+      const team = row.getAttribute('data-team') || '';
+      const person = row.getAttribute('data-person') || '';
+
+      if (searchValue === '' || plate.includes(searchValue) || brand.includes(searchValue) || team.includes(searchValue) || person.includes(searchValue)) {
+        row.style.display = '';
+        visibleCount++;
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  }
+
+  function toggleVehicleActionsMenu(vehicleId) {
+    const menu = document.getElementById('vehicleActionsMenu-' + vehicleId);
+    if (menu) {
+      menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    }
+  }
+
+  // Close menus when clicking outside
+  document.addEventListener('click', function (event) {
+    if (!event.target.closest('.actions-menu-container')) {
+      document.querySelectorAll('.actions-dropdown').forEach(menu => {
+        menu.style.display = 'none';
+      });
+    }
+  });
+</script>
+{% endblock %}

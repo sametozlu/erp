@@ -1,0 +1,486 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card" style="max-width: 1100px; margin: 0 auto;">
+  <div class="rowline" style="justify-content:space-between; gap:10px; flex-wrap:wrap;">
+    <div>
+      <h2 style="margin:0;">Sohbet</h2>
+      <div class="hint" style="margin-top:4px;">{{ user.full_name or user.email }}</div>
+    </div>
+    <div class="rowline" style="gap:8px;">
+      {% if session.get('role') == 'field' %}
+      <a class="btn secondary" href="{{ url_for('planner.portal_home') }}" style="text-decoration:none;">Benim
+        İşlerim</a>
+      {% else %}
+      <a class="btn secondary" href="{{ url_for('planner.plan_week') }}" style="text-decoration:none;">Plan</a>
+      {% endif %}
+      <a class="btn secondary" href="{{ url_for('auth.logout') }}" style="text-decoration:none;">Çıkış</a>
+    </div>
+  </div>
+</section>
+
+{% if announcements_preview %}
+<section class="card" style="max-width: 1100px; margin: 12px auto 0;">
+  <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+    <h3 style="margin:0;">Duyurular</h3>
+    <a class="btn secondary" href="{{ url_for('chat.announcements_page') }}" style="text-decoration:none;">Tümü</a>
+  </div>
+  {% if announcements_unread_count %}
+  <div class="hint" style="margin-top:4px;">{{ announcements_unread_count }} okunmadı</div>
+  {% endif %}
+  <div style="margin-top:10px; display:flex; flex-direction:column; gap:8px;">
+    {% for a in announcements_preview %}
+    <a class="jobCard" href="{{ url_for('chat.announcements_page') }}"
+      style="margin-top:0; border-left-color: {{ 'var(--text-strong)' if (not a.is_read) else 'var(--border)' }}; background: {{ 'var(--bg-soft)' if (not a.is_read) else 'var(--surface)' }};">
+      <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+        <div style="font-weight:900; color:var(--text-strong);">{{ a.title }}</div>
+        <div class="hint" style="white-space:nowrap;">{% if a.created_at %}{{ a.created_at.strftime('%Y-%m-%d %H:%M')
+          }}{% endif %}</div>
+      </div>
+      {% if a.body %}
+      <div class="hint" style="margin-top:6px; white-space:pre-wrap;">{{ a.body[:160] }}{% if a.body|length > 160
+        %}...{% endif %}</div>
+      {% endif %}
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="card" style="max-width: 1100px; margin: 12px auto 0;">
+  {% if (not online_users) and (not offline_users) %}
+  <div class="hint">Kullanıcı bulunamadı.</div>
+  {% else %}
+  <div class="chatLayout" data-user-id="{{ user.id }}" data-selected-user-id="{{ selected_user_id }}"
+    data-online-window-sec="{{ online_window_sec }}">
+    <aside class="chatSidebar">
+      <div class="chatSidebarTitle">Kullanıcılar</div>
+      <input id="chatUserSearch" type="text" placeholder="Ara..."
+        style="width:100%; margin: 0 0 10px; padding:10px 10px; border-radius:10px; border:1px solid var(--border); background:var(--surface);">
+
+      {% if online_users %}
+      <div class="hint" style="margin: 6px 0 8px; font-weight:900; color:var(--text-strong);">Online</div>
+      <div class="chatTeamList" id="chatOnlineList">
+        {% for u in online_users %}
+        <button type="button" class="chatTeamBtn {% if u.id == selected_user_id %}active{% endif %}"
+          data-user-id="{{ u.id }}" data-user-name="{{ (u.name or '')|e }}" data-is-online="1">
+          <span style="display:inline-flex; align-items:center; gap:8px;">
+            <span style="width:10px; height:10px; border-radius:999px; background:var(--status-online); flex-shrink:0;"></span>
+            {{ u.name }}
+          </span>
+        </button>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% if offline_users %}
+      <div class="hint" style="margin: 12px 0 8px; font-weight:900; color:var(--text-strong);">Offline</div>
+      <div class="chatTeamList" id="chatOfflineList">
+        {% for u in offline_users %}
+        <button type="button" class="chatTeamBtn {% if u.id == selected_user_id %}active{% endif %}"
+          data-user-id="{{ u.id }}" data-user-name="{{ (u.name or '')|e }}" data-is-online="0">
+          <span style="display:inline-flex; align-items:center; gap:8px;">
+            <span style="width:10px; height:10px; border-radius:999px; background:var(--status-offline); flex-shrink:0;"></span>
+            {{ u.name }}
+          </span>
+        </button>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div class="hint" style="margin-top:10px;">Online durumu: son {{ (online_window_sec // 60) or 1 }} dk</div>
+    </aside>
+
+    <div class="chatMain">
+      <div class="chatMainHeader">
+        <div style="font-weight:900; color:var(--text-strong);" id="chatRoomTitle">-</div>
+        <div class="hint" id="chatRoomHint"></div>
+      </div>
+
+      <div class="chatMessages" id="chatMessages"></div>
+
+      <form class="chatComposer" id="chatForm">
+        <textarea id="chatText" rows="2" placeholder="Mesaj yaz..." maxlength="2000"></textarea>
+        <button class="btn" type="submit" style="background:var(--text-strong); color:white; border:none;">Gönder</button>
+      </form>
+
+      <div class="hint" id="chatStatus" style="margin-top:8px;"></div>
+    </div>
+  </div>
+  {% endif %}
+</section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const root = document.querySelector('.chatLayout');
+    if (!root) return;
+
+    const escapeHtml = window.escapeHtml || ((s) => (s ?? '').toString().replace(/[&<>"']/g, (ch) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[ch])));
+    const toast = window.toast || ((msg) => { try { alert(msg); } catch (_) { } });
+
+    const csrfToken = (document.getElementById('csrfTokenGlobal') || {}).value || '';
+    const userId = Number(root.getAttribute('data-user-id') || '0') || 0;
+    const selectedUserId = Number(root.getAttribute('data-selected-user-id') || '0') || 0;
+    const messagesEl = document.getElementById('chatMessages');
+    const form = document.getElementById('chatForm');
+    const textEl = document.getElementById('chatText');
+    const roomTitle = document.getElementById('chatRoomTitle');
+    const roomHint = document.getElementById('chatRoomHint');
+    const statusEl = document.getElementById('chatStatus');
+    const userBtns = Array.from(document.querySelectorAll('.chatTeamBtn'));
+    const searchEl = document.getElementById('chatUserSearch');
+
+    let currentOtherUserId = selectedUserId || (userBtns[0] ? Number(userBtns[0].getAttribute('data-user-id') || '0') : 0);
+    let lastMessageId = 0;
+    const seenIds = new Set();
+
+    let pollTimer = null;
+    let sharedSocket = window.__socket;
+
+    const pairKey = (a, b) => {
+      const x = Number(a || 0) || 0;
+      const y = Number(b || 0) || 0;
+      if (!x || !y) return '';
+      const lo = Math.min(x, y);
+      const hi = Math.max(x, y);
+      return `${lo}:${hi}`;
+    };
+
+    const fmtTime = (isoStr) => {
+      if (!isoStr) return '';
+      try {
+        const d = new Date(isoStr);
+        return d.toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '');
+      } catch (_) { return isoStr; }
+    };
+
+    // Pop-up bildirim göster
+    const showChatNotification = (fromName, messageText, fromUserId) => {
+      // Bildirim container'ı oluştur (eğer yoksa)
+      let notificationContainer = document.getElementById('chatNotificationContainer');
+      if (!notificationContainer) {
+        notificationContainer = document.createElement('div');
+        notificationContainer.id = 'chatNotificationContainer';
+        notificationContainer.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 10px; pointer-events: none;';
+        document.body.appendChild(notificationContainer);
+      }
+
+      // Bildirim pop-up'ı oluştur
+      const notification = document.createElement('div');
+      notification.style.cssText = `
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+      padding: 14px 16px;
+      min-width: 300px;
+      max-width: 400px;
+      pointer-events: auto;
+      cursor: pointer;
+      animation: slideInRight 0.3s ease-out;
+      transition: transform 0.2s, opacity 0.2s;
+    `;
+
+      // Mesaj metnini kısalt
+      const shortText = messageText.length > 80 ? messageText.substring(0, 80) + '...' : messageText;
+
+      notification.innerHTML = `
+      <div style="display: flex; align-items: flex-start; gap: 12px;">
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-weight: 700; color: var(--text-strong); font-size: 14px; margin-bottom: 4px;">${escapeHtml(fromName)}</div>
+          <div style="color: var(--text-subtle); font-size: 13px; line-height: 1.4; word-wrap: break-word;">${escapeHtml(shortText)}</div>
+        </div>
+        <button class="closeBtn" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; padding: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">×</button>
+      </div>
+    `;
+
+      // Kapat butonu
+      const closeBtn = notification.querySelector('.closeBtn');
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        notification.style.transform = 'translateX(100%)';
+        notification.style.opacity = '0';
+        setTimeout(() => notification.remove(), 200);
+      });
+
+      // Tıklanınca sohbet sayfasına git
+      notification.addEventListener('click', () => {
+        window.location.href = `/chat/users?user_id=${encodeURIComponent(fromUserId)}`;
+      });
+
+      // Hover efekti
+      notification.addEventListener('mouseenter', () => {
+        notification.style.transform = 'translateY(-2px)';
+        notification.style.boxShadow = '0 12px 48px rgba(0,0,0,0.2)';
+      });
+      notification.addEventListener('mouseleave', () => {
+        notification.style.transform = '';
+        notification.style.boxShadow = '0 10px 40px rgba(0,0,0,0.15)';
+      });
+
+      notificationContainer.appendChild(notification);
+
+      // 5 saniye sonra otomatik kapat
+      setTimeout(() => {
+        if (notification.parentElement) {
+          notification.style.transform = 'translateX(100%)';
+          notification.style.opacity = '0';
+          setTimeout(() => notification.remove(), 200);
+        }
+      }, 5000);
+    };
+
+    // CSS animasyonu ekle
+    if (!document.getElementById('chatNotificationStyle')) {
+      const style = document.createElement('style');
+      style.id = 'chatNotificationStyle';
+      style.textContent = `
+      @keyframes slideInRight {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+    `;
+      document.head.appendChild(style);
+    }
+
+    const clearMessages = () => {
+      if (messagesEl) messagesEl.innerHTML = '';
+      seenIds.clear();
+      lastMessageId = 0;
+    };
+
+    const scrollToBottom = () => {
+      if (!messagesEl) return;
+      try { messagesEl.scrollTop = messagesEl.scrollHeight; } catch (_) { }
+    };
+
+    const appendMessage = (m) => {
+      if (!m || !m.id) return;
+      const id = Number(m.id) || 0;
+      if (!id || seenIds.has(id)) return;
+      seenIds.add(id);
+      lastMessageId = Math.max(lastMessageId, id);
+
+      const mine = (Number(m.from_user_id) || 0) === userId;
+      const wrap = document.createElement('div');
+      wrap.className = 'chatMsg' + (mine ? ' mine' : '');
+      wrap.innerHTML = `
+      <div class="chatMsgHeader">
+        <div class="chatMsgUser">${escapeHtml(m.from_user_name || '')}</div>
+        <div class="chatMsgTime">${escapeHtml(fmtTime(m.created_at))}</div>
+      </div>
+      <div class="chatMsgText">${escapeHtml(m.text || '').replace(/\\n/g, '<br>')}</div>
+    `;
+      messagesEl.appendChild(wrap);
+    };
+
+    const loadMessages = async (opts) => {
+      const reset = !!(opts && opts.reset);
+      const incremental = !!(opts && opts.incremental);
+      if (!currentOtherUserId) return;
+
+      if (reset) {
+        clearMessages();
+        if (roomHint) roomHint.textContent = 'Yükleniyor...';
+      }
+
+      const url = incremental && lastMessageId > 0
+        ? `/api/chat/messages?user_id=${encodeURIComponent(currentOtherUserId)}&after_id=${encodeURIComponent(lastMessageId)}`
+        : `/api/chat/messages?user_id=${encodeURIComponent(currentOtherUserId)}&limit=200`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json().catch(() => ({ ok: false }));
+        if (!res.ok || !data.ok) {
+          if (roomHint) roomHint.textContent = 'Mesajlar yüklenemedi';
+          return;
+        }
+        const items = data.messages || [];
+        items.forEach(appendMessage);
+        if (reset) scrollToBottom();
+        if (roomHint) roomHint.textContent = `${items.length ? '' : 'Henüz mesaj yok'}`;
+      } catch (_) {
+        if (roomHint) roomHint.textContent = 'Mesajlar yüklenemedi';
+      }
+    };
+
+    const setActiveUser = async (otherUserId) => {
+      const oid = Number(otherUserId) || 0;
+      if (!oid) return;
+      currentOtherUserId = oid;
+
+      userBtns.forEach(b => {
+        const id = Number(b.getAttribute('data-user-id') || '0') || 0;
+        b.classList.toggle('active', id === currentOtherUserId);
+      });
+
+      const btn = userBtns.find(b => (Number(b.getAttribute('data-user-id') || '0') || 0) === currentOtherUserId);
+      const name = btn ? (btn.getAttribute('data-user-name') || btn.textContent || '').trim() : '';
+      if (roomTitle) roomTitle.textContent = name || '-';
+
+      await loadMessages({ reset: true });
+    };
+
+    const stopPolling = () => {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    };
+    const startPolling = () => {
+      stopPolling();
+      pollTimer = setInterval(() => loadMessages({ incremental: true }), 5000);
+    };
+
+    // Search filter
+    const applySearch = () => {
+      const q = (searchEl ? searchEl.value : '').toString().trim().toLowerCase();
+      userBtns.forEach(b => {
+        const name = (b.getAttribute('data-user-name') || b.textContent || '').toString().toLowerCase();
+        b.style.display = (!q || name.includes(q)) ? '' : 'none';
+      });
+    };
+    if (searchEl) {
+      searchEl.addEventListener('input', applySearch);
+    }
+
+    // Wire sidebar
+    userBtns.forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const oid = Number(btn.getAttribute('data-user-id') || '0') || 0;
+        // Tıklanınca unread rozeti temizle
+        btn.classList.remove('unread');
+        await setActiveUser(oid);
+      });
+    });
+
+    // SocketIO if available, else polling
+    try {
+      if (sharedSocket) {
+        sharedSocket.on('connect', () => {
+          if (statusEl) statusEl.textContent = 'Bağlandı';
+        });
+        sharedSocket.on('disconnect', () => {
+          if (statusEl) statusEl.textContent = 'Bağlantı koptu, polling devrede';
+          startPolling();
+        });
+        sharedSocket.on('chat_message', (m) => {
+          try {
+            const incomingToMe = Number(m.to_user_id || 0) === userId;
+            const fromUser = Number(m.from_user_id || 0) || 0;
+            const pkActive = pairKey(userId, currentOtherUserId);
+            const pkMsg = (m.pair_key || '');
+
+            // Eğer aktif sohbete aitse mesajı göster
+            if (pkActive && pkMsg === pkActive) {
+              appendMessage(m);
+              scrollToBottom();
+              return;
+            }
+
+            // Aktif olmayan sohbetten gelen mesajlar için sidebar'da bildirim ve pop-up
+            if (incomingToMe && fromUser && fromUser !== currentOtherUserId) {
+              const btn = userBtns.find(b => (Number(b.getAttribute('data-user-id') || '0') || 0) === fromUser);
+              if (btn) {
+                btn.classList.add('unread');
+              }
+              // Pop-up bildirim göster (Chat Notifications in base.html also handles this, but keeping logic consistent)
+              showChatNotification(m.from_user_name || 'Bilinmeyen', m.text || '', fromUser);
+            }
+          } catch (_) { }
+        });
+
+        // 2) GÖREV: new_message eventini dinle (Anlık DOM güncelleme)
+        sharedSocket.on('new_message', (data) => {
+          try {
+            const incomingToMe = (Number(data.to_user_id) || 0) === userId;
+            const fromUser = Number(data.from_user_id) || 0;
+            const myId = userId;
+
+            // Mesajın şu anki açık olan sohbetle ilgili olup olmadığını kontrol et
+            let isActiveChat = false;
+            // Eğer ben gönderdiysem (başka sekmeden) ve şu an o kişiyle konuşuyorsam
+            if (fromUser === myId && (Number(data.to_user_id) || 0) === currentOtherUserId) {
+              isActiveChat = true;
+            }
+            // Eğer bana geldiyse ve şu an o kişiyle konuşuyorsam
+            else if (incomingToMe && fromUser === currentOtherUserId) {
+              isActiveChat = true;
+            }
+
+            if (isActiveChat) {
+              // Mesajı ekle (ID veritabanından gelmediği için timestamp kullanıyoruz dedup için)
+              appendMessage({
+                id: Date.now(),
+                from_user_name: data.sender,
+                text: data.text,
+                created_at: data.created_at || new Date().toISOString(),
+                from_user_id: fromUser
+              });
+              scrollToBottom();
+            } else if (incomingToMe && fromUser !== currentOtherUserId) {
+              // Sidebar güncelle (unread class)
+              const btn = userBtns.find(b => (Number(b.getAttribute('data-user-id') || '0') || 0) === fromUser);
+              if (btn) btn.classList.add('unread');
+              // Not: Bildirim base.html tarafından yönetiliyor
+            }
+          } catch (e) { console.error(e); }
+        });
+
+        stopPolling();
+      } else {
+        startPolling();
+        if (statusEl) statusEl.textContent = 'Polling (5sn)';
+      }
+    } catch (_) {
+      startPolling();
+      if (statusEl) statusEl.textContent = 'Polling (5sn)';
+    }
+
+    // Initial
+    setActiveUser(currentOtherUserId);
+    applySearch();
+
+    // Send
+    if (form) {
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!currentOtherUserId) return;
+        const text = (textEl ? textEl.value : '').toString().trim();
+        if (!text) return;
+        if (text.length > 2000) {
+          toast('Mesaj çok uzun');
+          return;
+        }
+
+        try {
+          const res = await fetch('/api/chat/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ to_user_id: currentOtherUserId, text, csrf_token: csrfToken })
+          });
+          const data = await res.json().catch(() => ({ ok: false }));
+          if (!res.ok || !data.ok) {
+            toast('Gönderilemedi');
+            return;
+          }
+          if (textEl) textEl.value = '';
+          if (data.message) {
+            appendMessage(data.message);
+            scrollToBottom();
+          }
+        } catch (_) {
+          toast('Gönderilemedi');
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="task-report-page" style="max-width: 1400px; margin: 0 auto; padding: 24px;">
+  <h1 style="margin: 0 0 24px 0; font-size: 24px; font-weight: 700; color: var(--text-strong);">Görev Takip Raporu</h1>
+
+  <!-- En hızlı görevini kapatan -->
+  {% if fastest_closer %}
+  <section style="margin-bottom: 28px;">
+    <div style="background: linear-gradient(135deg, var(--bg-soft) 0%, var(--card) 100%); border: 1px solid var(--border); border-radius: 12px; padding: 20px;">
+      <h2 style="margin: 0 0 12px 0; font-size: 14px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">En hızlı görevini kapatan</h2>
+      <p style="margin: 0; font-size: 18px; font-weight: 700; color: var(--primary);">
+        {{ fastest_closer.user_name }}
+      </p>
+      <p style="margin: 6px 0 0 0; font-size: 13px; color: var(--text-secondary);">
+        {{ fastest_closer.task_no }} — {{ fastest_closer.subject[:60] }}{% if fastest_closer.subject|length > 60 %}...{% endif %}
+        <br><strong>{{ fastest_closer.days }}</strong> günde tamamlandı.
+      </p>
+    </div>
+  </section>
+  {% endif %}
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+    <!-- Personel üzerindeki açık görevler -->
+    <section class="report-card" style="background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px;">
+      <h2 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 700; color: var(--text-strong);">Personel üzerindeki açık görevler</h2>
+      {% if open_per_person %}
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border);">
+              <th style="text-align: left; padding: 10px 8px; color: var(--text-muted); font-weight: 600;">Personel</th>
+              <th style="text-align: right; padding: 10px 8px; color: var(--text-muted); font-weight: 600;">Açık görev</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in open_per_person %}
+            <tr style="border-bottom: 1px solid var(--border-soft);">
+              <td style="padding: 10px 8px;"><a href="{{ url_for('tasks.task_list') }}?assigned_user_id={{ row.user_id }}" style="color: var(--primary); text-decoration: none;">{{ row.user_name }}</a></td>
+              <td style="text-align: right; padding: 10px 8px; font-weight: 600;">{{ row.count }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p style="margin: 0; color: var(--text-muted); font-size: 13px;">Açık görev yok.</p>
+      {% endif %}
+    </section>
+
+    <!-- En çok kayıt açılan -->
+    <section class="report-card" style="background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px;">
+      <h2 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 700; color: var(--text-strong);">En çok kayıt açılan</h2>
+      {% if most_created %}
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border);">
+              <th style="text-align: left; padding: 10px 8px; color: var(--text-muted); font-weight: 600;">Personel</th>
+              <th style="text-align: right; padding: 10px 8px; color: var(--text-muted); font-weight: 600;">Açılan görev</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in most_created %}
+            <tr style="border-bottom: 1px solid var(--border-soft);">
+              <td style="padding: 10px 8px;">{{ row.user_name }}</td>
+              <td style="text-align: right; padding: 10px 8px; font-weight: 600;">{{ row.count }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p style="margin: 0; color: var(--text-muted); font-size: 13px;">Kayıt yok.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <!-- Projelere göre görev raporu -->
+  <section style="margin-top: 24px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px;">
+    <h2 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 700; color: var(--text-strong);">Projelere göre görev sayıları</h2>
+    {% if by_project %}
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border);">
+            <th style="text-align: left; padding: 10px 8px; color: var(--text-muted); font-weight: 600;">Proje kodu</th>
+            <th style="text-align: right; padding: 10px 8px; color: var(--text-muted); font-weight: 600;">Görev sayısı</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for code, count in by_project %}
+          <tr style="border-bottom: 1px solid var(--border-soft);">
+            <td style="padding: 10px 8px;">{{ code }}</td>
+            <td style="text-align: right; padding: 10px 8px; font-weight: 600;">{{ count }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="margin: 0; color: var(--text-muted); font-size: 13px;">Proje bazlı görev yok.</p>
+    {% endif %}
+  </section>
+
+  <!-- Tamamlanma süreleri (son 50 kapalı görev) -->
+  <section style="margin-top: 24px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px;">
+    <h2 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 700; color: var(--text-strong);">Görev tamamlanma süreleri (en kısa sürede kapananlar)</h2>
+    {% if completion_times %}
+    <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+        <thead>
+          <tr style="border-bottom: 1px solid var(--border);">
+            <th style="text-align: left; padding: 10px 8px; color: var(--text-muted); font-weight: 600;">Görev</th>
+            <th style="text-align: left; padding: 10px 8px; color: var(--text-muted); font-weight: 600;">Atanan</th>
+            <th style="text-align: right; padding: 10px 8px; color: var(--text-muted); font-weight: 600;">Süre (gün)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in completion_times %}
+          <tr style="border-bottom: 1px solid var(--border-soft);">
+            <td style="padding: 10px 8px;">
+              <a href="{{ url_for('tasks.task_list') }}" style="color: var(--primary); text-decoration: none;">{{ row.task.task_no }}</a>
+              — {{ row.task.subject[:50] }}{% if row.task.subject|length > 50 %}...{% endif %}
+            </td>
+            <td style="padding: 10px 8px;">{{ row.assigned_name }}</td>
+            <td style="text-align: right; padding: 10px 8px; font-weight: 600;">{{ row.days }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="margin: 0; color: var(--text-muted); font-size: 13px;">Tamamlanmış görev yok.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

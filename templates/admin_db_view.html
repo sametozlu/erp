@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <h1 style="font-size: 28px; font-weight: 900; margin: 0; color: var(--text-strong);">Veritabanı Görüntüle</h1>
+    <a href="{{ url_for('auth.admin_users') }}" class="btn" style="background-color: var(--text-muted); color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600;">
+      ← Geri
+    </a>
+  </div>
+
+  <div style="margin-bottom: 20px; padding: 12px; background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; color: #92400e; font-size: 13px;">
+    <strong>ℹ️ Bilgi:</strong> Bu sayfada veritabanındaki tüm tablolar ve veriler görüntülenmektedir. Sayfayı yenilediğinizde güncel veriler gösterilir.
+  </div>
+
+  {% if tables %}
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      {% for table_name, table_data in tables.items() %}
+        <div class="db-table-card" style="background: #ffffff; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+          <div class="db-table-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 16px 20px; cursor: pointer; user-select: none;" onclick="toggleTable('{{ table_name|replace(' ', '_')|replace('-', '_') }}')">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 18px;">📊</span>
+                <h2 style="font-size: 18px; font-weight: 700; color: #ffffff; margin: 0;">
+                  {{ table_name }}
+                </h2>
+                <span style="font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 12px;">
+                  {{ table_data.rows|length }} kayıt
+                </span>
+              </div>
+              <span class="toggle-icon collapsed" id="icon_{{ table_name|replace(' ', '_')|replace('-', '_') }}" style="color: #ffffff; font-size: 14px; transition: transform 0.2s;">▶</span>
+            </div>
+          </div>
+          
+          <div class="db-table-content" id="content_{{ table_name|replace(' ', '_')|replace('-', '_') }}" style="display: none;">
+            {% if table_data.rows %}
+              <div style="overflow-x: auto; max-width: 100%;">
+                <table class="db-data-table" style="width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px;">
+                  <thead>
+                    <tr>
+                      {% for col_name in table_data.columns %}
+                        <th style="padding: 12px 14px; text-align: left; font-weight: 600; color: var(--text-strong); background: var(--bg-soft); border-bottom: 2px solid var(--border); border-right: 1px solid var(--border); white-space: nowrap; position: sticky; top: 0; z-index: 10;">
+                          {{ col_name }}
+                        </th>
+                      {% endfor %}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for row in table_data.rows %}
+                      <tr class="db-data-row" style="border-bottom: 1px solid var(--bg-soft-2);">
+                        {% for col_name in table_data.columns %}
+                          <td style="padding: 10px 14px; color: var(--text-subtle); border-right: 1px solid var(--bg-soft-2); max-width: 250px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.5; vertical-align: top;">
+                            {% if row[col_name] is none %}
+                              <span style="color: var(--border); font-style: italic; font-size: 11px;">NULL</span>
+                            {% elif row[col_name] is sameas true or row[col_name] is sameas false %}
+                              <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; {% if row[col_name] %}background: #d1fae5; color: #065f46;{% else %}background: #fee2e2; color: #991b1b;{% endif %}">
+                                {{ '✓' if row[col_name] else '✗' }}
+                              </span>
+                            {% elif row[col_name]|string|length > 80 %}
+                              {% set full_value = row[col_name]|string %}
+                              {% set truncated = full_value[:80] + '...' if full_value|length > 80 else full_value %}
+                              <div style="position: relative;">
+                                <span class="truncated-text" style="display: inline-block; max-width: 100%;">{{ truncated }}</span>
+                                <div class="full-text-tooltip" style="display: none; position: absolute; background: #1e293b; color: var(--bg-soft-2); padding: 8px 12px; border-radius: 6px; font-size: 11px; max-width: 400px; word-wrap: break-word; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.3); top: 100%; left: 0; margin-top: 4px;">
+                                  {{ full_value }}
+                                </div>
+                              </div>
+                            {% else %}
+                              <span style="display: inline-block; max-width: 100%;">{{ row[col_name] }}</span>
+                            {% endif %}
+                          </td>
+                        {% endfor %}
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div style="padding: 40px; text-align: center; color: var(--text-muted); font-size: 14px; background: var(--bg-soft);">
+                <span style="font-size: 24px; display: block; margin-bottom: 8px;">📭</span>
+                Bu tabloda veri bulunmamaktadır.
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card" style="background: #ffffff; border: 1px solid var(--border); border-radius: 12px; padding: 40px; text-align: center;">
+      <div style="color: var(--text-muted); font-size: 16px;">
+        Veritabanında tablo bulunamadı veya veri okunamadı.
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+<style>
+  .db-table-card {
+    transition: box-shadow 0.2s;
+  }
+  
+  .db-table-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  
+  .db-table-header:hover {
+    opacity: 0.95;
+  }
+  
+  .db-data-table {
+    background: #ffffff;
+  }
+  
+  .db-data-row {
+    transition: background-color 0.15s;
+  }
+  
+  .db-data-row:hover {
+    background-color: var(--bg-soft) !important;
+  }
+  
+  .db-data-row:nth-child(even) {
+    background-color: #fafbfc;
+  }
+  
+  .db-data-table th {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .db-data-table td {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 12px;
+  }
+  
+  .truncated-text {
+    cursor: help;
+  }
+  
+  .truncated-text:hover + .full-text-tooltip {
+    display: block !important;
+  }
+  
+  .db-table-content {
+    max-height: 600px;
+    overflow-y: auto;
+    overflow-x: auto;
+  }
+  
+  .db-table-content::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .db-table-content::-webkit-scrollbar-track {
+    background: var(--bg-soft-2);
+  }
+  
+  .db-table-content::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+  }
+  
+  .db-table-content::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+  }
+  
+  .toggle-icon {
+    transition: transform 0.3s ease;
+  }
+  
+  .toggle-icon.collapsed {
+    transform: rotate(-90deg);
+  }
+</style>
+
+<script>
+function toggleTable(tableId) {
+  const content = document.getElementById('content_' + tableId);
+  const icon = document.getElementById('icon_' + tableId);
+  
+  if (content.style.display === 'none') {
+    content.style.display = 'block';
+    icon.classList.remove('collapsed');
+    icon.textContent = '▼';
+  } else {
+    content.style.display = 'none';
+    icon.classList.add('collapsed');
+    icon.textContent = '▶';
+  }
+}
+</script>
+{% endblock %}

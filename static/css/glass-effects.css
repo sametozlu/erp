@@ -1,0 +1,150 @@
+/* ============================================
+   GLASS/ACRYLIC EFFECT COMPREHENSIVE THEME SUPPORT
+   ============================================ */
+
+/* Light (Default) */
+html[data-theme="light"],
+html:not([data-theme]) {
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.5);
+    --glass-gradient-start: rgba(255, 255, 255, 0.9);
+    --glass-gradient-end: rgba(255, 255, 255, 0.6);
+}
+
+/* Dark (Neutral Gray) */
+html[data-theme="dark"] {
+    --glass-bg: rgba(45, 45, 45, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-gradient-start: rgba(50, 50, 50, 0.9);
+    --glass-gradient-end: rgba(40, 40, 40, 0.7);
+}
+
+/* Navy (Deep Blue) */
+html[data-theme="navy"] {
+    --glass-bg: rgba(30, 58, 138, 0.85);
+    /* blue-900 base */
+    --glass-border: rgba(191, 219, 254, 0.1);
+    --glass-gradient-start: rgba(30, 58, 138, 0.9);
+    --glass-gradient-end: rgba(23, 37, 84, 0.8);
+}
+
+/* Pure Black (OLED) */
+html[data-theme="pure-black"] {
+    --glass-bg: rgba(0, 0, 0, 0.9);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-gradient-start: rgba(0, 0, 0, 0.95);
+    --glass-gradient-end: rgba(10, 10, 10, 0.85);
+}
+
+/* Grey (Neutral) */
+html[data-theme="grey"],
+html[data-theme="slate"] {
+    --glass-bg: rgba(58, 58, 58, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-gradient-start: rgba(63, 63, 70, 0.9);
+    --glass-gradient-end: rgba(39, 39, 42, 0.8);
+}
+
+/* Ocean (Blue) */
+html[data-theme="ocean"] {
+    --glass-bg: rgba(224, 242, 254, 0.85);
+    /* sky-100 */
+    --glass-border: rgba(186, 230, 253, 0.5);
+    --glass-gradient-start: rgba(240, 249, 255, 0.9);
+    --glass-gradient-end: rgba(224, 242, 254, 0.7);
+}
+
+/* Forest (Green) */
+html[data-theme="forest"] {
+    --glass-bg: rgba(220, 252, 231, 0.85);
+    /* green-100 */
+    --glass-border: rgba(187, 247, 208, 0.5);
+    --glass-gradient-start: rgba(240, 253, 244, 0.9);
+    --glass-gradient-end: rgba(220, 252, 231, 0.7);
+}
+
+/* Sunset (Orange) */
+html[data-theme="sunset"] {
+    --glass-bg: rgba(255, 237, 213, 0.85);
+    /* orange-100 */
+    --glass-border: rgba(254, 215, 170, 0.5);
+    --glass-gradient-start: rgba(255, 247, 237, 0.9);
+    --glass-gradient-end: rgba(255, 237, 213, 0.7);
+}
+
+/* Purple (Violet) */
+html[data-theme="purple"] {
+    --glass-bg: rgba(243, 232, 255, 0.85);
+    /* purple-100 */
+    --glass-border: rgba(233, 213, 255, 0.5);
+    --glass-gradient-start: rgba(250, 245, 255, 0.9);
+    --glass-gradient-end: rgba(243, 232, 255, 0.7);
+}
+
+/* Pure White */
+html[data-theme="pure-white"] {
+    --glass-bg: rgba(255, 255, 255, 0.95);
+    --glass-border: rgba(0, 0, 0, 0.05);
+    --glass-gradient-start: #ffffff;
+    --glass-gradient-end: #f5f5f5;
+}
+
+/* Teal & Rose (New placeholder support) */
+html[data-theme="teal"] {
+    --glass-bg: rgba(204, 251, 241, 0.85);
+    --glass-border: rgba(153, 246, 228, 0.5);
+}
+
+html[data-theme="rose"] {
+    --glass-bg: rgba(255, 228, 230, 0.85);
+    --glass-border: rgba(254, 205, 211, 0.5);
+}
+
+/* ============================================
+   BASE GLASS EFFECT
+   ============================================ */
+
+.glass {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(var(--glass-blur, 16px)) !important;
+    -webkit-backdrop-filter: blur(var(--glass-blur, 16px)) !important;
+    border: 1px solid var(--glass-border) !important;
+}
+
+.glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur, 16px));
+    -webkit-backdrop-filter: blur(var(--glass-blur, 16px));
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius, 12px);
+    box-shadow: var(--shadow-glass);
+}
+
+/* Gradient Fix: Use theme-aware gradient colors instead of hardcoded white */
+.glass-gradient {
+    background: linear-gradient(135deg,
+            var(--glass-gradient-start) 0%,
+            var(--glass-gradient-end) 100%) !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+    border: 1px solid var(--glass-border) !important;
+}
+
+/* Utility components reusing vars */
+.glass-nav,
+.glass-panel,
+.glass-dropdown,
+.glass-modal {
+    background: var(--glass-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+}
+
+/* Legacy support override to ensure no hardcoded white remains */
+.glass-light,
+.glass-medium,
+.glass-strong {
+    background: var(--glass-bg) !important;
+    border-color: var(--glass-border) !important;
+}

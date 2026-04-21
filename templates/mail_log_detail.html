@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card" style="max-width: 900px; margin: 0 auto;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+    <h2 style="margin:0;">Mail Log Detayı</h2>
+    <a class="button" href="{{ url_for('admin.mail_settings_page') }}#logs">Log Listesine Dön</a>
+  </div>
+
+  <table class="table">
+    <tr><th>ID</th><td>{{ log.id }}</td></tr>
+    <tr><th>Tarih</th><td>{{ log.created_at }}</td></tr>
+    <tr><th>Tür</th><td>{{ log.mail_type }} ({{ log.kind }})</td></tr>
+    <tr><th>Durum</th><td>{% if log.ok %}✅ Başarılı{% else %}❌ Hata{% endif %}</td></tr>
+    <tr><th>Alıcı</th><td>{{ log.to_addr }}</td></tr>
+    <tr><th>CC</th><td>{{ log.cc_addr or '-' }}</td></tr>
+    <tr><th>BCC</th><td>{{ log.bcc_addr or '-' }}</td></tr>
+    <tr><th>Konu</th><td>{{ log.subject }}</td></tr>
+    <tr><th>Ekip</th><td>{{ log.team_name or '-' }}</td></tr>
+    <tr><th>Kullanıcı</th><td>{{ log.user_id or '-' }}</td></tr>
+    <tr><th>İlişkili</th><td>Project: {{ log.project_id or '-' }}, Job: {{ log.job_id or '-' }}, Task: {{ log.task_id or '-' }}</td></tr>
+    <tr><th>Ek Sayısı</th><td>{{ log.attachments_count }}</td></tr>
+    <tr><th>Body Önizleme</th><td><pre style="white-space:pre-wrap">{{ log.body_preview or '' }}</pre></td></tr>
+    <tr><th>Hata</th><td>{{ log.error or '-' }} {% if log.error_code %}<small>(Kod: {{ log.error_code }})</small>{% endif %}</td></tr>
+    <tr><th>Meta</th><td><pre style="white-space:pre-wrap">{{ log.meta_json or '-' }}</pre></td></tr>
+  </table>
+</div>
+{% endblock %}

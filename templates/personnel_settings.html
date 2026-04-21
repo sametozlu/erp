@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% block content %}
+<input type="hidden" id="csrfToken" value="{{ csrf_token() }}">
+
+<section class="card" style="padding: 24px; max-width: 1200px; margin: 0 auto;">
+    <div
+        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; border-bottom: 1px solid var(--line); padding-bottom: 16px;">
+        <div>
+            <h2 style="margin: 0; color: var(--text); font-size: 24px; font-weight: 700;">⚙️ Personel Durum Ayarları
+            </h2>
+            <p style="margin: 8px 0 0 0; color: var(--text-light); font-size: 14px;">İzinli, Raporlu, Ofis gibi durum
+                tiplerini ve alt proje eşleştirmelerini yönetin.</p>
+        </div>
+        <a href="{{ url_for('planner.plan_week') }}" class="btn"
+            style="background: var(--line-light); color: var(--text-light); padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 500;">
+            ← Plana Dön
+        </a>
+    </div>
+
+    <!-- Yeni Durum Tipi Ekleme -->
+    <div
+        style="background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+        <h3 style="margin: 0 0 16px 0; color: var(--text); font-size: 16px; font-weight: 600;">➕ Yeni Durum Tipi Ekle
+        </h3>
+        <form id="addStatusTypeForm" onsubmit="return addStatusType(event)">
+            <div
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; align-items: end;">
+                <div>
+                    <label style="display: block; font-size: 12px; color: var(--text-light); margin-bottom: 4px;">Durum
+                        Adı *</label>
+                    <input type="text" id="newStatusName" required placeholder="Örn: Yıllık İzin"
+                        style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 14px; background: var(--card); color: var(--text);">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 12px; color: var(--text-light); margin-bottom: 4px;">Kod
+                        *</label>
+                    <input type="text" id="newStatusCode" required placeholder="Örn: annual_leave"
+                        style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 14px; background: var(--card); color: var(--text);">
+                </div>
+                <div>
+                    <label
+                        style="display: block; font-size: 12px; color: var(--text-light); margin-bottom: 4px;">Renk</label>
+                    <input type="color" id="newStatusColor" value="#be123c"
+                        style="width: 100%; height: 38px; border: 1px solid var(--line); border-radius: 6px; cursor: pointer;">
+                </div>
+                <div>
+                    <label
+                        style="display: block; font-size: 12px; color: var(--text-light); margin-bottom: 4px;">İkon</label>
+                    <input type="text" id="newStatusIcon" value="📋" placeholder="Emoji"
+                        style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 14px; background: var(--card); color: var(--text); text-align: center;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 12px; color: var(--text-light); margin-bottom: 4px;">Alt
+                        Proje</label>
+                    <select id="newStatusSubproject"
+                        style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; font-size: 14px; background: var(--card); color: var(--text);">
+                        <option value="">-- Seçiniz --</option>
+                        {% for sp in office_subprojects %}
+                        <option value="{{ sp.id }}">{{ sp.code }} {{ sp.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <button type="submit" class="btn"
+                        style="background: linear-gradient(135deg, var(--status-success) 0%, var(--status-success) 100%); color: white; padding: 10px 20px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; width: 100%;">
+                        Ekle
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Mevcut Durum Tipleri -->
+    <div style="background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden;">
+        <div style="padding: 16px 20px; border-bottom: 1px solid var(--line); background: var(--bg);">
+            <h3 style="margin: 0; color: var(--text); font-size: 16px; font-weight: 600;">📋 Mevcut Durum Tipleri</h3>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: var(--bg);">
+                    <th
+                        style="padding: 12px 16px; text-align: left; font-size: 12px; color: var(--text-light); font-weight: 600; border-bottom: 1px solid var(--line);">
+                        Sıra</th>
+                    <th
+                        style="padding: 12px 16px; text-align: left; font-size: 12px; color: var(--text-light); font-weight: 600; border-bottom: 1px solid var(--line);">
+                        İkon</th>
+                    <th
+                        style="padding: 12px 16px; text-align: left; font-size: 12px; color: var(--text-light); font-weight: 600; border-bottom: 1px solid var(--line);">
+                        Durum Adı</th>
+                    <th
+                        style="padding: 12px 16px; text-align: left; font-size: 12px; color: var(--text-light); font-weight: 600; border-bottom: 1px solid var(--line);">
+                        Kod</th>
+                    <th
+                        style="padding: 12px 16px; text-align: left; font-size: 12px; color: var(--text-light); font-weight: 600; border-bottom: 1px solid var(--line);">
+                        Renk</th>
+                    <th
+                        style="padding: 12px 16px; text-align: left; font-size: 12px; color: var(--text-light); font-weight: 600; border-bottom: 1px solid var(--line);">
+                        Alt Proje</th>
+                    <th
+                        style="padding: 12px 16px; text-align: left; font-size: 12px; color: var(--text-light); font-weight: 600; border-bottom: 1px solid var(--line);">
+                        Durum</th>
+                    <th
+                        style="padding: 12px 16px; text-align: center; font-size: 12px; color: var(--text-light); font-weight: 600; border-bottom: 1px solid var(--line);">
+                        İşlemler</th>
+                </tr>
+            </thead>
+            <tbody id="statusTypesBody">
+                {% for st in status_types %}
+                <tr data-id="{{ st.id }}" style="border-bottom: 1px solid var(--line);">
+                    <td style="padding: 12px 16px;">
+                        <input type="number" value="{{ st.display_order }}" min="0" max="100"
+                            onchange="updateStatusType({{ st.id }}, 'display_order', this.value)"
+                            style="width: 50px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 4px; text-align: center; background: var(--card); color: var(--text);">
+                    </td>
+                    <td style="padding: 12px 16px;">
+                        <input type="text" value="{{ st.icon or '📋' }}"
+                            onchange="updateStatusType({{ st.id }}, 'icon', this.value)"
+                            style="width: 40px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 4px; text-align: center; font-size: 18px; background: var(--card);">
+                    </td>
+                    <td style="padding: 12px 16px;">
+                        <input type="text" value="{{ st.name }}"
+                            onchange="updateStatusType({{ st.id }}, 'name', this.value)"
+                            style="width: 100%; padding: 6px 10px; border: 1px solid var(--line); border-radius: 4px; font-weight: 500; background: var(--card); color: var(--text);">
+                    </td>
+                    <td style="padding: 12px 16px;">
+                        <code
+                            style="background: var(--bg); padding: 4px 8px; border-radius: 4px; font-size: 12px; color: var(--text-light);">{{ st.code }}</code>
+                    </td>
+                    <td style="padding: 12px 16px;">
+                        <input type="color" value="{{ st.color or '#be123c' }}"
+                            onchange="updateStatusType({{ st.id }}, 'color', this.value)"
+                            style="width: 40px; height: 30px; border: 1px solid var(--line); border-radius: 4px; cursor: pointer;">
+                    </td>
+                    <td style="padding: 12px 16px;">
+                        <select onchange="updateStatusType({{ st.id }}, 'subproject_id', this.value)"
+                            style="padding: 6px 10px; border: 1px solid var(--line); border-radius: 4px; font-size: 12px; background: var(--card); color: var(--text);">
+                            <option value="">-- Seçiniz --</option>
+                            {% for sp in office_subprojects %}
+                            <option value="{{ sp.id }}" {% if st.subproject_id==sp.id %}selected{% endif %}>{{ sp.code
+                                }} {{ sp.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td style="padding: 12px 16px;">
+                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                            <input type="checkbox" {% if st.is_active %}checked{% endif %}
+                                onchange="updateStatusType({{ st.id }}, 'is_active', this.checked)"
+                                style="width: 18px; height: 18px; cursor: pointer;">
+                            <span style="font-size: 12px; color: var(--text-light);">Aktif</span>
+                        </label>
+                    </td>
+                    <td style="padding: 12px 16px; text-align: center;">
+                        <button onclick="deleteStatusType({{ st.id }}, '{{ st.name }}')"
+                            style="background: var(--status-danger); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 500;">
+                            🗑️ Sil
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if not status_types %}
+        <div style="padding: 40px; text-align: center; color: var(--text-light);">
+            <p style="font-size: 14px;">Henüz durum tipi tanımlanmamış.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Bilgi Kutusu -->
+    <div
+        style="margin-top: 24px; padding: 16px 20px; background: linear-gradient(135deg, #dbeafe 0%, #e0f2fe 100%); border: 1px solid var(--status-info); border-radius: 12px;">
+        <h4 style="margin: 0 0 8px 0; color: var(--status-info); font-size: 14px; font-weight: 600;">ℹ️ Alt Proje Eşleştirme</h4>
+        <p style="margin: 0; color: var(--status-info); font-size: 13px; line-height: 1.6;">
+            Her durum tipi, <strong>9026-0001 GENEL OFİS GİDERLERİ</strong> projesinin bir alt projesiyle
+            eşleştirilebilir.<br>
+            Bu sayede personele izin/rapor ataması yapıldığında, ilgili alt proje kodu da otomatik olarak kaydedilir.
+        </p>
+    </div>
+</section>
+
+<script>
+    const csrfToken = document.getElementById('csrfToken').value;
+
+    async function addStatusType(event) {
+        event.preventDefault();
+
+        const name = document.getElementById('newStatusName').value.trim();
+        const code = document.getElementById('newStatusCode').value.trim().toLowerCase().replace(/\s+/g, '_');
+        const color = document.getElementById('newStatusColor').value;
+        const icon = document.getElementById('newStatusIcon').value || '📋';
+        const subproject_id = document.getElementById('newStatusSubproject').value || null;
+
+        if (!name || !code) {
+            alert('Durum adı ve kodu zorunludur.');
+            return false;
+        }
+
+        try {
+            const res = await fetch('/api/personnel/status-types', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name, code, color, icon,
+                    subproject_id: subproject_id ? parseInt(subproject_id) : null,
+                    csrf_token: csrfToken
+                })
+            });
+            const data = await res.json();
+
+            if (data.ok) {
+                if (typeof showToast === 'function') showToast(data.message || 'Eklendi', 'success');
+                location.reload();
+            } else {
+                alert(data.error || 'Hata oluştu');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Bağlantı hatası');
+        }
+
+        return false;
+    }
+
+    async function updateStatusType(id, field, value) {
+        try {
+            const body = { csrf_token: csrfToken };
+            body[field] = value;
+
+            const res = await fetch(`/api/personnel/status-types/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await res.json();
+
+            if (data.ok) {
+                if (typeof showToast === 'function') showToast(data.message || 'Güncellendi', 'success');
+            } else {
+                alert(data.error || 'Hata oluştu');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Bağlantı hatası');
+        }
+    }
+
+    async function deleteStatusType(id, name) {
+        if (!confirm(`"${name}" durum tipini silmek istediğinizden emin misiniz?`)) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/personnel/status-types/${id}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ csrf_token: csrfToken })
+            });
+            const data = await res.json();
+
+            if (data.ok) {
+                if (typeof showToast === 'function') showToast(data.message || 'Silindi', 'success');
+                document.querySelector(`tr[data-id="${id}"]`)?.remove();
+            } else {
+                alert(data.error || 'Hata oluştu');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Bağlantı hatası');
+        }
+    }
+</script>
+
+{% endblock %}

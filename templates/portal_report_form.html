@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card" style="max-width: 720px; margin: 0 auto;">
+  <div class="rowline" style="justify-content:space-between; gap:10px; flex-wrap:wrap;">
+    <div>
+      <h2 style="margin:0;">Rapor / Geri Bildirim</h2>
+      <div class="hint" style="margin-top:4px;">
+        {{ project.project_code if project else '' }} | {{ project.region if project else '' }} | {{ job.work_date.strftime('%Y-%m-%d') }}
+      </div>
+    </div>
+    <a class="btn secondary" href="{{ url_for('planner.portal_job_detail', job_id=job.id) }}" style="text-decoration:none;">Geri</a>
+  </div>
+
+  {% if latest %}
+    <div style="margin-top:12px; padding:10px 12px; border:1px solid var(--border); border-radius:12px; background:var(--bg-soft);">
+      <div style="font-weight:900; color:var(--text-strong);">Son gönderim</div>
+      <div class="hint" style="margin-top:6px;">
+        {{ latest.submitted_at.strftime('%d.%m.%Y %H:%M') if latest.submitted_at else '-' }} | Sonuç: {{ {"completed":"Tamamlandı","not_completed":"Tamamlanmadı","issue":"Sorun"}.get(latest.outcome or "", latest.outcome or "-") }}
+      </div>
+    </div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" style="margin-top:14px;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="card" style="border:1px solid var(--border); border-radius:12px; padding:12px;">
+      <div style="font-weight:900; color:var(--text-strong);">Q1: İş tamamlandı mı?</div>
+      <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+        <label style="display:flex; gap:8px; align-items:center;">
+          <input type="radio" name="q1_completed" value="yes" {% if latest_answers.get('q1_completed')=='yes' %}checked{% endif %} required>
+          Evet
+        </label>
+        <label style="display:flex; gap:8px; align-items:center;">
+          <input type="radio" name="q1_completed" value="no" {% if latest_answers.get('q1_completed')=='no' %}checked{% endif %} required>
+          Hayır
+        </label>
+      </div>
+    </div>
+
+    <div class="card" style="border:1px solid var(--border); border-radius:12px; padding:12px; margin-top:12px;">
+      <div style="font-weight:900; color:var(--text-strong);">Q2: ISDP tamamlandı mı?</div>
+      <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+        <label style="display:flex; gap:8px; align-items:center;">
+          <input type="radio" name="q2_isdp" value="yes" {% if latest_answers.get('q2_isdp')=='yes' %}checked{% endif %} required>
+          Evet
+        </label>
+        <label style="display:flex; gap:8px; align-items:center;">
+          <input type="radio" name="q2_isdp" value="no" {% if latest_answers.get('q2_isdp')=='no' %}checked{% endif %} required>
+          Hayır
+        </label>
+        <label style="display:flex; gap:8px; align-items:center;">
+          <input type="radio" name="q2_isdp" value="error" {% if latest_answers.get('q2_isdp')=='error' %}checked{% endif %} required>
+          Hata aldık
+        </label>
+      </div>
+    </div>
+
+    <div class="card" style="border:1px solid var(--border); border-radius:12px; padding:12px; margin-top:12px;">
+      <div style="font-weight:900; color:var(--text-strong);">Ek çalışma ve detaylar</div>
+      <textarea name="extra_work_note" rows="4" class="input" style="margin-top:8px; width:100%;" placeholder="Yapılan ek işler...">{{ latest_answers.get('extra_work_note','') }}</textarea>
+    </div>
+
+    <div class="card" style="border:1px solid var(--border); border-radius:12px; padding:12px; margin-top:12px;">
+      <div style="font-weight:900; color:var(--text-strong);">Notlar / Problemler (opsiyonel)</div>
+      <textarea name="issue_note" rows="4" class="input" style="margin-top:8px; width:100%;" placeholder="Sorun, gecikme, risk...">{{ latest_answers.get('issue_note','') }}</textarea>
+      <div class="hint" style="margin-top:6px;">Not girerseniz outcome otomatik olarak "issue" sayılabilir.</div>
+    </div>
+
+    <div class="card" style="border:1px solid var(--border); border-radius:12px; padding:12px; margin-top:12px;">
+      <div style="font-weight:900; color:var(--text-strong);">Fotoğraf / Video (opsiyonel)</div>
+      <input type="file" name="media_files" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime" style="margin-top:10px;">
+      <div class="hint" style="margin-top:6px;">İzinli: jpg/jpeg/png/webp + mp4/mov. Maks: {{ (config.FEEDBACK_MAX_MB if config and config.FEEDBACK_MAX_MB else 50) }} MB</div>
+    </div>
+
+    <button class="btn" type="submit" style="margin-top:14px; width:100%; background:var(--status-success); color:white; border:none; padding:14px 16px; font-weight:900;">Gönder</button>
+  </form>
+</section>
+{% endblock %}

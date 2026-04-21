@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+{% block header_content %}
+  <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%;">
+    <div style="min-width:0;">
+      <div style="font-weight:800; color:var(--text-strong); font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+        İş Detayı #{{ j.id }}
+      </div>
+      <div style="color:var(--text-muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+        {{ project.project_code if project else "-" }} · {{ project.region if project else "" }}{% if j.subproject %} · {{ j.subproject.name }}{% endif %} · {{ j.work_date.strftime("%d.%m.%Y") if j.work_date else "-" }}
+      </div>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <a class="btn" href="{{ url_for('planner.plan_week') }}" style="background:var(--bg-soft-2); border:1px solid var(--border);">Plana Dön</a>
+    </div>
+  </div>
+{% endblock %}
+{% block content %}
+
+<input type="hidden" id="csrfToken" value="{{ csrf_token() }}">
+
+<section class="card" style="max-width: 1100px; margin: 0 auto;">
+  <div style="display:grid; grid-template-columns: 1.2fr 0.8fr; gap:14px;">
+    <div>
+      <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start;">
+        <div style="min-width:0;">
+          <div style="font-weight:900; color:var(--text-strong); font-size:18px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            {{ project.project_code if project else "-" }} · {{ project.project_name if project else "" }}{% if j.subproject %} / {{ j.subproject.name }}{% endif %}
+          </div>
+          <div style="margin-top:4px; color:var(--text-subtle); font-size:13px;">
+            <strong>Saha:</strong> {{ project.region if project else "-" }} ·
+            <strong>Tarih:</strong> {{ j.work_date.strftime("%d.%m.%Y") if j.work_date else "-" }} ·
+            <strong>Ekip:</strong> {{ j.team_name or "-" }}
+          </div>
+          {% if j.shift or j.vehicle_info %}
+          <div style="margin-top:4px; color:var(--text-muted); font-size:12px;">
+            {% if j.shift %}<span><strong>Vardiya:</strong> {{ j.shift }}</span>{% endif %}
+            {% if j.vehicle_info %}<span style="margin-left:10px;"><strong>Araç:</strong> {{ j.vehicle_info }}</span>{% endif %}
+          </div>
+          {% endif %}
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:12px; color:var(--text-muted);">Son güncelleme</div>
+          <div style="font-size:12px; color:var(--text-strong); font-weight:800;">{% if j.updated_at %}{{ j.updated_at.strftime("%d.%m %H:%M") }}{% else %}-{% endif %}</div>
+        </div>
+      </div>
+
+      {% if j.note %}
+      <div style="margin-top:12px; border:1px solid var(--border); border-radius:10px; padding:10px; background:var(--bg-soft);">
+        <div style="font-weight:800; color:var(--text-strong); font-size:12px; margin-bottom:6px;">Not</div>
+        <div style="font-size:13px; color:var(--text-strong); white-space:pre-wrap;">{{ j.note }}</div>
+      </div>
+      {% endif %}
+
+      <div style="margin-top:14px; display:grid; grid-template-columns: 1fr 1fr; gap:14px;">
+        <div style="border:1px solid var(--border); border-radius:12px; padding:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="font-weight:900; color:var(--text-strong); font-size:13px;">Personel</div>
+            <div style="font-size:12px; color:var(--text-muted);">{{ people|length }}</div>
+          </div>
+          {% if people and people|length %}
+            <ul style="margin:10px 0 0 18px; padding:0; color:var(--text-strong); font-size:13px;">
+              {% for p in people %}
+                <li>{{ p.full_name }}{% if p.phone %} <span style="color:var(--text-muted);">({{ p.phone }})</span>{% endif %}</li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div style="margin-top:10px; color:var(--text-muted); font-size:13px;">Atama yok</div>
+          {% endif %}
+        </div>
+
+        <div style="border:1px solid var(--border); border-radius:12px; padding:12px;">
+          <div style="font-weight:900; color:var(--text-strong); font-size:13px; margin-bottom:10px;">Durum</div>
+          <form method="post" action="{{ url_for('planner.assignment_set_kanban', job_id=j.id) }}" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <select name="kanban_status" class="input" style="height:36px; min-width: 220px;">
+              {% for c in kanban_columns %}
+                <option value="{{ c }}" {% if (j.kanban_status or 'PLANNED') == c %}selected{% endif %}>{{ c }}</option>
+              {% endfor %}
+            </select>
+            <button class="btn" type="submit" style="background:var(--text-strong); color:#fff; height:36px;">Kaydet</button>
+          </form>
+          <div style="margin-top:10px; display:flex; justify-content:space-between; gap:10px;">
+            <div style="font-size:12px; color:var(--text-muted);">İş Durumu</div>
+            <div style="font-size:12px; color:var(--text-strong); font-weight:800;">{{ j.status }}</div>
+          </div>
+          <div style="margin-top:6px; display:flex; justify-content:space-between; gap:10px;">
+            <div style="font-size:12px; color:var(--text-muted);">Kapandı</div>
+            <div style="font-size:12px; color:var(--text-strong); font-weight:800;">{% if j.closed_at %}{{ j.closed_at.strftime("%d.%m.%Y %H:%M") }}{% else %}-{% endif %}</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:14px; border:1px solid var(--border); border-radius:12px; padding:12px;">
+        <div style="font-weight:900; color:var(--text-strong); font-size:13px; margin-bottom:10px;">Ekler</div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+          <div>
+            <div style="font-weight:800; color:var(--text-strong); font-size:12px; margin-bottom:6px;">LLD/HHD</div>
+            {% if lld_files and lld_files|length %}
+              {% for f in lld_files %}
+                <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; border:1px solid var(--border); border-radius:10px; padding:8px 10px; margin-bottom:8px;">
+                  <a href="{{ url_for('download_file', filename=f) }}" style="color:var(--status-info); text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ f }}</a>
+                  <form method="post" action="{{ url_for('planner.assignment_delete_file', job_id=j.id) }}" style="margin:0;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="kind" value="lld_hhd">
+                    <input type="hidden" name="filename" value="{{ f }}">
+                    <button class="btn" type="submit" style="background:var(--status-danger); color:#fff; border:none; padding:6px 10px;">Sil</button>
+                  </form>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div style="color:var(--text-muted); font-size:13px;">Yok</div>
+            {% endif %}
+          </div>
+          <div>
+            <div style="font-weight:800; color:var(--text-strong); font-size:12px; margin-bottom:6px;">Tutanak</div>
+            {% if tutanak_files and tutanak_files|length %}
+              {% for f in tutanak_files %}
+                <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; border:1px solid var(--border); border-radius:10px; padding:8px 10px; margin-bottom:8px;">
+                  <a href="{{ url_for('download_file', filename=f) }}" style="color:var(--status-info); text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ f }}</a>
+                  <form method="post" action="{{ url_for('planner.assignment_delete_file', job_id=j.id) }}" style="margin:0;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="kind" value="tutanak">
+                    <input type="hidden" name="filename" value="{{ f }}">
+                    <button class="btn" type="submit" style="background:var(--status-danger); color:#fff; border:none; padding:6px 10px;">Sil</button>
+                  </form>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div style="color:var(--text-muted); font-size:13px;">Yok</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" action="{{ url_for('planner.assignment_upload_attachments', job_id=j.id) }}" style="margin-top:12px; border-top:1px solid var(--border); padding-top:12px; display:flex; gap:12px; flex-wrap:wrap; align-items:end;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label style="flex:1; min-width:240px;">LLD/HHD Ekle
+            <input class="input" type="file" name="lld_hhd" multiple>
+          </label>
+          <label style="flex:1; min-width:240px;">Tutanak Ekle
+            <input class="input" type="file" name="tutanak" multiple>
+          </label>
+          <button class="btn" type="submit" style="background:var(--text-strong); color:#fff;">Yükle</button>
+        </form>
+      </div>
+
+      <div style="margin-top:14px; border:1px solid var(--border); border-radius:12px; padding:12px;">
+        <div style="font-weight:900; color:var(--text-strong); font-size:13px; margin-bottom:10px;">Fotoğraflar + QC</div>
+        {% if photo_files and photo_files|length %}
+          <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:10px;">
+            {% for f in photo_files %}
+              <div style="border:1px solid var(--border); border-radius:12px; overflow:hidden; background:#fff;">
+                <a href="{{ url_for('view_file_inline', filename=f) }}" target="_blank" rel="noreferrer noopener" style="display:block;">
+                  <img src="{{ url_for('view_file_inline', filename=f) }}" alt="{{ f }}" style="width:100%; height:110px; object-fit:cover; display:block;">
+                </a>
+                <div style="padding:8px 8px; display:flex; justify-content:space-between; gap:8px; align-items:center;">
+                  <a href="{{ url_for('download_file', filename=f) }}" style="font-size:11px; color:var(--status-info); text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ f }}</a>
+                  <form method="post" action="{{ url_for('planner.assignment_delete_file', job_id=j.id) }}" style="margin:0;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="kind" value="photo">
+                    <input type="hidden" name="filename" value="{{ f }}">
+                    <button class="btn" type="submit" style="background:var(--status-danger); color:#fff; border:none; padding:4px 8px; font-size:12px;">Sil</button>
+                  </form>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div style="color:var(--text-muted); font-size:13px;">Fotoğraf yok</div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data" action="{{ url_for('planner.assignment_upload_photos', job_id=j.id) }}" style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label style="flex:1; min-width:260px;">Fotoğraf Yükle
+            <input class="input" type="file" name="photos" multiple accept="image/*">
+          </label>
+          <button class="btn" type="submit" style="background:var(--text-strong); color:#fff;">Yükle</button>
+        </form>
+
+        <form method="post" action="{{ url_for('planner.assignment_set_qc', job_id=j.id) }}" style="margin-top:12px; border-top:1px solid var(--border); padding-top:12px;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label>QC Sonucu
+            <textarea class="input" name="qc_result" rows="4" placeholder="QC notları / sonuçları..." style="width:100%;">{{ qc_result or "" }}</textarea>
+          </label>
+          <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+            <button class="btn" type="submit" style="background:var(--text-strong); color:#fff;">Kaydet</button>
+          </div>
+        </form>
+      </div>
+
+      <div style="margin-top:14px; border:1px solid var(--border); border-radius:12px; padding:12px;">
+        <div style="font-weight:900; color:var(--text-strong); font-size:13px; margin-bottom:10px;">Geri Bildirim</div>
+        <form method="post" action="{{ url_for('planner.assignment_set_feedback', job_id=j.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+            <button class="btn" type="submit" name="status" value="completed" style="background:var(--status-success); color:#fff; border:none;">Tamamlandı</button>
+            <button class="btn" type="submit" name="status" value="problem" style="background:var(--status-danger); color:#fff; border:none;">Sorun</button>
+            <button class="btn" type="submit" name="status" value="pending" style="background:var(--bg-soft-2); border:1px solid var(--border);">Beklemede</button>
+          </div>
+          <label style="display:block; margin-top:10px;">Not
+            <textarea class="input" name="note" rows="3" style="width:100%;" placeholder="Geri bildirim notu...">{% if feedback_rows and feedback_rows|length %}{{ feedback_rows[0].note or "" }}{% endif %}</textarea>
+          </label>
+        </form>
+
+        <div style="margin-top:12px; border-top:1px solid var(--border); padding-top:12px;">
+          <div style="font-weight:800; color:var(--text-strong); font-size:12px; margin-bottom:8px;">Form Cevapları (Geçmiş)</div>
+          {% if feedback_rows and feedback_rows|length %}
+            <div style="max-height:220px; overflow:auto;">
+              <table class="simple" style="width:100%; font-size:12px;">
+                <thead><tr><th>Zaman</th><th>Durum</th><th>Not</th></tr></thead>
+                <tbody>
+                  {% for r in feedback_rows %}
+                    <tr>
+                      <td style="white-space:nowrap;">{{ r.closed_at.strftime("%d.%m.%Y %H:%M") if r.closed_at else "-" }}</td>
+                      <td style="white-space:nowrap;">{{ r.status }}</td>
+                      <td style="white-space:pre-wrap;">{{ r.note or "" }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div style="color:var(--text-muted); font-size:13px;">Kayıt yok</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div style="position:sticky; top:18px; display:flex; flex-direction:column; gap:14px;">
+        <div style="border:1px solid var(--border); border-radius:12px; padding:12px;">
+          <div style="font-weight:900; color:var(--text-strong); font-size:13px; margin-bottom:10px;">Status History</div>
+          {% if status_rows and status_rows|length %}
+            <div style="max-height:240px; overflow:auto;">
+              <table class="simple" style="width:100%; font-size:12px;">
+                <thead><tr><th>Zaman</th><th>From</th><th>To</th></tr></thead>
+                <tbody>
+                {% for r in status_rows %}
+                  <tr>
+                    <td style="white-space:nowrap;">{{ r.changed_at.strftime("%d.%m %H:%M") if r.changed_at else "-" }}</td>
+                    <td style="white-space:nowrap;">{{ r.from_status or "-" }}</td>
+                    <td style="white-space:nowrap;">{{ r.to_status }}</td>
+                  </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div style="color:var(--text-muted); font-size:13px;">Kayıt yok</div>
+          {% endif %}
+        </div>
+
+        <div style="border:1px solid var(--border); border-radius:12px; padding:12px;">
+          <div style="font-weight:900; color:var(--text-strong); font-size:13px; margin-bottom:10px;">Mail Geçmişi</div>
+          {% if mail_rows and mail_rows|length %}
+            <div style="max-height:420px; overflow:auto;">
+              <table class="simple" style="width:100%; font-size:12px;">
+                <thead><tr><th>Zaman</th><th>Tip</th><th>OK</th><th>Konu</th></tr></thead>
+                <tbody>
+                {% for r in mail_rows %}
+                  {% set meta = r.meta or {} %}
+                  <tr>
+                    <td style="white-space:nowrap;">{{ r.created_at.strftime("%d.%m %H:%M") if r.created_at else "-" }}</td>
+                    <td style="white-space:nowrap;">{{ r.kind }}</td>
+                    <td style="white-space:nowrap;">{% if r.ok %}OK{% else %}ERR{% endif %}</td>
+                    <td style="white-space:pre-wrap;">
+                      <div style="font-weight:800; color:var(--text-strong);">{{ r.subject }}</div>
+                      <div style="color:var(--text-muted); font-size:11px; margin-top:2px;">To: {{ r.to }}</div>
+                      {% if meta.checklist %}
+                        <div style="margin-top:4px; color:var(--text-subtle); font-size:11px;">
+                          {% for c in meta.checklist %}
+                            {% if c.checked %}<span style="display:inline-block; margin-right:6px;">{{ c.label }}</span>{% endif %}
+                          {% endfor %}
+                        </div>
+                      {% endif %}
+                      {% if not r.ok and r.error %}
+                        <div style="margin-top:6px; color:#b91c1c; font-size:11px;">{{ r.error }}</div>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div style="color:var(--text-muted); font-size:13px;">Mail kaydı yok</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block header_content %}
+  <div style="font-weight:800; color:var(--text-strong); font-size:18px;">Raporlar</div>
+{% endblock %}
+{% block content %}
+
+<section class="card" style="padding: 0; background: transparent; box-shadow: none;">
+  <div style="background:#ffffff; border:1px solid var(--border); border-radius:12px; padding:14px 18px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+    <form method="get" style="display:flex; flex-wrap:wrap; gap:10px; align-items:end; margin:0;">
+      <input type="hidden" name="tab" value="{{ tab }}">
+      <label style="min-width:200px;">Hafta Başlangıcı
+        <input class="input" type="date" name="week_start" value="{{ week_start }}" style="height:36px;">
+      </label>
+      <label style="min-width:180px;">İl
+        <select class="input" name="city" style="height:36px;">
+          <option value="">Hepsi</option>
+          {% for c in cities %}
+            <option value="{{ c }}" {% if city == c %}selected{% endif %}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label style="min-width:240px;">Proje
+        <select class="input" name="project_id" style="height:36px;">
+          <option value="">Hepsi</option>
+          {% for p in projects %}
+            <option value="{{ p.id }}" {% if project_id == p.id %}selected{% endif %}>{{ p.region }} | {{ p.project_code }} - {{ p.project_name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      {% if subprojects and subprojects|length %}
+      <label style="min-width:220px;">Alt Proje
+        <select class="input" name="subproject_id" style="height:36px;">
+          <option value="">Hepsi</option>
+          {% for sp in subprojects %}
+            <option value="{{ sp.id }}" {% if subproject_id == sp.id %}selected{% endif %}>{{ sp.name }}{% if sp.code %} ({{ sp.code }}){% endif %}</option>
+          {% endfor %}
+        </select>
+      </label>
+      {% endif %}
+      <label style="min-width:200px;">Ekip
+        <select class="input" name="team_name" style="height:36px;">
+          <option value="">Hepsi</option>
+          {% for t in teams %}
+            <option value="{{ t }}" {% if team_name == t %}selected{% endif %}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <button class="btn" type="submit" style="background:var(--text-strong); color:#fff; height:36px;">Filtrele</button>
+        <a class="btn" href="{{ excel_url }}" style="background:var(--status-success); color:#fff; border:none; height:36px; display:inline-flex; align-items:center;">Excel</a>
+        <a class="btn" href="{{ url_for('planner.reports_page', week_start=prev_week, tab=tab, city=city, project_id=project_id, subproject_id=subproject_id, team_name=team_name) }}" style="background:var(--bg-soft-2); border:1px solid var(--border); height:36px;">‹ Önceki</a>
+        <a class="btn" href="{{ url_for('planner.reports_page', week_start=next_week, tab=tab, city=city, project_id=project_id, subproject_id=subproject_id, team_name=team_name) }}" style="background:var(--bg-soft-2); border:1px solid var(--border); height:36px;">Sonraki ›</a>
+      </div>
+    </form>
+  </div>
+
+  <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+    <a class="btn" href="{{ url_for('planner.reports_page', tab='open', week_start=week_start, city=city, project_id=project_id, subproject_id=subproject_id, team_name=team_name) }}" style="background:{{ 'var(--text-strong)' if tab=='open' else 'var(--bg-soft-2)' }}; color:{{ '#fff' if tab=='open' else 'var(--text-strong)' }}; border:1px solid var(--border);">Açık İşler</a>
+    <a class="btn" href="{{ url_for('planner.reports_page', tab='team', week_start=week_start, city=city, project_id=project_id, subproject_id=subproject_id, team_name=team_name) }}" style="background:{{ 'var(--text-strong)' if tab=='team' else 'var(--bg-soft-2)' }}; color:{{ '#fff' if tab=='team' else 'var(--text-strong)' }}; border:1px solid var(--border);">Ekip Performans</a>
+    <a class="btn" href="{{ url_for('planner.reports_page', tab='errors', week_start=week_start, city=city, project_id=project_id, subproject_id=subproject_id, team_name=team_name) }}" style="background:{{ 'var(--text-strong)' if tab=='errors' else 'var(--bg-soft-2)' }}; color:{{ '#fff' if tab=='errors' else 'var(--text-strong)' }}; border:1px solid var(--border);">Hata Kuyruğu</a>
+  </div>
+
+  {% if tab == 'open' %}
+    <div style="background:#ffffff; border:1px solid var(--border); border-radius:12px; padding:14px 18px; box-shadow:0 1px 3px rgba(0,0,0,0.05); overflow:auto;">
+      <table class="simple" style="width:100%; font-size:12px;">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Tarih</th>
+            <th>İl</th>
+            <th>Proje</th>
+            <th>Ekip</th>
+            <th>Kanban</th>
+            <th>İş Durumu</th>
+            <th>Son Güncelleme</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for j in open_jobs %}
+            <tr>
+              <td><a href="{{ url_for('planner.assignment_page', job_id=j.id) }}">#{{ j.id }}</a></td>
+              <td style="white-space:nowrap;">{{ j.work_date.strftime("%d.%m.%Y") if j.work_date else "-" }}</td>
+              <td>{{ j.project.region if j.project else "" }}</td>
+              <td>{{ j.project.project_code if j.project else "" }} - {{ j.project.project_name if j.project else "" }}{% if j.subproject %} / {{ j.subproject.name }}{% endif %}</td>
+              <td>{{ j.team_name or "-" }}</td>
+              <td style="white-space:nowrap;">{{ j.kanban_status or "PLANNED" }}</td>
+              <td style="white-space:nowrap;">{{ j.status }}</td>
+              <td style="white-space:nowrap;">{% if j.updated_at %}{{ j.updated_at.strftime("%d.%m %H:%M") }}{% else %}-{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if not open_jobs or open_jobs|length == 0 %}
+        <div style="color:var(--text-muted); font-size:13px; padding:10px 0;">Kayıt yok</div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if tab == 'team' %}
+    <div style="background:#ffffff; border:1px solid var(--border); border-radius:12px; padding:14px 18px; box-shadow:0 1px 3px rgba(0,0,0,0.05); overflow:auto;">
+      <table class="simple" style="width:100%; font-size:12px;">
+        <thead>
+          <tr>
+            <th>Ekip</th>
+            <th>Toplam</th>
+            <th>Açık</th>
+            <th>Kapanan</th>
+            <th>Sorun</th>
+            <th>Ort. Kapanış (saat)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in team_perf %}
+            <tr>
+              <td>{{ r.team }}</td>
+              <td>{{ r.total }}</td>
+              <td>{{ r.open }}</td>
+              <td>{{ r.completed }}</td>
+              <td>{{ r.problem }}</td>
+              <td>{{ r.avg_close_hours if r.avg_close_hours is not none else "-" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if not team_perf or team_perf|length == 0 %}
+        <div style="color:var(--text-muted); font-size:13px; padding:10px 0;">Kayıt yok</div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if tab == 'errors' %}
+    <div style="background:#ffffff; border:1px solid var(--border); border-radius:12px; padding:14px 18px; box-shadow:0 1px 3px rgba(0,0,0,0.05); overflow:auto;">
+      <table class="simple" style="width:100%; font-size:12px;">
+        <thead>
+          <tr>
+            <th>Zaman</th>
+            <th>Event</th>
+            <th>Okundu</th>
+            <th>Başlık</th>
+            <th>Detay</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for n in error_rows %}
+            <tr>
+              <td style="white-space:nowrap;">{% if n.created_at %}{{ n.created_at.strftime("%d.%m %H:%M") }}{% else %}-{% endif %}</td>
+              <td style="white-space:nowrap;">{{ n.event }}</td>
+              <td style="white-space:nowrap;">{% if n.read_at %}Evet{% else %}Hayır{% endif %}</td>
+              <td style="white-space:nowrap;">{{ n.title }}</td>
+              <td style="white-space:pre-wrap;">
+                {{ n.body or "" }}
+                {% if n.link_url %}
+                  <div style="margin-top:6px;"><a href="{{ n.link_url }}">Aç</a></div>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if not error_rows or error_rows|length == 0 %}
+        <div style="color:var(--text-muted); font-size:13px; padding:10px 0;">Kayıt yok</div>
+      {% endif %}
+    </div>
+  {% endif %}
+</section>
+
+{% endblock %}

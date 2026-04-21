@@ -1,0 +1,425 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card" style="position:sticky; top:64px; z-index:40; width:100%; max-width:100%; box-sizing:border-box;">
+  <div class="rowline" style="justify-content: space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+    <h2 style="margin:0;">Gelişmiş Raporlar</h2>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+      <a class="btn" href="{{ url_for('planner.reports_page') }}" style="text-decoration:none;">Klasik Rapor</a>
+      <a class="btn" href="{{ url_for('reports_advanced_page', start=start, end=end, tab=tab, status=status, project_id=project_id, subproject_id=subproject_id, team_name=team_name, city=city) }}&export=1" style="display:none;"></a>
+      <a class="btn" href="{{ url_for('planner.reports_advanced_xlsx') }}?start={{ start }}&end={{ end }}&status={{ status }}&project_id={{ project_id }}&subproject_id={{ subproject_id }}&team_name={{ team_name|urlencode }}&city={{ city|urlencode }}&include_leave={{ 1 if include_leave else 0 }}&only_overdue={{ 1 if only_overdue else 0 }}&only_problem={{ 1 if only_problem else 0 }}" style="text-decoration:none;">Excel</a>
+    </div>
+  </div>
+
+  <form method="get" style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; align-items:end;">
+    <input type="hidden" name="tab" value="{{ tab }}">
+    <input type="hidden" name="page" value="1">
+    <label style="font-weight:600; font-size:12px;">Baslangic
+      <input type="date" name="start" value="{{ start }}" style="padding:8px 10px; border:1px solid var(--border); border-radius:6px;">
+    </label>
+    <label style="font-weight:600; font-size:12px;">Bitis
+      <input type="date" name="end" value="{{ end }}" style="padding:8px 10px; border:1px solid var(--border); border-radius:6px;">
+    </label>
+    <label style="font-weight:600; font-size:12px;">İl
+      <select name="city" style="padding:8px 10px; border:1px solid var(--border); border-radius:6px; min-width:160px;">
+        <option value="">(hepsi)</option>
+        {% for c in cities %}
+          <option value="{{ c }}" {% if city==c %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label style="font-weight:600; font-size:12px;">Proje
+      <select name="project_id" style="padding:8px 10px; border:1px solid var(--border); border-radius:6px; min-width:220px;">
+        <option value="0">(hepsi)</option>
+        {% for p in projects %}
+          <option value="{{ p.id }}" {% if project_id==p.id %}selected{% endif %}>{{ p.region }} | {{ p.project_code }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label style="font-weight:600; font-size:12px;">Alt Proje
+      <select name="subproject_id" style="padding:8px 10px; border:1px solid var(--border); border-radius:6px; min-width:220px;" {% if not project_id %}disabled{% endif %}>
+        {% if not project_id %}
+          <option value="0">(once proje sec)</option>
+        {% else %}
+          <option value="0">(hepsi)</option>
+          {% for sp in subprojects %}
+            <option value="{{ sp.id }}" {% if subproject_id==sp.id %}selected{% endif %}>{{ (sp.code ~ " | " if sp.code else "") ~ sp.name }}</option>
+          {% endfor %}
+        {% endif %}
+      </select>
+    </label>
+    <label style="font-weight:600; font-size:12px;">Ekip
+      <select name="team_name" style="padding:8px 10px; border:1px solid var(--border); border-radius:6px; min-width:160px;">
+        <option value="">(hepsi)</option>
+        {% for t in teams %}
+          <option value="{{ t }}" {% if team_name==t %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label style="font-weight:600; font-size:12px;">Durum
+      <select name="status" style="padding:8px 10px; border:1px solid var(--border); border-radius:6px; min-width:140px;">
+        <option value="" {% if not status %}selected{% endif %}>(hepsi)</option>
+        <option value="pending" {% if status=='pending' %}selected{% endif %}>Beklemede</option>
+        <option value="completed" {% if status=='completed' %}selected{% endif %}>Tamamlandı</option>
+        <option value="problem" {% if status=='problem' %}selected{% endif %}>Sorun</option>
+      </select>
+    </label>
+    <label style="font-weight:600; font-size:12px; display:flex; align-items:center; gap:6px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:white;">
+      <input type="checkbox" name="include_leave" value="1" {% if include_leave %}checked{% endif %}>
+      Izinli dahil
+    </label>
+    <label style="font-weight:600; font-size:12px; display:flex; align-items:center; gap:6px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:white;">
+      <input type="checkbox" name="only_overdue" value="1" {% if only_overdue %}checked{% endif %}>
+      Sadece gecikenler
+    </label>
+    <label style="font-weight:600; font-size:12px; display:flex; align-items:center; gap:6px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:white;">
+      <input type="checkbox" name="only_problem" value="1" {% if only_problem %}checked{% endif %}>
+      Sadece problemli
+    </label>
+    <button class="btn" type="submit" style="background:var(--text-strong); color:white; border:none;">Filtrele</button>
+  </form>
+
+  <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+    <a class="btn" href="{{ url_for('reports_advanced_page', start=start, end=end, tab='dashboard', status=status, project_id=project_id, subproject_id=subproject_id, team_name=team_name, city=city, include_leave=(1 if include_leave else 0), only_overdue=(1 if only_overdue else 0), only_problem=(1 if only_problem else 0)) }}" style="text-decoration:none; {% if tab=='dashboard' %}background:var(--text-strong); color:white;{% endif %}">Dashboard</a>
+    <a class="btn" href="{{ url_for('reports_advanced_page', start=start, end=end, tab='jobs', status=status, project_id=project_id, subproject_id=subproject_id, team_name=team_name, city=city, include_leave=(1 if include_leave else 0), only_overdue=(1 if only_overdue else 0), only_problem=(1 if only_problem else 0), page=1, page_size=page_size) }}" style="text-decoration:none; {% if tab=='jobs' %}background:var(--text-strong); color:white;{% endif %}">Isler</a>
+    <a class="btn" href="{{ url_for('reports_advanced_page', start=start, end=end, tab='team', status=status, project_id=project_id, subproject_id=subproject_id, team_name=team_name, city=city, include_leave=(1 if include_leave else 0), only_overdue=(1 if only_overdue else 0), only_problem=(1 if only_problem else 0)) }}" style="text-decoration:none; {% if tab=='team' %}background:var(--text-strong); color:white;{% endif %}">Ekip</a>
+    <a class="btn" href="{{ url_for('reports_advanced_page', start=start, end=end, tab='mail', status=status, project_id=project_id, subproject_id=subproject_id, team_name=team_name, city=city, include_leave=(1 if include_leave else 0), only_overdue=(1 if only_overdue else 0), only_problem=(1 if only_problem else 0)) }}" style="text-decoration:none; {% if tab=='mail' %}background:var(--text-strong); color:white;{% endif %}">Mail</a>
+    <a class="btn" href="{{ url_for('reports_advanced_page', start=start, end=end, tab='export', status=status, project_id=project_id, subproject_id=subproject_id, team_name=team_name, city=city, include_leave=(1 if include_leave else 0), only_overdue=(1 if only_overdue else 0), only_problem=(1 if only_problem else 0)) }}" style="text-decoration:none; {% if tab=='export' %}background:var(--text-strong); color:white;{% endif %}">Dışa Aktar</a>
+  </div>
+</div>
+
+{% if tab=='dashboard' %}
+<div class="card">
+  <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap:10px;">
+    <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:white;">
+      <div style="color:var(--text-muted); font-size:12px;">Toplam İş</div>
+      <div style="font-size:20px; font-weight:700; color:var(--text-strong);">{{ total_jobs }}</div>
+    </div>
+    <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:white;">
+      <div style="color:var(--text-muted); font-size:12px;">Beklemede</div>
+      <div style="font-size:20px; font-weight:700; color:var(--text-strong);">{{ pending }}</div>
+    </div>
+    <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:white;">
+      <div style="color:var(--text-muted); font-size:12px;">Tamamlandı</div>
+      <div style="font-size:20px; font-weight:700; color:var(--text-strong);">{{ completed }}</div>
+    </div>
+    <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:white;">
+      <div style="color:var(--text-muted); font-size:12px;">Sorun</div>
+      <div style="font-size:20px; font-weight:700; color:var(--text-strong);">{{ problem }}</div>
+    </div>
+    <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:white;">
+      <div style="color:var(--text-muted); font-size:12px;">Geciken</div>
+      <div style="font-size:20px; font-weight:700; color:var(--status-danger);">{{ overdue }}</div>
+    </div>
+    <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:white;">
+      <div style="color:var(--text-muted); font-size:12px;">Ort. Kapanis (saat)</div>
+      <div style="font-size:20px; font-weight:700; color:var(--text-strong);">{{ avg_close_hours if avg_close_hours is not none else '-' }}</div>
+    </div>
+    <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:white;">
+      <div style="color:var(--text-muted); font-size:12px;">Tamamlanma (%)</div>
+      <div style="font-size:20px; font-weight:700; color:var(--text-strong);">{{ completion_rate }}</div>
+    </div>
+    <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:white;">
+      <div style="color:var(--text-muted); font-size:12px;">İptal/Problem (%)</div>
+      <div style="font-size:20px; font-weight:700; color:var(--text-strong);">{{ cancel_rate }}</div>
+    </div>
+    <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:white;">
+      <div style="color:var(--text-muted); font-size:12px;">Sahada</div>
+      <div style="font-size:20px; font-weight:700; color:var(--text-strong);">{{ published_total }}</div>
+    </div>
+    <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:white;">
+      <div style="color:var(--text-muted); font-size:12px;">En Çok Sahada (Proje)</div>
+      <div style="font-size:13px; font-weight:800; color:var(--text-strong);">{{ top_on_site_project.label if top_on_site_project else '-' }}</div>
+      <div style="color:var(--text-muted); font-size:12px;">{{ top_on_site_project.count if top_on_site_project else 0 }} is</div>
+    </div>
+    <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:white;">
+      <div style="color:var(--text-muted); font-size:12px;">En Çok Sahada (Alt Proje)</div>
+      <div style="font-size:13px; font-weight:800; color:var(--text-strong);">{{ top_on_site_subproject.label if top_on_site_subproject else '-' }}</div>
+      <div style="color:var(--text-muted); font-size:12px;">{{ top_on_site_subproject.count if top_on_site_subproject else 0 }} is</div>
+    </div>
+    <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:white;">
+      <div style="color:var(--text-muted); font-size:12px;">Ekip Sayisi</div>
+      <div style="font-size:20px; font-weight:700; color:var(--text-strong);">{{ team_total }}</div>
+    </div>
+    <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:white;">
+      <div style="color:var(--text-muted); font-size:12px;">İş / Ekip</div>
+      <div style="font-size:20px; font-weight:700; color:var(--text-strong);">{{ jobs_per_team }}</div>
+    </div>
+    <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:white;">
+      <div style="color:var(--text-muted); font-size:12px;">Publish → Report (saat)</div>
+      <div style="font-size:20px; font-weight:700; color:var(--text-strong);">{{ avg_publish_to_report_hours if avg_publish_to_report_hours is not none else '-' }}</div>
+    </div>
+    <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:white;">
+      <div style="color:var(--text-muted); font-size:12px;">Report → Close (saat)</div>
+      <div style="font-size:20px; font-weight:700; color:var(--text-strong);">{{ avg_report_to_close_hours if avg_report_to_close_hours is not none else '-' }}</div>
+    </div>
+  </div>
+
+  <div style="margin-top:14px; border:1px solid var(--border); border-radius:10px; padding:10px; background:white;">
+    <div style="font-weight:700; color:var(--text-strong); margin-bottom:8px;">Kanban Dağılımı</div>
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:8px;">
+      {% for k in ['PLANNED','ASSIGNED','PUBLISHED','REPORTED','CLOSED'] %}
+        <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:var(--bg-soft);">
+          <div style="color:var(--text-muted); font-size:12px;">{{ k }}</div>
+          <div style="font-size:18px; font-weight:800; color:var(--text-strong);">{{ kanban_counts.get(k, 0) }}</div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div style="margin-top:14px; display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+    <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:white;">
+      <div style="font-weight:700; color:var(--text-strong); margin-bottom:8px;">Ekip Bazli (Top)</div>
+      <table class="simple" style="width:100%;">
+        <thead><tr><th>Ekip</th><th>İş</th></tr></thead>
+        <tbody>
+          {% for name, cnt in top_teams %}
+          <tr><td>{{ name }}</td><td>{{ cnt }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:white;">
+      <div style="font-weight:700; color:var(--text-strong); margin-bottom:8px;">İl Yoğunluğu (Top)</div>
+      <table class="simple" style="width:100%;">
+        <thead><tr><th>İl</th><th>İş</th></tr></thead>
+        <tbody>
+          {% for name, cnt in top_cities %}
+          <tr><td>{{ name }}</td><td>{{ cnt }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="margin-top:14px; border:1px solid var(--border); border-radius:10px; padding:10px; background:white;">
+    <div style="font-weight:700; color:var(--text-strong); margin-bottom:8px;">Ekip İş Yükü</div>
+    <div style="overflow:auto;">
+      <table class="simple" style="width:100%;">
+        <thead><tr><th>Ekip</th><th>Toplam</th><th>Sahada</th><th>Tamamlandı</th><th>Problem</th><th>Tamamlanma %</th><th>İptal %</th></tr></thead>
+        <tbody>
+          {% if not team_workload %}
+          <tr><td colspan="7" style="color:var(--text-muted); padding:10px;">Kayit yok.</td></tr>
+          {% endif %}
+          {% for r in team_workload %}
+          <tr>
+            <td>{{ r.team }}</td>
+            <td>{{ r.total }}</td>
+            <td>{{ r.on_site }}</td>
+            <td>{{ r.completed }}</td>
+            <td>{{ r.problem }}</td>
+            <td>{{ r.completion_rate }}</td>
+            <td>{{ r.cancel_rate }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if tab=='jobs' %}
+<div class="card">
+  <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+    <div style="font-weight:700; color:var(--text-strong);">İş Listesi</div>
+    <div style="color:var(--text-muted); font-size:12px;">Toplam: {{ total_count }} | Sayfa {{ page }} / {{ total_pages }}</div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      {% if page > 1 %}
+        <a class="btn" href="{{ url_for('reports_advanced_page', start=start, end=end, tab='jobs', status=status, project_id=project_id, subproject_id=subproject_id, team_name=team_name, city=city, include_leave=(1 if include_leave else 0), only_overdue=(1 if only_overdue else 0), only_problem=(1 if only_problem else 0), page=(page-1), page_size=page_size) }}" style="text-decoration:none;">Onceki</a>
+      {% endif %}
+      {% if page < total_pages %}
+        <a class="btn" href="{{ url_for('reports_advanced_page', start=start, end=end, tab='jobs', status=status, project_id=project_id, subproject_id=subproject_id, team_name=team_name, city=city, include_leave=(1 if include_leave else 0), only_overdue=(1 if only_overdue else 0), only_problem=(1 if only_problem else 0), page=(page+1), page_size=page_size) }}" style="text-decoration:none;">Sonraki</a>
+      {% endif %}
+    </div>
+  </div>
+  <div style="overflow:auto;">
+    <table class="simple" style="width:100%; background:white;">
+      <thead>
+        <tr>
+          <th>Tarih</th><th>İl</th><th>Proje</th><th>Ekip</th><th>Durum</th><th>Personel</th><th>İşlem</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if not jobs %}
+        <tr><td colspan="7" style="color:var(--text-muted); padding:10px;">Kayit yok.</td></tr>
+        {% endif %}
+        {% for j in jobs %}
+        <tr>
+          <td>{{ j.work_date.strftime("%Y-%m-%d") }}</td>
+          <td>{{ j.project.region if j.project else "" }}</td>
+          <td>{{ (j.project.project_code if j.project else "") }}</td>
+          <td>{{ j.team_name or "-" }}</td>
+          <td>{{ j.status }}</td>
+          <td>{{ people_count.get(j.id, 0) }}</td>
+          <td><button class="btn" type="button" onclick="openJobDetail({{ j.id }})">Detay</button></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if tab=='team' %}
+<div class="card">
+  <div style="font-weight:700; color:var(--text-strong); margin-bottom:10px;">Ekip Performans (filtreli aralik)</div>
+  <div style="overflow:auto;">
+    <table class="simple" style="width:100%; background:white;">
+      <thead><tr><th>Ekip</th><th>İş</th><th>Ort. Kapanış (saat)</th></tr></thead>
+      <tbody>
+        {% for name, cnt in top_teams %}
+        <tr><td>{{ name }}</td><td>{{ cnt }}</td><td>{{ team_avg_close_hours.get(name) if team_avg_close_hours else '-' }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% if tab=='mail' %}
+<div class="card">
+  <div style="display:flex; gap:12px; flex-wrap:wrap;">
+    <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:white; min-width:180px;">
+      <div style="color:var(--text-muted); font-size:12px;">Toplam</div><div style="font-size:20px; font-weight:700;">{{ mail_total }}</div>
+    </div>
+    <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:white; min-width:180px;">
+      <div style="color:var(--text-muted); font-size:12px;">Basarili</div><div style="font-size:20px; font-weight:700;">{{ mail_ok }}</div>
+    </div>
+    <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:white; min-width:180px;">
+      <div style="color:var(--text-muted); font-size:12px;">Basarisiz</div><div style="font-size:20px; font-weight:700; color:var(--status-danger);">{{ mail_fail }}</div>
+    </div>
+  </div>
+
+  <div style="margin-top:12px; display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+    <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:white;">
+      <div style="font-weight:700; margin-bottom:8px;">Basarisiz Nedenleri (Top)</div>
+      <table class="simple" style="width:100%;">
+        <thead><tr><th>Hata</th><th>Adet</th></tr></thead>
+        <tbody>
+          {% for msg, cnt in top_fail_reasons %}
+          <tr><td>{{ msg }}</td><td>{{ cnt }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div style="border:1px solid var(--border); border-radius:10px; padding:10px; background:white;">
+      <div style="font-weight:700; margin-bottom:8px;">Mail Gecmisi (son 500)</div>
+      <div style="max-height:340px; overflow:auto;">
+        <table class="simple" style="width:100%;">
+          <thead><tr><th>Zaman</th><th>OK</th><th>To</th><th>Konu</th></tr></thead>
+          <tbody>
+            {% for r in mail_rows %}
+            <tr>
+              <td>{{ r.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
+              <td>{% if r.ok %}OK{% else %}X{% endif %}</td>
+              <td>{{ r.to_addr }}</td>
+              <td>{{ r.subject }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if tab=='export' %}
+<div class="card">
+  <div style="font-weight:700; color:var(--text-strong); margin-bottom:10px;">Dışa Aktar</div>
+  <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+    <a class="btn" href="{{ url_for('planner.reports_advanced_xlsx') }}?start={{ start }}&end={{ end }}&status={{ status }}&project_id={{ project_id }}&subproject_id={{ subproject_id }}&team_name={{ team_name|urlencode }}&city={{ city|urlencode }}&include_leave={{ 1 if include_leave else 0 }}&only_overdue={{ 1 if only_overdue else 0 }}&only_problem={{ 1 if only_problem else 0 }}" style="text-decoration:none; background:var(--text-strong); color:white; border:none;">Excel indir</a>
+    <div style="color:var(--text-muted); font-size:12px;">PDF export sonraki faz.</div>
+  </div>
+</div>
+{% endif %}
+
+<div class="modal" id="jobDetailModal">
+  <div class="modalCard" style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid var(--border); max-width: 980px;">
+    <div class="rowline" style="border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 12px;">
+      <h3 style="margin:0; color: var(--text-strong); font-size: 18px; font-weight: 600;">İş Detayı</h3>
+      <button class="btn" type="button" onclick="closeJobDetail()" style="background:var(--text-strong); color:white; border:none;">Kapat</button>
+    </div>
+    <div id="jobDetailBody" style="font-size:13px;"></div>
+  </div>
+</div>
+
+<script>
+  window.__ADV_CSRF = "{{ csrf_token() }}";
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+  function closeJobDetail(){ document.getElementById('jobDetailModal')?.classList.remove('open'); }
+  async function openJobDetail(jobId){
+    const modal = document.getElementById('jobDetailModal');
+    const body = document.getElementById('jobDetailBody');
+    if(body) body.innerHTML = "Yukleniyor...";
+    if(modal) modal.classList.add('open');
+    const res = await fetch(`/api/job_detail?job_id=${jobId}`);
+    const data = await res.json().catch(()=>({ok:false}));
+    if(!res.ok || !data.ok){
+      if(body) body.innerHTML = "Detay alinmadi.";
+      return;
+    }
+    const j = data.job;
+    const people = data.people || [];
+    const fb = data.feedback;
+    const logs = data.mail_logs || [];
+    let html = `<div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">`+
+      `<div><strong>Tarih:</strong> ${j.date}<br><strong>İl:</strong> ${j.city}<br><strong>Proje:</strong> ${j.project_code} - ${j.project_name}</div>`+
+      `<div><strong>Ekip:</strong> ${j.team_name || '-'}<br><strong>Durum:</strong> ${j.status}<br><strong>Vardiya:</strong> ${j.shift || '-'}<br><strong>Arac:</strong> ${j.vehicle || '-'}</div>`+
+      `</div>`;
+    if(j.note){ html += `<div style="margin-top:8px;"><strong>Not:</strong><br>${(j.note||'').replace(/</g,'&lt;').replace(/\\n/g,'<br>')}</div>`; }
+    html += `<div style="margin-top:10px;"><strong>Personel</strong>
+      <div id="jobDetailPeopleTable" style="margin-top:8px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; max-height: 400px !important; overflow-y: auto !important; overflow-x: auto !important; background: var(--card); position: relative; display: block;">
+        <table style="width: 100%; border-collapse: collapse; margin: 0;">
+          <thead style="position: sticky; top: 0; z-index: 10; display: table-header-group;">
+            <tr style="background: var(--table-header-bg) !important; border-bottom: 2px solid var(--line);">
+              <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: var(--text); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; background: var(--table-header-bg) !important; position: sticky; top: 0; z-index: 11;">Ad Soyad</th>
+              <th style="padding: 10px 12px; text-align: left; font-weight: 600; color: var(--text); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; background: var(--table-header-bg) !important; position: sticky; top: 0; z-index: 11;">Telefon</th>
+            </tr>
+          </thead>
+          <tbody>` + 
+          (people.length > 0 
+            ? people.map(p=>`<tr style="border-bottom: 1px solid var(--line); background: var(--card);">
+              <td style="padding: 10px 12px; color: var(--text); font-size: 13px;">${escapeHtml(p.full_name || '-')}</td>
+              <td style="padding: 10px 12px; color: var(--text); font-size: 13px;">${escapeHtml(p.phone || '-')}</td>
+            </tr>`).join('')
+            : `<tr><td colspan="2" style="padding: 20px; text-align: center; color: var(--text); font-size: 13px;">Personel bulunamadı</td></tr>`
+          ) + `
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+    html += `<div style="margin-top:10px; border-top:1px solid var(--border); padding-top:10px;">`+
+      `<strong>Geri Bildirim</strong><div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;">`+
+      `<button class="btn" type="button" onclick="setJobFeedback(${j.id}, 'completed')" style="background:var(--status-success); color:white; border:none;">Tamamlandı</button>`+
+      `<button class="btn" type="button" onclick="setJobFeedback(${j.id}, 'problem')" style="background:var(--status-danger); color:white; border:none;">Sorun</button>`+
+      `<button class="btn" type="button" onclick="setJobFeedback(${j.id}, 'pending')" style="background:var(--bg-soft-2); border:1px solid var(--border);">Beklemede</button>`+
+      `</div>`+
+      `<textarea id="jobFbNote" rows="3" style="width:100%; margin-top:8px; padding:8px; border:1px solid var(--border); border-radius:6px;" placeholder="Not...">${(fb?.note||'').replace(/</g,'&lt;')}</textarea>`+
+      `<div style="margin-top:6px; color:var(--text-muted); font-size:12px;">${fb ? ('Son: '+(fb.closed_at||'')) : ''}</div>`+
+      `</div>`;
+    html += `<div style="margin-top:10px; border-top:1px solid var(--border); padding-top:10px;"><strong>Mail Log</strong>`+
+      `<div style="max-height:180px; overflow:auto; margin-top:6px;"><table class="simple" style="width:100%"><thead><tr><th>Zaman</th><th>OK</th><th>To</th><th>Konu</th></tr></thead><tbody>`+
+      logs.map(r=>`<tr><td>${(r.created_at||'').replace('T',' ').slice(0,16)}</td><td>${r.ok ? 'OK' : 'X'}</td><td>${r.to||''}</td><td>${(r.subject||'')}</td></tr>`).join('')+
+      `</tbody></table></div></div>`;
+    if(body) body.innerHTML = html;
+  }
+  async function setJobFeedback(jobId, status){
+    const note = document.getElementById('jobFbNote')?.value || '';
+    const res = await fetch('/api/job_feedback', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ job_id: jobId, status, note })
+    });
+    const data = await res.json().catch(()=>({ok:false}));
+    if(!res.ok || !data.ok){ alert(data.error || 'Kayit hatasi'); return; }
+    // refresh modal + page
+    openJobDetail(jobId);
+  }
+</script>
+{% endblock %}

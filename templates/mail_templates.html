@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <div class="rowline" style="justify-content: space-between; align-items: center;">
+    <h2 style="margin:0;">Mail Şablonları</h2>
+    <a class="btn" href="{{ url_for('admin.mail_template_add') }}" style="text-decoration:none;">Yeni Şablon</a>
+  </div>
+
+  <div style="margin-top:12px; color:var(--text-subtle); font-size:13px;">
+    Degiskenler: <code>{{ "{{ project_code }}" }}</code>, <code>{{ "{{ site_code }}" }}</code>, <code>{{ "{{ date }}" }}</code>, <code>{{ "{{ team_name }}" }}</code>,
+    <code>{{ "{{ short_summary }}" }}</code>, <code>{{ "{{ job_details_list }}" }}</code>, <code>{{ "{{ checklist }}" }}</code>, <code>{{ "{{ links }}" }}</code>, <code>{{ "{{ people }}" }}</code>
+  </div>
+
+  <div style="margin-top:14px; overflow:auto;">
+    <table class="simple" style="width:100%; background:white;">
+      <thead>
+        <tr>
+          <th>Ad</th>
+          <th>Varsayilan</th>
+          <th>Konu</th>
+          <th style="width:180px;">İşlem</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in templates %}
+        <tr>
+          <td>{{ t.name }}</td>
+          <td>{% if t.is_default %}Evet{% else %}-{% endif %}</td>
+          <td><code style="font-size:12px;">{{ t.subject_template }}</code></td>
+          <td>
+            <a class="btn" href="{{ url_for('mail_template_edit_page', tpl_id=t.id) }}" style="text-decoration:none;">Düzenle</a>
+            <form method="post" action="{{ url_for('mail_template_delete', tpl_id=t.id) }}" style="display:inline;" onsubmit="return confirm('Silinsin mi?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn" type="submit" style="background:var(--status-danger); color:white; border:none;">Sil</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

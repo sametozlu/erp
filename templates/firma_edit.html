@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h2>Firma Düzenle</h2>
+
+  <form method="post" class="filters" style="align-items: flex-end;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label>Firma Adı <input name="name" value="{{ f.name }}" required></label>
+    <label>Cinsiyet
+      <select name="gender">
+        <option value="">-- Seçiniz --</option>
+        <option value="Erkek" {% if f.gender == 'Erkek' %}selected{% endif %}>Erkek</option>
+        <option value="Kadın" {% if f.gender == 'Kadın' %}selected{% endif %}>Kadın</option>
+      </select>
+    </label>
+    <label>Mail Adresi <input type="email" name="email" value="{{ f.email or '' }}" placeholder="ornek@firma.com"></label>
+    <label>Mail Atılacak Kişi <input name="mail_recipient_name" value="{{ f.mail_recipient_name or '' }}" placeholder="Ad Soyad"></label>
+    <label>Durum
+      <select name="is_active">
+        <option value="1" {% if f.is_active %}selected{% endif %}>Aktif</option>
+        <option value="0" {% if not f.is_active %}selected{% endif %}>Pasif</option>
+      </select>
+    </label>
+    <div style="display: flex; gap: 10px; align-items: center; width: 100%; margin-top: 10px;">
+      <button class="btn" type="submit" style="height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Kaydet</button>
+      {% if request.referrer and 'people' in request.referrer %}
+      <a class="btn secondary" href="{{ url_for('planner.people_page') }}?tab=firma" style="height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">Geri</a>
+      {% else %}
+      <a class="btn secondary" href="{{ url_for('planner.firma_page') }}" style="height: 36px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">Geri</a>
+      {% endif %}
+    </div>
+  </form>
+</section>
+{% endblock %}
+

@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+{% block header_content %}
+  <div style="font-weight:700; color:var(--text-strong); font-size:18px;">Kanban</div>
+{% endblock %}
+{% block content %}
+
+<input type="hidden" id="csrfToken" value="{{ csrf_token() }}">
+
+<section class="card" style="padding: 0; background: transparent; box-shadow: none;">
+  <div style="background:#ffffff; border:1px solid var(--border); border-radius:12px; padding:14px 18px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.05); display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:center;">
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <div style="font-weight:700; color:var(--text-strong);">Aralik</div>
+      <form method="get" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:0;">
+        <input type="date" name="start" value="{{ start }}" style="padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:#fff; height:36px;">
+        <input type="date" name="end" value="{{ end }}" style="padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:#fff; height:36px;">
+        <button class="btn" type="submit" style="background:var(--text-strong); color:#fff; height:36px;">Getir</button>
+      </form>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <div style="color:var(--text-muted); font-size:13px;">Surukle-birak ile durum guncellenir. Karti cift tiklayin: son rapor.</div>
+      <a class="btn secondary" href="{{ url_for('planner.board_xlsx') }}?start={{ start }}&end={{ end }}" style="text-decoration:none; height:34px; display:inline-flex; align-items:center;">Excel</a>
+    </div>
+  </div>
+
+  <div id="kanbanBoard" style="display:flex; gap:12px; overflow-x:auto; padding-bottom:12px;">
+    {% for col in columns %}
+      <div class="kanban-col" data-status="{{ col }}" style="min-width: 300px; max-width: 340px; flex: 0 0 auto; background:var(--bg-soft); border:1px solid var(--border); border-radius:12px;">
+        <div style="padding:12px 12px 10px 12px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+          <div style="font-weight:800; color:var(--text-strong); font-size:13px; letter-spacing:0.2px;">{{ col }}</div>
+          <div class="kanban-count" style="font-size:12px; color:var(--text-subtle); background:#fff; border:1px solid var(--border); border-radius:999px; padding:2px 8px;">
+            {{ jobs_by_status[col]|length }}
+          </div>
+        </div>
+        <div class="kanban-dropzone" data-status="{{ col }}" style="padding:10px; min-height: 120px;">
+          {% for j in jobs_by_status[col] %}
+            <div class="kanban-card" draggable="true" data-job-id="{{ j.id }}" style="background:#ffffff; border:1px solid var(--border); border-radius:12px; padding:10px 10px; margin-bottom:10px; box-shadow:0 1px 2px rgba(0,0,0,0.04); cursor:grab;">
+              <div style="display:flex; justify-content:space-between; gap:8px; align-items:flex-start;">
+                <div style="min-width:0;">
+                  <a href="{{ url_for('planner.assignment_page', job_id=j.id) }}" style="font-weight:800; color:var(--text-strong); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-decoration:none;">
+                    {{ j.project.project_code if j.project else "-" }} - {{ j.project.region if j.project else "" }}
+                  </a>
+                  <div style="color:var(--text-subtle); font-size:12px; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    {{ j.project.project_name if j.project else "" }}{% if j.subproject %} / {{ j.subproject.name }}{% endif %}
+                  </div>
+                </div>
+                <a href="{{ url_for('planner.assignment_page', job_id=j.id) }}" style="font-size:11px; color:var(--text-muted); white-space:nowrap; text-decoration:none;">#{{ j.id }}</a>
+              </div>
+
+              <div style="display:grid; grid-template-columns: 1fr; gap:6px; margin-top:10px;">
+                <div style="display:flex; justify-content:space-between; gap:10px;">
+                  <span style="font-size:11px; color:var(--text-muted);">Tarih</span>
+                  <span style="font-size:11px; color:var(--text-strong); font-weight:700;">{{ j.work_date.strftime("%d.%m.%Y") if j.work_date else "-" }}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; gap:10px;">
+                  <span style="font-size:11px; color:var(--text-muted);">Ekip</span>
+                  <span style="font-size:11px; color:var(--text-strong); font-weight:700; max-width: 180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ j.team_name or "-" }}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; gap:10px;">
+                  <span style="font-size:11px; color:var(--text-muted);">İş Durumu</span>
+                  <span style="font-size:11px; color:var(--text-strong); font-weight:800; text-transform:uppercase;">{{ j.status }}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; gap:10px;">
+                  <span style="font-size:11px; color:var(--text-muted);">Guncelleme</span>
+                  <span class="kanban-updated-at" style="font-size:11px; color:var(--text-subtle);">{{ j.updated_at.strftime("%d.%m %H:%M") if j.updated_at else "-" }}</span>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<div id="reportModal" style="display:none; position:fixed; inset:0; background:rgba(2,6,23,0.6); z-index:9999; padding:24px;">
+  <div style="max-width:980px; margin:0 auto; background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 18px 80px rgba(0,0,0,0.25);">
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; border-bottom:1px solid var(--border);">
+      <div style="font-weight:900; color:var(--text-strong);">Son Rapor</div>
+      <button id="reportClose" class="btn" type="button" style="background:var(--bg-soft-2); border:1px solid var(--border);">Kapat</button>
+    </div>
+    <div id="reportMeta" style="padding:10px 14px; border-bottom:1px solid var(--border); color:var(--text-subtle); font-size:13px;"></div>
+    <div id="reportBody" style="padding:14px 14px; max-height: calc(100vh - 160px); overflow:auto;"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const csrfToken = (document.getElementById('csrfToken') || {}).value || '';
+  let draggingCard = null;
+
+  const updateCounts = () => {
+    document.querySelectorAll('.kanban-col').forEach(col => {
+      const cntEl = col.querySelector('.kanban-count');
+      const dz = col.querySelector('.kanban-dropzone');
+      if(cntEl && dz) cntEl.textContent = String(dz.querySelectorAll('.kanban-card').length);
+    });
+  };
+
+  const modal = document.getElementById('reportModal');
+  const modalBody = document.getElementById('reportBody');
+  const modalMeta = document.getElementById('reportMeta');
+  const closeBtn = document.getElementById('reportClose');
+  const closeModal = () => { if(modal) modal.style.display = 'none'; };
+  if(closeBtn) closeBtn.addEventListener('click', closeModal);
+  if(modal) modal.addEventListener('click', (e) => { if(e.target === modal) closeModal(); });
+
+  const fmtTime = (isoStr) => {
+    if(!isoStr) return '';
+    try{
+      const d = new Date(isoStr);
+      return d.toLocaleString('tr-TR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }).replace(',', '');
+    }catch(_){ return isoStr; }
+  };
+
+  const esc = (s)=> (s||'').toString().replace(/[&<>"']/g, (ch)=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[ch]));
+
+  const setDropzoneActive = (dz, on) => {
+    if(!dz) return;
+    dz.style.background = on ? 'rgba(14,165,233,0.08)' : '';
+    dz.style.borderRadius = on ? '12px' : '';
+  };
+
+  document.querySelectorAll('.kanban-card').forEach(card => {
+    card.addEventListener('dblclick', async () => {
+      const jobId = Number(card.dataset.jobId || 0) || 0;
+      if(!jobId) return;
+      try{
+        if(modal) modal.style.display = 'block';
+        if(modalMeta) modalMeta.textContent = 'Yukleniyor...';
+        if(modalBody) modalBody.innerHTML = '';
+        const resp = await fetch(`/api/job/${jobId}/latest_report`);
+        const data = await resp.json().catch(() => ({}));
+        if(!resp.ok || !data.ok){
+          if(modalMeta) modalMeta.textContent = (data && data.error) ? data.error : 'Yüklenemedi';
+          return;
+        }
+
+        const r = data.report || null;
+        if(!r){
+          if(modalMeta) modalMeta.textContent = 'Rapor yok.';
+          if(modalBody) modalBody.innerHTML = `<div class="hint">Rapor yok.</div>`;
+          return;
+        }
+
+        const submittedAt = fmtTime(r.submitted_at);
+        const outcome = esc(r.outcome || '');
+        const review = esc(r.review_status || '');
+        if(modalMeta) modalMeta.textContent = `#${jobId} | ${submittedAt || ''} | ${outcome} | ${review}`;
+
+        const answers = data.answers || {};
+        const q1 = esc(answers.q1_completed || '');
+        const q2 = esc(answers.q2_isdp || '');
+        const extra = esc(answers.extra_work_note || '');
+        const notes = esc(answers.issue_note || '');
+
+        const media = (data.media || []);
+        const mediaHtml = media.length ? media.map(m => {
+          const fp = (m.file_path || '').toString();
+          const view = `/files/view/${encodeURIComponent(fp).replace(/%2F/g, '/')}`;
+          const dl = `/files/${encodeURIComponent(fp).replace(/%2F/g, '/')}`;
+          const title = esc(m.original_name || fp);
+          if((m.file_type || '') === 'image'){
+            return `
+              <div style="border:1px solid var(--border); border-radius:12px; padding:10px;">
+                <div style="font-weight:800; font-size:12px; color:var(--text-strong); word-break:break-word;">${title}</div>
+                <img src="${view}" alt="" style="margin-top:8px; width:100%; border-radius:10px; border:1px solid var(--border);">
+                <div style="margin-top:8px; display:flex; gap:8px;">
+                  <a class="btn tiny secondary" href="${view}" target="_blank" style="text-decoration:none;">Ac</a>
+                  <a class="btn tiny secondary" href="${dl}" style="text-decoration:none;">Indir</a>
+                </div>
+              </div>`;
+          }
+          return `
+            <div style="border:1px solid var(--border); border-radius:12px; padding:10px;">
+              <div style="font-weight:800; font-size:12px; color:var(--text-strong); word-break:break-word;">${title}</div>
+              <div style="margin-top:8px; display:flex; gap:8px;">
+                <a class="btn tiny secondary" href="${view}" target="_blank" style="text-decoration:none;">Ac</a>
+                <a class="btn tiny secondary" href="${dl}" style="text-decoration:none;">Indir</a>
+              </div>
+            </div>`;
+        }).join('') : `<div class="hint">Ek yok.</div>`;
+
+        if(modalBody){
+          modalBody.innerHTML = `
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+              <div class="card" style="border:1px solid var(--border); border-radius:12px; padding:12px;">
+                <div style="font-weight:900; color:var(--text-strong);">Cevaplar</div>
+                <div class="hint" style="margin-top:8px;"><strong>Q1:</strong> ${q1}</div>
+                <div class="hint" style="margin-top:6px;"><strong>Q2:</strong> ${q2}</div>
+              </div>
+              <div class="card" style="border:1px solid var(--border); border-radius:12px; padding:12px;">
+                <div style="font-weight:900; color:var(--text-strong);">Ek Calisma</div>
+                <div style="margin-top:8px; white-space:pre-wrap; color:var(--text-subtle); font-size:13px;">${extra || '-'}</div>
+              </div>
+            </div>
+            <div class="card" style="margin-top:12px; border:1px solid var(--border); border-radius:12px; padding:12px;">
+              <div style="font-weight:900; color:var(--text-strong);">Notlar</div>
+              <div style="margin-top:8px; white-space:pre-wrap; color:var(--text-subtle); font-size:13px;">${notes || '-'}</div>
+            </div>
+            <div class="card" style="margin-top:12px; border:1px solid var(--border); border-radius:12px; padding:12px;">
+              <div style="font-weight:900; color:var(--text-strong);">Ekler</div>
+              <div style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                ${mediaHtml}
+              </div>
+            </div>
+          `;
+        }
+      }catch(_){
+        if(modalMeta) modalMeta.textContent = 'Yüklenemedi';
+      }
+    });
+
+    card.addEventListener('dragstart', (e) => {
+      draggingCard = card;
+      card.style.opacity = '0.6';
+      card.style.cursor = 'grabbing';
+      try {
+        e.dataTransfer.setData('text/plain', card.dataset.jobId || '');
+      } catch (_) {}
+    });
+    card.addEventListener('dragend', () => {
+      card.style.opacity = '';
+      card.style.cursor = 'grab';
+      draggingCard = null;
+      document.querySelectorAll('.kanban-dropzone').forEach(dz => setDropzoneActive(dz, false));
+    });
+  });
+
+  document.querySelectorAll('.kanban-dropzone').forEach(dropzone => {
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      setDropzoneActive(dropzone, true);
+    });
+    dropzone.addEventListener('dragleave', () => setDropzoneActive(dropzone, false));
+    dropzone.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      setDropzoneActive(dropzone, false);
+
+      const jobId = (() => {
+        try { return e.dataTransfer.getData('text/plain'); } catch (_) {}
+        return draggingCard ? (draggingCard.dataset.jobId || '') : '';
+      })();
+      const newStatus = dropzone.dataset.status || '';
+      if (!jobId || !newStatus) return;
+      if (!draggingCard) return;
+
+      const prevColumn = draggingCard.closest('.kanban-col');
+      const prevStatus = prevColumn ? (prevColumn.dataset.status || '') : '';
+      if (prevStatus === newStatus) return;
+
+      try {
+        const resp = await fetch('{{ url_for("api_board_move") }}', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ job_id: Number(jobId), new_status: newStatus, csrf_token: csrfToken })
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || !data.ok) {
+          alert((data && data.error) ? data.error : 'Durum guncellenemedi.');
+          return;
+        }
+
+        dropzone.prepend(draggingCard);
+        const updatedEl = draggingCard.querySelector('.kanban-updated-at');
+        if (updatedEl) {
+          const dt = data.updated_at ? new Date(data.updated_at) : null;
+          updatedEl.textContent = dt ? dt.toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '') : '-';
+        }
+        updateCounts();
+      } catch (err) {
+        alert('Durum guncellenemedi.');
+      }
+    });
+  });
+})();
+</script>
+
+{% endblock %}

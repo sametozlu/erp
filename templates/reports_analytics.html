@@ -1,0 +1,1287 @@
+﻿{% extends "base.html" %}
+
+{% block content %}
+<input type="hidden" id="csrfToken" value="{{ csrf_token() }}">
+<!-- ECharts & ECharts GL -->
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts-gl@2.0.9/dist/echarts-gl.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+    :root {
+        --glass-bg: rgba(255, 255, 255, 0.95);
+        --glass-border: 1px solid rgba(226, 232, 240, 0.8);
+        --surface-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        --primary: var(--status-info);
+        --secondary: var(--text-muted);
+        --text-main: #1e293b;
+        --text-sub: var(--text-muted);
+    }
+
+    .analytics-page {
+        max-width: 1800px;
+        margin: 0 auto;
+        padding: 24px;
+        font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+    }
+
+    /* Filters */
+    .filter-bar {
+        background: var(--glass-bg);
+        border: var(--glass-border);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 24px;
+        box-shadow: var(--surface-shadow);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        align-items: flex-end;
+    }
+
+    .filter-group {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .filter-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .custom-select,
+    .custom-input {
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-size: 13px;
+        color: var(--text-main);
+        min-width: 140px;
+        max-width: 240px;
+    }
+
+    .btn-apply {
+        background: var(--primary);
+        color: white;
+        padding: 10px 24px;
+        border-radius: 8px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        height: 38px;
+    }
+
+    /* Tabs */
+    .tabs-nav {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 24px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 12px;
+    }
+
+    .tab-btn {
+        padding: 10px 20px;
+        border-radius: 8px;
+        background: transparent;
+        border: none;
+        color: var(--text-sub);
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .tab-btn.active {
+        color: var(--text-main);
+        background: var(--bg-soft-2);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Content */
+    .tab-content {
+        display: none;
+        margin-top: 20px;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    /* Cards */
+    .charts-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+        gap: 24px;
+        margin-bottom: 24px;
+    }
+
+    .card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: var(--surface-shadow);
+    }
+
+    .card-full {
+        grid-column: 1 / -1;
+    }
+
+    .card-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-main);
+        margin-bottom: 16px;
+    }
+
+    /* Robot */
+    .robot-builder {
+        background: linear-gradient(135deg, var(--bg-soft) 0%, #eff6ff 100%);
+        border: 1px dashed #bfdbfe;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+    }
+
+    /* Enler Grid */
+    .tops-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 24px;
+    }
+
+    .top-card {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        transition: transform 0.2s;
+    }
+
+    .top-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    .top-list-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--bg-soft);
+        font-size: 13px;
+    }
+
+    .top-list-item:last-child {
+        border-bottom: none;
+    }
+
+    .rank-badge {
+        display: inline-block;
+        width: 20px;
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+
+    /* Table */
+    .table-container {
+        overflow-x: auto;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+    .data-table th {
+        background: var(--bg-soft);
+        padding: 12px;
+        text-align: left;
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+
+    .data-table td {
+        padding: 12px;
+        border-bottom: 1px solid var(--bg-soft-2);
+        color: var(--text-subtle);
+    }
+
+    .empty-state {
+        padding: 28px;
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 13px;
+    }
+
+    .detail-panel {
+        margin-top: 20px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        background: #ffffff;
+    }
+
+    .detail-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .detail-title {
+        font-weight: 700;
+        color: var(--text-main);
+    }
+
+    .export-row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .btn-ghost {
+        background: var(--border);
+        color: #1e293b;
+        padding: 6px 12px;
+        border-radius: 8px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        height: 32px;
+        font-size: 12px;
+    }
+</style>
+
+<div class="analytics-page">
+    <div style="margin-bottom: 24px;">
+        <h1 style="font-size: 28px; font-weight: 800; color: #1e293b;">Analiz Merkezi v2.0</h1>
+    </div>
+
+    <!-- FİLTRE ÇUBUĞU -->
+    <form class="filter-bar" id="filterForm">
+        <div class="filter-group">
+            <div class="filter-item">
+                <label style="font-size:11px; font-weight:700; color:var(--text-muted);">PERİYOT</label>
+                <select name="bucket" class="custom-select">
+                    <option value="day">Günlük</option>
+                    <option value="week">Haftalık</option>
+                    <option value="month" selected>Aylık</option>
+                    <option value="year">Yıllık</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label style="font-size:11px; font-weight:700; color:var(--text-muted);">TARİH ARALIĞI</label>
+                <div style="display:flex; gap:4px;">
+                    <input type="date" name="start_date" class="custom-input" value="{{ default_start }}">
+                    <input type="date" name="end_date" class="custom-input" value="{{ default_end }}">
+                </div>
+            </div>
+            <div class="filter-item">
+                <label style="font-size:11px; font-weight:700; color:var(--text-muted);">PROJE</label>
+                <select name="project_ids" class="custom-select" multiple size="1" style="height:38px;">
+                    {% for p in projects %}
+                    <option value="{{ p.id }}">{{ p.project_code }} - {{ p.project_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-item">
+                <label style="font-size:11px; font-weight:700; color:var(--text-muted);">ALT PROJE</label>
+                <select name="sub_project_ids" class="custom-select" multiple size="1" style="height:38px;">
+                    {% for sp in subprojects %}
+                    <option value="{{ sp.id }}">{{ sp.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-item">
+                <label style="font-size:11px; font-weight:700; color:var(--text-muted);">PERSONEL</label>
+                <select name="person_ids" class="custom-select" multiple size="1" style="height:38px;">
+                    {% for p in people %}
+                    <option value="{{ p.id }}">{{ p.full_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-item">
+                <label style="font-size:11px; font-weight:700; color:var(--text-muted);">ARAÇ</label>
+                <select name="vehicle_ids" class="custom-select" multiple size="1" style="height:38px;">
+                    {% for v in vehicles %}
+                    <option value="{{ v.id }}">{{ v.plate }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-item">
+                <label style="font-size:11px; font-weight:700; color:var(--text-muted);">İL</label>
+                <select name="city" class="custom-select" multiple size="1" style="height:38px;">
+                    {% for c in cities %}
+                    <option value="{{ c }}">{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-item">
+                <label style="font-size:11px; font-weight:700; color:var(--text-muted);">EKİP</label>
+                <select name="team_ids" class="custom-select" multiple size="1" style="height:38px;">
+                    {% for t in teams %}
+                    <option value="{{ t.id }}">{{ t.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-item">
+                <label style="font-size:11px; font-weight:700; color:var(--text-muted);">FİRMA</label>
+                <select name="firma_ids" class="custom-select" multiple size="1" style="height:38px;">
+                    {% for f in firmas %}
+                    <option value="{{ f.id }}">{{ f.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-item">
+                <label style="font-size:11px; font-weight:700; color:var(--text-muted);">SEVİYE</label>
+                <select name="seviye_ids" class="custom-select" multiple size="1" style="height:38px;">
+                    {% for l in levels %}
+                    <option value="{{ l.id }}">{{ l.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-item">
+                <label style="font-size:11px; font-weight:700; color:var(--text-muted);">DURUM</label>
+                <select name="status" class="custom-select" multiple size="1" style="height:38px;">
+                    <option value="pending">Beklemede</option>
+                    <option value="completed">Tamamlandı</option>
+                    <option value="problem">Sorunlu</option>
+                    <option value="PLANNED">Planlandı</option>
+                    <option value="ASSIGNED">Atandı</option>
+                    <option value="PUBLISHED">Yayınlandı</option>
+                    <option value="REPORTED">Raporlandı</option>
+                    <option value="CLOSED">Kapandı</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label style="font-size:11px; font-weight:700; color:var(--text-muted);">SIRALAMA</label>
+                <select name="sort_key" class="custom-select">
+                    <option value="job_count">İş Sayısı</option>
+                    <option value="work_hours">Çalışma Saati</option>
+                    <option value="km_total">Toplam KM</option>
+                    <option value="name">İsim A-Z</option>
+                </select>
+            </div>
+            <div class="filter-item">
+                <label style="font-size:11px; font-weight:700; color:var(--text-muted);">SIRA YÖNÜ</label>
+                <select name="sort_dir" class="custom-select">
+                    <option value="desc">Azalan</option>
+                    <option value="asc">Artan</option>
+                </select>
+            </div>
+        </div>
+        <button type="submit" class="btn-apply">Raporu Güncelle</button>
+    </form>
+
+    <!-- SEKMELER -->
+    <div class="tabs-nav">
+        <button class="tab-btn active" onclick="switchTab('dashboard', this)">Gösterge Paneli</button>
+        <button class="tab-btn" onclick="switchTab('robot', this)">İstatistik Robotu</button>
+        <button class="tab-btn" onclick="switchTab('tops', this)">Enler Listesi</button>
+        <button class="tab-btn" onclick="switchTab('cancelovertime', this)">İptal ve Mesai</button>
+    </div>
+
+    <!-- GÖSTERGE PANELİ -->
+    <div id="tab-dashboard" class="tab-content active">
+        <div class="charts-row">
+            <div class="card">
+                <div class="card-title">En Yoğun Projeler (Saat)</div>
+                <div id="dash1" style="height: 350px;"></div>
+            </div>
+            <div class="card">
+                <div class="card-title">İl Bazlı İş Yoğunluğu</div>
+                <div id="dash2" style="height: 350px;"></div>
+            </div>
+        </div>
+
+        <div class="charts-row">
+            <div class="card">
+                <div class="card-title">Proje Dağılımı (Dilim Grafik)</div>
+                <div id="dash-pie-project" style="height: 380px;"></div>
+            </div>
+            <div class="card">
+                <div class="card-title">İl Dağılımı (3D Dilim Grafik)</div>
+                <div id="dash-pie-city" style="height: 380px;"></div>
+            </div>
+        </div>
+
+        <div class="charts-row">
+            <div class="card">
+                <div class="card-title">3D: Personel × Zaman × Saat</div>
+                <div id="dash3d-person" style="height: 420px;"></div>
+            </div>
+            <div class="card">
+                <div class="card-title">3D: Araç × Zaman × KM</div>
+                <div id="dash3d-vehicle" style="height: 420px;"></div>
+            </div>
+        </div>
+
+        <div class="card card-full">
+            <div class="card-title">3D: Proje / Alt Proje Yoğunluk</div>
+            <div id="dash3d-project" style="height: 460px;"></div>
+        </div>
+
+        <div class="card card-full">
+            <div class="card-title">Ağaç Haritası: Proje → Alt Proje</div>
+            <div id="dash-treemap" style="height: 420px;"></div>
+        </div>
+
+        <div class="card card-full">
+            <div class="card-title">Proje Detay Tablosu</div>
+            <div class="table-container">
+                <table class="data-table" id="dash-table">
+                    <thead>
+                        <tr>
+                            <th>Proje</th>
+                            <th>Alt Proje</th>
+                            <th style="text-align:right">İş</th>
+                            <th style="text-align:right">Saat</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- İSTATİSTİK ROBOTU -->
+    <div id="tab-robot" class="tab-content">
+        <div class="robot-builder">
+            <div class="filter-group">
+                <div class="filter-item">
+                    <label class="builder-label">Kırılım 1 (X Ekseni)</label>
+                    <select id="rb-dim1" class="custom-select">
+                        <option value="project">Proje</option>
+                        <option value="sub_project">Alt Proje</option>
+                        <option value="person">Personel</option>
+                        <option value="vehicle">Araç</option>
+                        <option value="city">İl</option>
+                        <option value="team">Ekip</option>
+                        <option value="firma">Firma</option>
+                        <option value="status">Durum</option>
+                        <option value="shift">Vardiya</option>
+                        <option value="seviye">Seviye</option>
+                        <option value="feedback_outcome">Geri Bildirim</option>
+                        <option value="bucket">Zaman Dilimi</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label class="builder-label">Kırılım 2 (Y Ekseni/Grup)</label>
+                    <select id="rb-dim2" class="custom-select">
+                        <option value="">- Yok -</option>
+                        <option value="project">Proje</option>
+                        <option value="sub_project">Alt Proje</option>
+                        <option value="person">Personel</option>
+                        <option value="vehicle">Araç</option>
+                        <option value="city">İl</option>
+                        <option value="team">Ekip</option>
+                        <option value="firma">Firma</option>
+                        <option value="status">Durum</option>
+                        <option value="shift">Vardiya</option>
+                        <option value="seviye">Seviye</option>
+                        <option value="feedback_outcome">Geri Bildirim</option>
+                        <option value="bucket">Zaman Dilimi</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label class="builder-label">Metrik</label>
+                    <select id="rb-metric" class="custom-select">
+                        <option value="job_count">İş Sayısı</option>
+                        <option value="work_hours">Çalışma Saati</option>
+                        <option value="km_total">Toplam KM</option>
+                        <option value="usage_count">Kullanım (Personel × Araç)</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label class="builder-label">Grafik Tipi</label>
+                    <select id="rb-chart" class="custom-select">
+                        <option value="bar">Çubuk Grafik</option>
+                        <option value="line">Çizgi Grafik</option>
+                        <option value="pie">Dilim Grafik</option>
+                        <option value="pie3d">3D Dilim Grafik</option>
+                        <option value="bar3d">3D Çubuk Grafik</option>
+                        <option value="heatmap">Isı Haritası</option>
+                    </select>
+                </div>
+                <button type="button" class="btn-apply" onclick="runRobot()">Çalıştır</button>
+            </div>
+        </div>
+
+        <div class="card card-full" style="min-height: 500px;">
+            <div id="robot-viz" style="width:100%; height:500px;"></div>
+        </div>
+
+        <div class="card card-full" style="margin-top:20px">
+            <div class="export-row" style="justify-content:flex-end; margin-bottom: 8px;">
+                <button onclick="exportRobot('xlsx')" class="btn-ghost">Excel</button>
+                <button onclick="exportRobot('csv')" class="btn-ghost">CSV</button>
+            </div>
+            <div class="table-container">
+                <table class="data-table" id="robot-table">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div id="robot-empty" class="empty-state" style="display:none;">Sonuç bulunamadı</div>
+        </div>
+    </div>
+
+    <!-- ENLER LİSTESİ -->
+    <div id="tab-tops" class="tab-content">
+        <div class="tops-grid" id="tops-container"></div>
+        <div class="detail-panel" id="tops-detail" style="display:none;">
+            <div class="detail-header">
+                <div class="detail-title" id="tops-detail-title">Detay</div>
+                <div class="export-row">
+                    <button class="btn-ghost" onclick="exportTopDetail('xlsx')">Excel</button>
+                    <button class="btn-ghost" onclick="exportTopDetail('csv')">CSV</button>
+                </div>
+            </div>
+            <div id="tops-detail-chart" style="height: 360px;"></div>
+            <div class="table-container" style="margin-top:12px;">
+                <table class="data-table" id="tops-detail-table">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div id="tops-detail-empty" class="empty-state" style="display:none;">Sonuç bulunamadı</div>
+        </div>
+    </div>
+
+    <!-- İPTAL VE MESAİ SEKMESİ -->
+    <div id="tab-cancelovertime" class="tab-content">
+        <!-- Özet Kartları -->
+        <div class="charts-row" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 24px;">
+            <div class="card"
+                style="text-align: center; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-color: #fecaca;">
+                <div style="font-size: 14px; color: var(--status-danger); font-weight: 600; margin-bottom: 8px;">❌
+                    Toplam İptal</div>
+                <div id="co-total-cancel" style="font-size: 36px; font-weight: 800; color: #b91c1c;">0</div>
+            </div>
+            <div class="card"
+                style="text-align: center; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-color: #fcd34d;">
+                <div style="font-size: 14px; color: var(--status-warning); font-weight: 600; margin-bottom: 8px;">⏰
+                    Toplam Mesai Kaydı
+                </div>
+                <div id="co-total-overtime-records" style="font-size: 36px; font-weight: 800; color: #b45309;">0</div>
+            </div>
+            <div class="card"
+                style="text-align: center; background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); border-color: #86efac;">
+                <div style="font-size: 14px; color: var(--status-success); font-weight: 600; margin-bottom: 8px;">⏱️
+                    Toplam Mesai
+                    Saati</div>
+                <div id="co-total-overtime-hours" style="font-size: 36px; font-weight: 800; color: #15803d;">0</div>
+            </div>
+        </div>
+
+        <div class="charts-row">
+            <!-- İptal İstatistikleri -->
+            <div class="card">
+                <div class="card-title">❌ İptal Edilen İşler (Projeye Göre)</div>
+                <div id="co-cancel-project-chart" style="height: 320px;"></div>
+            </div>
+            <div class="card">
+                <div class="card-title">⏰ Mesai (Personele Göre)</div>
+                <div id="co-overtime-person-chart" style="height: 320px;"></div>
+            </div>
+        </div>
+
+        <div class="charts-row">
+            <div class="card">
+                <div class="card-title">📍 İptal (İle Göre)</div>
+                <div id="co-cancel-city-chart" style="height: 320px;"></div>
+            </div>
+            <div class="card">
+                <div class="card-title">📊 Mesai (Projeye Göre)</div>
+                <div id="co-overtime-project-chart" style="height: 320px;"></div>
+            </div>
+        </div>
+
+        <!-- Detay Listeleri -->
+        <div class="tops-grid">
+            <div class="top-card">
+                <div class="card-title">👤 En Çok İptal Yapan Kullanıcılar</div>
+                <div id="co-cancel-user-list"></div>
+            </div>
+            <div class="top-card">
+                <div class="card-title">💬 En Sık İptal Nedenleri</div>
+                <div id="co-cancel-reason-list"></div>
+            </div>
+            <div class="top-card">
+                <div class="card-title">🏙️ Mesai (İle Göre)</div>
+                <div id="co-overtime-city-list"></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+<script>
+    let charts = {};
+    let lastRobotPayload = null;
+    let lastRobotMeta = null;
+    let topsData = null;
+    let currentTopCard = null;
+
+    // Türkçe kart tanımları
+    const CARD_DEFS = {
+        person_max_hours: { title: 'En Çok Çalışan (Saat)', unit: 'saat' },
+        person_min_hours: { title: 'En Az Çalışan (Saat)', unit: 'saat' },
+        person_max_jobs: { title: 'En Çok İş Yapan Personel', unit: 'iş' },
+        person_min_jobs: { title: 'En Az İş Yapan Personel', unit: 'iş' },
+        person_efficiency: { title: 'En Verimli (İş/Saat)', unit: 'iş/saat' },
+        person_diversity_proj: { title: 'En Çok Proje Değiştiren', unit: 'proje' },
+        person_diversity_city: { title: 'En Çok İl Gezen Personel', unit: 'il' },
+        person_most_vehicles: { title: 'En Çok Farklı Araç Kullanan', unit: 'araç' },
+
+        proj_max_hours: { title: 'En Çok Saat Harcanan Proje', unit: 'saat' },
+        proj_min_hours: { title: 'En Az Saat Harcanan Proje', unit: 'saat' },
+        proj_max_jobs: { title: 'En Çok İş Yapılan Proje', unit: 'iş' },
+        proj_min_jobs: { title: 'En Az İş Yapılan Proje', unit: 'iş' },
+        proj_city_peak: { title: 'En Yoğun İl Projeleri', unit: 'iş' },
+
+        sub_max_hours: { title: 'En Çok Saat Harcanan Alt Proje', unit: 'saat' },
+        sub_max_jobs: { title: 'En Çok İş Yapılan Alt Proje', unit: 'iş' },
+        sub_min_jobs: { title: 'En Az İş Yapılan Alt Proje', unit: 'iş' },
+
+        veh_max_km: { title: 'En Çok KM Yapan Araç', unit: 'km' },
+        veh_min_km: { title: 'En Az KM Yapan Araç', unit: 'km' },
+        veh_max_jobs: { title: 'En Çok İş Yapılan Araç', unit: 'iş' },
+        veh_diversity_city: { title: 'En Çok İl Gezen Araç', unit: 'il' },
+
+        person_vehicle_max_usage: { title: 'En Çok Kullanılan Personel-Araç', unit: 'kullanım' },
+        veh_most_people: { title: 'En Çok Farklı Personel Kullanan Araç', unit: 'personel' },
+
+        city_max_jobs: { title: 'En Çok Gidilen İl', unit: 'iş' },
+        city_max_hours: { title: 'En Çok Saat Harcanan İl', unit: 'saat' },
+        city_max_km: { title: 'En Çok KM Yapılan İl', unit: 'km' }
+    };
+
+    // Türkçe kolon isimleri
+    const COL_LABELS = {
+        project: 'Proje',
+        sub_project: 'Alt Proje',
+        person: 'Personel',
+        vehicle: 'Araç',
+        city: 'İl',
+        bucket: 'Zaman Dilimi',
+        job_count: 'İş Sayısı',
+        work_hours: 'Çalışma Saati',
+        km_total: 'Toplam KM',
+        usage_count: 'Kullanım',
+        team: 'Ekip',
+        firma: 'Firma',
+        status: 'Durum',
+        shift: 'Vardiya',
+        seviye: 'Seviye',
+        feedback_outcome: 'Geri Bildirim'
+    };
+
+    function getColLabel(col) {
+        return COL_LABELS[col] || col.replace('_', ' ').toUpperCase();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        refreshAll();
+        const form = document.getElementById('filterForm');
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            refreshAll();
+        });
+        form.addEventListener('change', () => {
+            refreshAll();
+        });
+    });
+
+    function refreshAll() {
+        loadDashboard();
+        loadTops();
+        loadCancelOvertime();
+    }
+
+    // --- İPTAL VE MESAİ ---
+    async function loadCancelOvertime() {
+        const base = getFilters();
+        try {
+            const data = await postJson('/api/analytics/cancel-overtime', { ...base, limit: 10 });
+            if (!data.ok) return;
+
+            // Özet kartları
+            document.getElementById('co-total-cancel').textContent = data.summary?.total_cancellations || 0;
+            document.getElementById('co-total-overtime-records').textContent = data.summary?.total_overtime_records || 0;
+            document.getElementById('co-total-overtime-hours').textContent = data.summary?.total_overtime_hours || 0;
+
+            // İptal grafikleri
+            const cancelByProject = data.cancellations?.by_project || [];
+            const cancelByCity = data.cancellations?.by_city || [];
+            const cancelByUser = data.cancellations?.by_user || [];
+            const cancelByReason = data.cancellations?.by_reason || [];
+
+            renderBarChart('co-cancel-project-chart', cancelByProject, 'name', 'value', 'iptal', '#dc2626');
+            renderBarChart('co-cancel-city-chart', cancelByCity, 'name', 'value', 'iptal', '#f59e0b');
+
+            // Mesai grafikleri
+            const overtimeByPerson = data.overtime?.by_person || [];
+            const overtimeByProject = data.overtime?.by_project || [];
+            const overtimeByCity = data.overtime?.by_city || [];
+
+            renderBarChart('co-overtime-person-chart', overtimeByPerson, 'name', 'value', 'saat', '#10b981');
+            renderBarChart('co-overtime-project-chart', overtimeByProject, 'name', 'value', 'saat', '#3b82f6');
+
+            // Listeler
+            renderTopList('co-cancel-user-list', cancelByUser, 'iptal');
+            renderTopList('co-cancel-reason-list', cancelByReason, '');
+            renderTopList('co-overtime-city-list', overtimeByCity, 'saat');
+
+        } catch (e) {
+            console.error('Cancel/Overtime load error:', e);
+        }
+    }
+
+    function renderTopList(containerId, items, unit) {
+        const el = document.getElementById(containerId);
+        if (!el) return;
+        if (!items || !items.length) {
+            el.innerHTML = '<div class="empty-state">Veri yok</div>';
+            return;
+        }
+        el.innerHTML = items.map((item, i) => `
+            <div class="top-list-item">
+                <span><span class="rank-badge">${i + 1}.</span> ${item.name || 'Bilinmiyor'}</span>
+                <strong>${item.value || 0} ${unit}</strong>
+            </div>
+        `).join('');
+    }
+
+
+    function switchTab(id, btn) {
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`tab-${id}`).classList.add('active');
+        btn.classList.add('active');
+        setTimeout(() => Object.values(charts).forEach(c => c.resize()), 200);
+    }
+
+    function getMultiValues(name) {
+        const el = document.querySelector(`[name="${name}"]`);
+        if (!el) return [];
+        return Array.from(el.selectedOptions).map(o => o.value).filter(v => v);
+    }
+
+    function getFilters() {
+        const fd = new FormData(document.getElementById('filterForm'));
+        return {
+            date_range: {
+                start: fd.get('start_date'),
+                end: fd.get('end_date')
+            },
+            bucket: fd.get('bucket'),
+            sort_key: fd.get('sort_key'),
+            sort_dir: fd.get('sort_dir'),
+            filters: {
+                project_ids: getMultiValues('project_ids'),
+                sub_project_ids: getMultiValues('sub_project_ids'),
+                person_ids: getMultiValues('person_ids'),
+                vehicle_ids: getMultiValues('vehicle_ids'),
+                city: getMultiValues('city'),
+                status: getMultiValues('status'),
+                team_ids: getMultiValues('team_ids'),
+                firma_ids: getMultiValues('firma_ids'),
+                seviye_ids: getMultiValues('seviye_ids')
+            }
+        };
+    }
+
+    function buildStatsQuery() {
+        const fd = new FormData(document.getElementById('filterForm'));
+        const params = new URLSearchParams();
+        ['start_date', 'end_date', 'bucket', 'sort_key', 'sort_dir'].forEach(k => {
+            const v = fd.get(k);
+            if (v) params.append(k, v);
+        });
+        ['project_ids', 'sub_project_ids', 'person_ids', 'vehicle_ids', 'city', 'status', 'team_ids', 'firma_ids', 'seviye_ids'].forEach(k => {
+            getMultiValues(k).forEach(v => params.append(k, v));
+        });
+        return params;
+    }
+
+    async function postJson(url, payload) {
+        const csrfToken = document.getElementById('csrfToken')?.value || '';
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(payload)
+        });
+        return res.json();
+    }
+
+    // --- GÖSTERGE PANELİ ---
+    async function loadDashboard() {
+        const q = buildStatsQuery();
+        const res = await fetch(`/api/analytics/stats?${q}`);
+        const data = await res.json();
+
+        const topProjects = (data.top_projects || []);
+        const topCities = (data.top_cities || []);
+        const projTable = (data.project_table || []);
+
+        renderBarChart('dash1', topProjects, 'project', 'work_hours', 'saat');
+        renderBarChart('dash2', topCities, 'city', 'job_count', 'iş');
+
+        // Yeni Dilim Grafikleri
+        renderPie('dash-pie-project', topProjects, 'project', 'work_hours', 'Proje Dağılımı');
+        renderPie3D('dash-pie-city', topCities, 'city', 'job_count', 'İl Dağılımı');
+
+        await load3DCharts();
+        renderTreemap('dash-treemap', projTable);
+        renderSimpleTable('dash-table', projTable, ['project', 'sub_project'], ['job_count', 'work_hours']);
+    }
+
+    async function load3DCharts() {
+        const base = getFilters();
+
+        const personRes = await postJson('/api/analytics/query', {
+            ...base,
+            dimensions: ['bucket', 'person'],
+            metrics: ['work_hours'],
+            sort_key: 'work_hours',
+            sort_dir: 'desc'
+        });
+        render3D('dash3d-person', (personRes.rows || []), 'bucket', 'person', 'work_hours');
+
+        const vehicleRes = await postJson('/api/analytics/query', {
+            ...base,
+            dimensions: ['bucket', 'vehicle'],
+            metrics: ['km_total'],
+            sort_key: 'km_total',
+            sort_dir: 'desc'
+        });
+        render3D('dash3d-vehicle', (vehicleRes.rows || []), 'bucket', 'vehicle', 'km_total');
+
+        const projRes = await postJson('/api/analytics/query', {
+            ...base,
+            dimensions: ['project', 'sub_project'],
+            metrics: ['work_hours'],
+            sort_key: 'work_hours',
+            sort_dir: 'desc'
+        });
+        render3D('dash3d-project', (projRes.rows || []), 'project', 'sub_project', 'work_hours');
+    }
+
+    // --- İSTATİSTİK ROBOTU ---
+    async function runRobot() {
+        const d1 = document.getElementById('rb-dim1').value;
+        const d2 = document.getElementById('rb-dim2').value;
+        const met = document.getElementById('rb-metric').value;
+        const type = document.getElementById('rb-chart').value;
+
+        const dims = [d1];
+        if (d2) dims.push(d2);
+
+        const base = getFilters();
+        const payload = {
+            ...base,
+            dimensions: dims,
+            metrics: [met]
+        };
+
+        try {
+            const data = await postJson('/api/analytics/query', payload);
+            if (data.error) {
+                alert('Hata: ' + data.error);
+                return;
+            }
+            const rows = data.rows || [];
+            lastRobotPayload = payload;
+            lastRobotMeta = data.meta || {};
+
+            const empty = document.getElementById('robot-empty');
+            if (!rows.length) {
+                empty.style.display = 'block';
+                document.getElementById('robot-viz').innerHTML = '';
+                renderTable('robot-table', [], dims, data.meta ? data.meta.metrics : [met]);
+                return;
+            }
+            empty.style.display = 'none';
+
+            if (type === 'pie') {
+                renderPie('robot-viz', rows, dims[0], met, 'Dilim Grafik');
+            } else if (type === 'pie3d') {
+                renderPie3D('robot-viz', rows, dims[0], met, '3D Dilim Grafik');
+            } else if (type === 'bar3d' && dims.length >= 2) {
+                render3D('robot-viz', rows, dims[0], dims[1], met);
+            } else if (type === 'heatmap' && dims.length >= 2) {
+                renderHeatmap('robot-viz', rows, dims[0], dims[1], met);
+            } else {
+                render2D('robot-viz', rows, dims[0], dims[1] || null, met, type);
+            }
+
+            renderTable('robot-table', rows, dims, data.meta ? data.meta.metrics : [met]);
+        } catch (e) {
+            console.error(e);
+            alert('Robot hatası');
+        }
+    }
+
+    async function exportRobot(format) {
+        if (!lastRobotPayload) {
+            alert('Önce robotu çalıştırın.');
+            return;
+        }
+        const csrfToken = document.getElementById('csrfToken')?.value || '';
+        const res = await fetch(`/api/analytics/query/export?format=${format}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify(lastRobotPayload)
+        });
+        const blob = await res.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = format === 'csv' ? 'robot_export.csv' : 'robot_export.xlsx';
+        a.click();
+    }
+
+    // --- ENLER LİSTESİ ---
+    async function loadTops() {
+        const base = getFilters();
+        const data = await postJson('/api/analytics/tops', { ...base, limit: 10 });
+        topsData = data.cards || {};
+        const sortKey = base.sort_key;
+        const sortDir = base.sort_dir;
+
+        const container = document.getElementById('tops-container');
+        const cardsHtml = Object.keys(CARD_DEFS).map((key) => {
+            const meta = CARD_DEFS[key];
+            const list = sortList((topsData[key] || []), sortKey, sortDir);
+            return makeCard(key, meta.title, list, meta.unit);
+        }).join('');
+        container.innerHTML = cardsHtml;
+
+        container.querySelectorAll('[data-card-id]').forEach(card => {
+            card.addEventListener('click', () => openTopDetail(card.dataset.cardId));
+        });
+    }
+
+    function makeCard(cardId, title, list, unit) {
+        if (!list || !list.length) {
+            return `<div class="top-card" data-card-id="${cardId}"><div style="font-weight:700;color:var(--text-muted)">${title}</div><div style="font-size:12px;color:var(--border);margin-top:10px;">Sonuç bulunamadı</div></div>`;
+        }
+        const items = list.slice(0, 5).map((x, i) => `
+            <div class="top-list-item">
+                <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:70%;"><span class="rank-badge">#${i + 1}</span> ${x.name}</div>
+                <div style="font-weight:700; color:var(--status-info);">${x.value} <span style="font-size:10px;color:var(--text-muted)">${unit}</span></div>
+            </div>
+        `).join('');
+        return `<div class="top-card" data-card-id="${cardId}"><div class="card-title" style="font-size:14px; margin-bottom:12px;">${title}</div>${items}</div>`;
+    }
+
+    function sortList(list, sortKey, sortDir) {
+        const dir = sortDir === 'asc' ? 1 : -1;
+        const arr = (list || []).slice();
+        if (sortKey === 'name') {
+            arr.sort((a, b) => (a.name || '').localeCompare(b.name || '') * dir);
+        } else {
+            arr.sort((a, b) => ((a.value || 0) - (b.value || 0)) * dir);
+        }
+        return arr;
+    }
+
+    async function openTopDetail(cardId) {
+        currentTopCard = cardId;
+        const base = getFilters();
+        const list = sortList((topsData[cardId] || []), base.sort_key, base.sort_dir);
+        const meta = CARD_DEFS[cardId] || { title: 'Detay', unit: '' };
+
+        const detail = document.getElementById('tops-detail');
+        const title = document.getElementById('tops-detail-title');
+        const empty = document.getElementById('tops-detail-empty');
+        title.textContent = meta.title;
+
+        renderDetailTable(list, meta.unit);
+        if (!list.length) {
+            empty.style.display = 'block';
+            detail.style.display = 'block';
+            initChart('tops-detail-chart', { title: { text: 'Sonuç bulunamadı', left: 'center', top: 'middle' } });
+            return;
+        }
+
+        empty.style.display = 'none';
+        detail.style.display = 'block';
+
+        const trend = await postJson('/api/analytics/tops/detail', {
+            ...base,
+            card_id: cardId,
+            entity_name: list[0].name
+        });
+
+        renderTrend('tops-detail-chart', trend.trend || [], meta.unit);
+    }
+
+    async function exportTopDetail(format) {
+        if (!currentTopCard) {
+            alert('Önce bir kart seçin.');
+            return;
+        }
+        const base = getFilters();
+        const csrfToken = document.getElementById('csrfToken')?.value || '';
+        const res = await fetch(`/api/analytics/tops/export?format=${format}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ ...base, card_id: currentTopCard })
+        });
+        const blob = await res.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = format === 'csv' ? 'enler_export.csv' : 'enler_export.xlsx';
+        a.click();
+    }
+
+    // --- GRAFİK FONKSİYONLARI ---
+    function renderBarChart(id, rows, labelKey, valueKey, unit) {
+        if (!rows.length) {
+            renderEmptyChart(id);
+            return;
+        }
+        const labels = rows.map(r => r[labelKey]);
+        const values = rows.map(r => r[valueKey]);
+        initChart(id, {
+            tooltip: { trigger: 'axis' },
+            xAxis: { type: 'value' },
+            yAxis: { type: 'category', data: labels, inverse: true },
+            series: [{ type: 'bar', data: values, itemStyle: { color: '#3b82f6' } }],
+            animationDuration: 700
+        });
+    }
+
+    // Dilim Grafik (Pie)
+    function renderPie(id, rows, labelKey, valueKey, title) {
+        if (!rows.length) {
+            renderEmptyChart(id);
+            return;
+        }
+        const data = rows.map(r => ({ name: r[labelKey], value: r[valueKey] }));
+        initChart(id, {
+            tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+            legend: { type: 'scroll', orient: 'vertical', right: 10, top: 20, bottom: 20 },
+            series: [{
+                type: 'pie',
+                radius: ['35%', '65%'],
+                center: ['40%', '50%'],
+                data: data,
+                label: { show: true, formatter: '{b}: {d}%' },
+                emphasis: {
+                    itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' },
+                    label: { show: true, fontSize: 14, fontWeight: 'bold' }
+                }
+            }],
+            animationDuration: 700
+        });
+    }
+
+    // 3D Dilim Grafik (Rose/Nightingale)
+    function renderPie3D(id, rows, labelKey, valueKey, title) {
+        if (!rows.length) {
+            renderEmptyChart(id);
+            return;
+        }
+        const data = rows.map(r => ({ name: r[labelKey], value: r[valueKey] }));
+        initChart(id, {
+            tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+            legend: { type: 'scroll', orient: 'vertical', right: 10, top: 20, bottom: 20 },
+            series: [{
+                type: 'pie',
+                radius: ['20%', '70%'],
+                center: ['40%', '50%'],
+                roseType: 'area',
+                itemStyle: { borderRadius: 8 },
+                data: data,
+                label: { show: true, formatter: '{b}: {d}%' },
+                emphasis: {
+                    itemStyle: { shadowBlur: 20, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' }
+                }
+            }],
+            animationDuration: 700
+        });
+    }
+
+    function renderTreemap(id, rows) {
+        if (!rows.length) {
+            renderEmptyChart(id);
+            return;
+        }
+        const tree = {};
+        rows.forEach(r => {
+            const p = r.project || 'Bilinmiyor';
+            const sp = r.sub_project || 'Genel';
+            tree[p] = tree[p] || { name: p, children: {} };
+            tree[p].children[sp] = (tree[p].children[sp] || 0) + (r.work_hours || 0);
+        });
+        const data = Object.values(tree).map(node => ({
+            name: node.name,
+            children: Object.entries(node.children).map(([name, value]) => ({ name, value }))
+        }));
+        initChart(id, {
+            tooltip: { trigger: 'item' },
+            series: [{
+                type: 'treemap',
+                roam: true,
+                nodeClick: false,
+                data: data
+            }],
+            animationDuration: 700
+        });
+    }
+
+    function renderTrend(id, points, unit) {
+        if (!points.length) {
+            renderEmptyChart(id);
+            return;
+        }
+        const labels = points.map(p => p.bucket);
+        const values = points.map(p => p.value);
+        initChart(id, {
+            tooltip: { trigger: 'axis' },
+            xAxis: { type: 'category', data: labels },
+            yAxis: { type: 'value' },
+            series: [{ type: 'line', areaStyle: {}, data: values }],
+            animationDuration: 700
+        });
+    }
+
+    function render2D(id, rows, d1, d2, met, type) {
+        if (!rows.length) {
+            renderEmptyChart(id);
+            return;
+        }
+        const xData = [...new Set(rows.map(d => d[d1]))];
+        let series = [];
+        if (d2) {
+            const stacks = [...new Set(rows.map(d => d[d2]))];
+            stacks.forEach(s => {
+                series.push({
+                    name: s,
+                    type: type,
+                    stack: 'total',
+                    data: xData.map(x => {
+                        const f = rows.find(r => r[d1] == x && r[d2] == s);
+                        return f ? f[met] : 0;
+                    })
+                });
+            });
+        } else {
+            series.push({ type: type, data: xData.map(x => { const f = rows.find(r => r[d1] == x); return f ? f[met] : 0; }) });
+        }
+        initChart(id, {
+            tooltip: { trigger: 'axis' },
+            legend: {},
+            xAxis: { type: 'category', data: xData },
+            yAxis: { type: 'value' },
+            series: series,
+            animationDuration: 700
+        });
+    }
+
+    function render3D(id, rows, d1, d2, met) {
+        if (!rows.length) {
+            renderEmptyChart(id);
+            return;
+        }
+        const xData = [...new Set(rows.map(d => d[d1]))];
+        const yData = [...new Set(rows.map(d => d[d2]))];
+        const valData = rows.map(d => [xData.indexOf(d[d1]), yData.indexOf(d[d2]), d[met]]);
+
+        initChart(id, {
+            tooltip: {},
+            visualMap: { max: Math.max(...rows.map(d => d[met])), inRange: { color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026'] } },
+            xAxis3D: { type: 'category', data: xData, name: getColLabel(d1) },
+            yAxis3D: { type: 'category', data: yData, name: getColLabel(d2) },
+            zAxis3D: { type: 'value', name: getColLabel(met) },
+            grid3D: { boxWidth: 200, boxDepth: 90, viewControl: { projection: 'orthographic', autoRotate: true } },
+            series: [{ type: 'bar3D', data: valData, shading: 'lambert' }],
+            animationDuration: 700
+        });
+    }
+
+    function renderHeatmap(id, rows, d1, d2, met) {
+        if (!rows.length) {
+            renderEmptyChart(id);
+            return;
+        }
+        const xData = [...new Set(rows.map(d => d[d1]))];
+        const yData = [...new Set(rows.map(d => d[d2]))];
+        const valData = rows.map(d => [xData.indexOf(d[d1]), yData.indexOf(d[d2]), d[met]]);
+
+        initChart(id, {
+            tooltip: { position: 'top' },
+            grid: { height: '50%', top: '10%' },
+            xAxis: { type: 'category', data: xData, splitArea: { show: true } },
+            yAxis: { type: 'category', data: yData, splitArea: { show: true } },
+            visualMap: { min: 0, max: Math.max(...rows.map(d => d[met])), calculable: true, orient: 'horizontal', left: 'center', bottom: '15%' },
+            series: [{ type: 'heatmap', data: valData, label: { show: true } }],
+            animationDuration: 700
+        });
+    }
+
+    function renderTable(id, rows, dims, metrics) {
+        const cols = dims.concat(metrics || []);
+        const thead = '<tr>' + cols.map(d => `<th>${getColLabel(d)}</th>`).join('') + '</tr>';
+        const tbody = rows.map(r => '<tr>' + cols.map(d => `<td>${r[d] ?? ''}</td>`).join('') + '</tr>').join('');
+        document.querySelector(`#${id} thead`).innerHTML = thead;
+        document.querySelector(`#${id} tbody`).innerHTML = tbody;
+    }
+
+    function renderSimpleTable(id, rows, dims, metrics) {
+        const cols = dims.concat(metrics);
+        const thead = '<tr>' + cols.map(d => `<th>${getColLabel(d)}</th>`).join('') + '</tr>';
+        if (!rows.length) {
+            document.querySelector(`#${id} thead`).innerHTML = thead;
+            document.querySelector(`#${id} tbody`).innerHTML = `<tr><td colspan="${cols.length}" style="text-align:center;color:var(--text-muted);">Sonuç bulunamadı</td></tr>`;
+            return;
+        }
+        const tbody = rows.map(r => '<tr>' + cols.map(d => {
+            const val = r[d] ?? '';
+            if (typeof val === 'number') return `<td style="text-align:right">${val}</td>`;
+            return `<td>${val}</td>`;
+        }).join('') + '</tr>').join('');
+        document.querySelector(`#${id} thead`).innerHTML = thead;
+        document.querySelector(`#${id} tbody`).innerHTML = tbody;
+    }
+
+    function renderDetailTable(list, unit) {
+        const table = document.getElementById('tops-detail-table');
+        const thead = '<tr><th>Adı</th><th style="text-align:right">Değer</th></tr>';
+        const tbody = list.map(r => `<tr><td>${r.name}</td><td style="text-align:right">${r.value} ${unit || ''}</td></tr>`).join('');
+        table.querySelector('thead').innerHTML = thead;
+        table.querySelector('tbody').innerHTML = tbody;
+    }
+
+    function renderEmptyChart(id) {
+        initChart(id, {
+            title: { text: 'Sonuç bulunamadı', left: 'center', top: 'middle', textStyle: { color: '#94a3b8', fontSize: 12 } }
+        });
+    }
+
+    function initChart(id, opt) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (charts[id]) charts[id].dispose();
+        charts[id] = echarts.init(el);
+        charts[id].setOption(opt);
+        charts[id].resize();
+    }
+</script>
+{% endblock %}

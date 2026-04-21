@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <div class="rowline" style="justify-content:space-between; gap:12px; flex-wrap:wrap;">
+    <h2 style="margin:0;">Saha Raporları</h2>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <a class="btn secondary" href="{{ url_for('planner.plan_week') }}" style="text-decoration:none;">Plan</a>
+      <a class="btn secondary" href="{{ url_for('planner.admin_reports_xlsx', start=start, end=end, outcome=outcome, user_id=user_id, project_id=project_id) }}" style="text-decoration:none;">Excel</a>
+    </div>
+  </div>
+
+  <form method="get" class="filters" style="margin-top:12px; align-items:end;">
+    <label>Başlangıç
+      <input type="date" name="start" value="{{ start }}">
+    </label>
+    <label>Bitiş
+      <input type="date" name="end" value="{{ end }}">
+    </label>
+    <label>Sonuç
+      <select name="outcome">
+        <option value="" {% if not outcome %}selected{% endif %}>(hepsi)</option>
+        <option value="completed" {% if outcome=='completed' %}selected{% endif %}>Tamamlandı</option>
+        <option value="not_completed" {% if outcome=='not_completed' %}selected{% endif %}>Tamamlanmadı</option>
+        <option value="issue" {% if outcome=='issue' %}selected{% endif %}>Sorun</option>
+      </select>
+    </label>
+    <label>Kullanıcı
+      <select name="user_id">
+        <option value="0">(hepsi)</option>
+        {% for u in users %}
+          <option value="{{ u.id }}" {% if user_id==u.id %}selected{% endif %}>{{ u.full_name or u.email }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Proje
+      <select name="project_id">
+        <option value="0">(hepsi)</option>
+        {% for p in projects %}
+          <option value="{{ p.id }}" {% if project_id==p.id %}selected{% endif %}>{{ p.region }} | {{ p.project_code }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="btn" type="submit" style="background:var(--text-strong); color:white; border:none;">Filtrele</button>
+  </form>
+
+  <div class="tablewrap" style="margin-top:12px;">
+    <table class="simple" style="width:100%; background:white;">
+      <thead>
+        <tr>
+          <th>Zaman</th>
+          <th>Sonuç</th>
+          <th>Kullanıcı</th>
+          <th>İş</th>
+          <th>Proje</th>
+          <th>İl</th>
+          <th>İncelendi</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+          {% set j = r.job %}
+          {% set u = r.user or r.created_by_user %}
+          {% set p = j.project if j else None %}
+          <tr>
+            <td>{{ r.submitted_at.strftime('%d.%m.%Y %H:%M') if r.submitted_at else '-' }}</td>
+            <td>{{ {"completed":"Tamamlandı","not_completed":"Tamamlanmadı","issue":"Sorun"}.get(r.outcome or "", r.outcome or "-") }}</td>
+            <td>{{ u.full_name or u.email if u else '-' }}</td>
+            <td>#{{ r.job_id }}</td>
+            <td>{{ p.project_code if p else '' }}</td>
+            <td>{{ p.region if p else '' }}</td>
+            <td>{% if r.reviewed_at %}OK{% else %}-{% endif %}</td>
+            <td><a class="btn tiny" href="{{ url_for('planner.admin_report_detail', report_id=r.id) }}" style="text-decoration:none;">Detay</a></td>
+          </tr>
+        {% endfor %}
+        {% if not rows %}
+          <tr><td colspan="8" style="color:var(--text-muted); padding:12px;">Kayıt yok.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

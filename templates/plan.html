@@ -1,0 +1,3798 @@
+{% extends "base.html" %}
+{% block header_content %}
+<style>
+  .mesai-giris {
+    margin-top: 8px;
+    /* Araçların altı boşluğu */
+    padding: 8px 12px;
+    background: var(--bg-soft);
+    /* #f7f8fa equivalent */
+    border-radius: 6px;
+    border: 1px solid var(--line);
+  }
+
+  .mesai-baslik {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .mesai-satir {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    /* Satırlar arası az boşluk */
+    font-size: 12px;
+  }
+
+  .mesai-personel {
+    flex: 1;
+    margin-right: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-strong);
+    font-weight: 500;
+  }
+
+  /* Mesai kutuları */
+  .mesai-giris input[type="number"],
+  .mesai-giris input[type="text"] {
+    width: 80px;
+    /* Kompakt genişlik */
+    padding: 2px 6px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: var(--card);
+    color: var(--text);
+    font-size: 11px;
+    height: 24px;
+    text-align: center;
+  }
+
+  .mesai-kaydet-btn {
+    width: 100%;
+    margin-top: 8px;
+    padding: 6px 0;
+    background: var(--text);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .mesai-kaydet-btn:hover {
+    opacity: 0.9;
+  }
+
+  /* İptal edilen hücreler */
+  .cell.is-cancelled {
+    background: repeating-linear-gradient(45deg,
+        #fef2f2,
+        #fef2f2 10px,
+        #fee2e2 10px,
+        #fee2e2 20px) !important;
+    position: relative;
+    color: #991b1b !important;
+  }
+
+  /* Dark mode support logic exists in app.js via body classes usually, adding generic override */
+  [data-theme="dark"] .cell.is-cancelled,
+  body.dark-mode .cell.is-cancelled {
+    background: repeating-linear-gradient(45deg,
+        #3f0e0e,
+        #3f0e0e 10px,
+        #581414 10px,
+        #581414 20px) !important;
+    color: #fecaca !important;
+  }
+
+  .cell.is-cancelled .cell-time,
+  .cell.is-cancelled .cell-people,
+  .cell.is-cancelled .cell-note,
+  .cell.is-cancelled .cell-vehicle {
+    text-decoration: line-through;
+    opacity: 0.7;
+  }
+
+  .cell.is-cancelled::after {
+    content: "İPTAL";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-15deg);
+    font-size: 14px;
+    font-weight: 800;
+    color: rgba(220, 38, 38, 0.3);
+    pointer-events: none;
+    border: 2px solid rgba(220, 38, 38, 0.3);
+    padding: 2px 6px;
+    border-radius: 4px;
+    z-index: 1;
+  }
+</style>
+{% endblock %}
+{% block content %}
+
+<input type="hidden" id="csrfToken" value="{{ csrf_token() }}">
+
+<section class="card"
+  style="padding: 0; background: transparent; box-shadow: none; width:100%; max-width:100%; box-sizing:border-box; position: relative;">
+  <!-- Clean Selection Bar -->
+  <div
+    style="background: #ffffff; border: 1px solid var(--border); border-radius: 12px; padding: 10px 20px; margin-bottom: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+
+    <!-- Üst Satır: Seçili İş + Hafta + Tarih Kontrolları -->
+    <div
+      style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; width: 100%; margin-bottom: 10px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <strong style="color: var(--text-strong); font-size: 14px; font-weight: 600;">Seçili iş:</strong>
+        <span id="selectedLabel"
+          style="color: var(--text-subtle); font-size: 14px; font-weight: 500; padding: 5px 10px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 6px;">-</span>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+        <h2 style="margin: 0; color: var(--status-info); font-size: 20px; font-weight: 700; letter-spacing: -0.3px;">
+          {{ start.year }} - {{ start.isocalendar().week }}. HAFTA
+        </h2>
+      </div>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center; justify-content: flex-end;">
+        <form method="get" style="display: flex; align-items: center; gap: 6px; margin: 0;">
+          <input type="date" name="date" value="{{ selected_week }}"
+            style="padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; background: #ffffff; height: 32px; box-sizing: border-box;"
+            id="weekStartInput">
+          <input type="hidden" name="week_start" value="{{ week_start_iso }}" id="weekStartHidden">
+          <button class="btn" type="submit"
+            style="background: var(--text-strong); color: white; font-weight: 500; padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; height: 32px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Getir</button>
+          <a class="btn" href="{{ url_for('planner.plan_week', date=today_iso) }}"
+            style="background: var(--bg-soft-2); color: var(--text-subtle); font-weight: 500; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; height: 32px; border: 1px solid var(--border); box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Bugün</a>
+        </form>
+        <a class="btn" href="{{ url_for('planner.plan_week', date=prev_week) }}"
+          style="background: var(--bg-soft-2); color: var(--text-subtle); font-weight: 500; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; height: 32px; border: 1px solid var(--border); box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">&lt;
+          Önceki</a>
+        <a class="btn" href="{{ url_for('planner.plan_week', date=next_week) }}"
+          style="background: var(--bg-soft-2); color: var(--text-subtle); font-weight: 500; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; height: 32px; border: 1px solid var(--border); box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">Sonraki
+          &gt;</a>
+      </div>
+    </div>
+
+    <!-- Alt Satır: Tüm Butonlar -->
+    <div
+      style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; border-top: 1px solid var(--bg-soft-2); padding-top: 10px;">
+
+      <!-- Sol: İşlem Butonları -->
+      <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+        <!-- Excel -->
+        <a href="{{ url_for('planner.plan_export_excel', week_start=week_start_iso) }}" class="btn" download
+          style="background: linear-gradient(135deg, var(--status-success) 0%, var(--status-success) 100%); color: #fff; font-weight: 600; padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; height: 32px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 4px; text-decoration: none;">
+          📥 Excel</a>
+
+        <!-- Timesheet -->
+        <a href="{{ url_for('planner.timesheet_excel', week_start=week_start_iso) }}" target="_blank"
+          style="background: linear-gradient(135deg, var(--secondary) 0%, #4f46e5 100%); color: #fff; font-weight: 600; padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; height: 32px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 4px; text-decoration: none;">
+          👤 Timesheet</a>
+
+        <!-- Ekip -->
+        <button class="btn" type="button" onclick="openTeamModal()"
+          style="background: var(--bg-soft-2); color: var(--text-subtle); font-weight: 500; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 12px; height: 32px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">
+          👥 Ekip</button>
+
+        <!-- Tam Ekran (Sadece Tablo) -->
+        <button class="btn" type="button" onclick="toggleTableFullscreen()"
+          style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: #fff; font-weight: 500; padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; height: 32px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;"
+          title="Tabloyu tam ekran yap">⛶ Tablo Tam Ekran</button>
+
+        <!-- Ayarlar -->
+        <button class="btn" type="button" onclick="RealtimeFeatures.showSettingsModal()"
+          style="background: var(--bg-soft-2); color: var(--text-subtle); font-weight: 500; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 12px; height: 32px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;"
+          title="Ayarlar">⚙️ Ayarlar</button>
+
+
+        {% if session.get('role') != 'gözlemci' %}
+        {% if session.get('is_admin') or session.get('role') in ['planner','planlayici','planlayıcı'] %}
+        <!-- Yayınlama Butonları -->
+        <button class="btn" type="button" onclick="publishWeek()"
+          style="background: linear-gradient(135deg, #15803d 0%, #166534 100%); color:#fff; font-weight:600; padding:6px 12px; border-radius:6px; border:none; cursor:pointer; font-size:12px; height:32px; box-sizing:border-box; display:inline-flex; align-items:center; justify-content:center;">
+          📢 Haftayı Yayınla</button>
+        <button class="btn" type="button" onclick="publishSelectedCell()"
+          style="background: linear-gradient(135deg, var(--status-success) 0%, #15803d 100%); color:#fff; font-weight:600; padding:6px 12px; border-radius:6px; border:none; cursor:pointer; font-size:12px; height:32px; box-sizing:border-box; display:inline-flex; align-items:center; justify-content:center;">
+          ✅ Seçili Yayınla</button>
+        <button class="btn" type="button" onclick="openTeamPublishModal()"
+          style="background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%); color:#fff; font-weight:600; padding:6px 12px; border-radius:6px; border:none; cursor:pointer; font-size:12px; height:32px; box-sizing:border-box; display:inline-flex; align-items:center; justify-content:center;">
+          👥 Ekip Yayınla</button>
+        <button class="btn" type="button" onclick="sendTableByEmail()"
+          style="background: linear-gradient(135deg, var(--status-info) 0%, var(--status-info) 100%); color:#fff; font-weight:600; padding:6px 12px; border-radius:6px; border:none; cursor:pointer; font-size:12px; height:32px; box-sizing:border-box; display:inline-flex; align-items:center; justify-content:center;"
+          title="Tabloyu e-posta ile gönder">📧 Tablo Gönder</button>
+
+        <!-- Ekip Bazlı Mail Gönder -->
+        <button class="btn" type="button" onclick="openTeamEmailModal()"
+          style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color:#fff; font-weight:600; padding:6px 12px; border-radius:6px; border:none; cursor:pointer; font-size:12px; height:32px; box-sizing:border-box; display:inline-flex; align-items:center; justify-content:center;"
+          title="Ekip bazlı tablo gönder">👥 Ekip Maili</button>
+        {% endif %}
+        {% endif %}
+      </div>
+
+      <!-- Sağ: İş ve Personel Butonları -->
+      <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+        <button type="button" class="btn secondary" id="btnPersonelOzet"
+          style="height: 32px; font-size: 12px; padding: 6px 12px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+          <svg id="summaryToggleIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+            style="color:var(--text-strong);">
+            <path d="M6 9l6 6 6-6" stroke="#0f172a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span id="summaryToggleText">Personel Özeti</span>
+        </button>
+
+        {% if session.get('role') != 'gözlemci' %}
+        <div
+          style="display: flex; gap: 4px; flex-wrap: wrap; align-items: center; margin-left: 4px; padding-left: 8px; border-left: 1px solid var(--border);">
+          <button type="button" class="btn" onclick="addBlankJobRow()"
+            style="background: linear-gradient(135deg, var(--text-strong) 0%, #1e293b 100%); color: white; font-weight: 600; padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; height: 32px; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center;">
+            + İş Ekle</button>
+          <button type="button" class="btn" id="topJobCopyRow"
+            style="display:none; background: var(--status-info); color: white; font-weight: 500; padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; height: 32px; box-sizing: border-box; align-items: center; justify-content: center;"
+            onclick="copySelectedRow()">Satırı Kopyala</button>
+          <button type="button" class="btn" id="topJobCancel"
+            style="display:none; background: var(--bg-soft-2); color: var(--text-subtle); font-weight: 500; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 12px; height: 32px; box-sizing: border-box; align-items: center; justify-content: center;"
+            onclick="cancelNewJobRow()">İptal</button>
+          <button type="button" class="btn" id="topJobSave"
+            style="display:none; background: var(--text-strong); color: white; font-weight: 500; padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; height: 32px; box-sizing: border-box; align-items: center; justify-content: center;"
+            onclick="saveNewOrEdit()">Kaydet</button>
+          <button type="button" class="btn" id="topJobEdit"
+            style="display:none; background: var(--text-strong); color: white; font-weight: 500; padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; height: 32px; box-sizing: border-box; align-items: center; justify-content: center;"
+            onclick="editSelectedJobRow()">Düzenle</button>
+          <button type="button" class="btn" id="topJobDelete"
+            style="display:none; background: var(--status-danger); color: white; font-weight: 500; padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; height: 32px; box-sizing: border-box; align-items: center; justify-content: center;"
+            onclick="deleteSelectedJobRow()">Sil</button>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+
+
+
+
+
+
+  <script>
+    // Hücre arkaplanlarını data-bg-color üzerinden uygula ve satır renklerini ayarla
+    document.addEventListener('DOMContentLoaded', function () {
+      // Proje renk haritası (Project Code -> HSL/Hex)
+      // HTML'den okuyabiliriz veya direkt satırdan alabiliriz.
+
+      // Satırları gez
+      document.querySelectorAll('tr.planRow').forEach(function (row) {
+        // Renk kodunu proj hücresinden al
+        const projTd = row.querySelector('td.proj[data-bg-color]');
+        if (!projTd) return;
+
+        const bgColor = projTd.dataset.bgColor || '#f9fafb';
+
+        // CSS variable olarak ata (Light Mode)
+        row.style.setProperty('--project-color', bgColor);
+
+        // Dark Mode rengini hesapla (Basitçe biraz karart veya opaklık düşür)
+        // Eğer hex ise rgb'ye çevirip opacity verebiliriz
+        let darkColor = '#1e293b'; // Fallback
+
+        // Hex to RGB
+        if (bgColor.startsWith('#')) {
+          const r = parseInt(bgColor.slice(1, 3), 16);
+          const g = parseInt(bgColor.slice(3, 5), 16);
+          const b = parseInt(bgColor.slice(5, 7), 16);
+          // Dark mode için koyu ama tint'li
+          // Arkaplan #0f172a, üzerine %20 renk ekle
+          darkColor = `rgba(${r}, ${g}, ${b}, 0.15)`;
+        }
+
+        row.style.setProperty('--project-color-dark', darkColor);
+      });
+    });
+  </script>
+
+  <!-- ÜST: Personel Durum Özeti - Tablonun Üstünde -->
+  <div id="personelOzetPanel"
+    style="width: 100% !important; position: absolute !important; left: 0 !important; right: 0 !important; background: var(--card, #ffffff); border: 1px solid var(--line, var(--border)); border-radius: 12px; overflow: visible; transition: height 0.4s ease-in-out, opacity 0.3s ease-in-out; opacity: 0; height: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); z-index: 100; display: block;">
+    <div id="personnelSummaryBody" style="padding: 20px; display: none; width: 100%; box-sizing: border-box;">
+      <div
+        style="display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 16px; color: var(--text, var(--text-strong)); margin-bottom: 16px; border-bottom: 1px solid var(--line, var(--border)); padding-bottom: 12px;">
+        <span>Personel Durum Özeti</span>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <button type="button" onclick="openCategoryManagerModal()"
+            style="font-size: 12px; font-weight: 600; color: white; background: #6366f1; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+            ➕ Ekle / Düzenle
+          </button>
+          <a href="{{ url_for('planner.personnel_settings_page') }}"
+            style="font-size: 13px; font-weight: 500; color: var(--status-info); text-decoration: none; display: flex; align-items: center; gap: 4px;">
+            ⚙️ Ayarlar
+          </a>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: row; gap: 12px; flex-wrap: wrap;">
+        {% for d in days %}
+        {% set day_iso = d.strftime("%Y-%m-%d") %}
+        {% set summary = personnel_summary.get(day_iso) or
+        {"total":0,"ana_kadro":0,"yardimci":0,"alt_yuklenici":0,"total_names":[],"ana_kadro_names":[],"yardimci_names":[],"alt_yuklenici_names":[],"firm_available":{},"status_categories":{}}
+        %}
+        <div class="personnel-summary-card" data-day="{{ day_iso }}"
+          data-day-label="{{ d.strftime('%d.%m') }} {{ tr_days[loop.index0] }}" data-summary='{{ summary|tojson|safe }}'
+          style="flex: 1; min-width: 180px; padding: 12px 14px; border: 1px solid var(--line, var(--border)); border-radius: 10px; background: var(--bg, var(--bg-soft)); cursor: default; transition: box-shadow 0.15s, transform 0.15s; position: relative;">
+          <div style="font-weight: 700; color: var(--text, var(--text-strong)); font-size: 14px; margin-bottom: 8px;">{{
+            d.strftime("%d.%m") }} {{ tr_days[loop.index0] }}</div>
+          <div class="summary-rows-container" style="display: flex; flex-direction: column; gap: 4px;">
+            <!-- Sistem Kategorileri (Sabit) -->
+            <!-- Toplam Boşta -->
+            <div class="summary-row clickable-row" data-category="total" data-date="{{ day_iso }}"
+              data-label="Toplam Boşta"
+              style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; margin: 0 -6px; border-radius: 6px; cursor: pointer; transition: background 0.15s;">
+              <span style="font-size: 12px; color: var(--text-light, var(--text-muted));">Toplam Boşta:</span>
+              <span class="count-badge"
+                style="font-weight: 700; color: var(--text, var(--text-strong)); padding: 2px 8px; background: #dbeafe; border-radius: 10px; min-width: 24px; text-align: center;">{{
+                summary.total }}</span>
+            </div>
+            <!-- Ana Kadro -->
+            <div class="summary-row clickable-row" data-category="ana_kadro" data-date="{{ day_iso }}"
+              data-label="Ana Kadro"
+              style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; margin: 0 -6px; border-radius: 6px; cursor: pointer; transition: background 0.15s;">
+              <span style="font-size: 12px; color: var(--text-light, var(--text-muted));">Ana Kadro:</span>
+              <span class="count-badge"
+                style="font-weight: 600; color: var(--text, var(--text-strong)); padding: 2px 8px; background: #e0f2fe; border-radius: 10px; min-width: 24px; text-align: center;">{{
+                summary.ana_kadro }}</span>
+            </div>
+            <!-- Yardımcı -->
+            <div class="summary-row clickable-row" data-category="yardimci" data-date="{{ day_iso }}"
+              data-label="Yardımcı"
+              style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; margin: 0 -6px; border-radius: 6px; cursor: pointer; transition: background 0.15s;">
+              <span style="font-size: 12px; color: var(--text-light, var(--text-muted));">Yardımcı:</span>
+              <span class="count-badge"
+                style="font-weight: 600; color: var(--text, var(--text-strong)); padding: 2px 8px; background: #fef3c7; border-radius: 10px; min-width: 24px; text-align: center;">{{
+                summary.yardimci }}</span>
+            </div>
+            <!-- Alt Yüklenici -->
+            <div class="summary-row clickable-row" data-category="alt_yuklenici" data-date="{{ day_iso }}"
+              data-label="Alt Yüklenici"
+              style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; margin: 0 -6px; border-radius: 6px; cursor: pointer; transition: background 0.15s;">
+              <span style="font-size: 12px; color: var(--text-light, var(--text-muted));">Alt Yüklenici:</span>
+              <span class="count-badge"
+                style="font-weight: 600; color: var(--text, var(--text-strong)); padding: 2px 8px; background: #e0e7ff; border-radius: 10px; min-width: 24px; text-align: center;">{{
+                summary.alt_yuklenici }}</span>
+            </div>
+
+            <!-- Dinamik Durum Kategorileri (PersonnelStatusType'dan) -->
+            {% for cat_id, cat in summary.status_categories.items() %}
+            {% if cat.visible %}
+            <div class="summary-row clickable-row summary-row-cat-color" data-category="status_{{ cat_id }}" data-date="{{ day_iso }}"
+              data-label="{{ cat.icon }} {{ cat.name }}"
+              data-cat-color="{{ cat.color }}"
+              style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; margin: 0 -6px; border-radius: 6px; cursor: pointer; transition: background 0.15s;">
+              <span class="summary-cat-label" style="font-size: 12px;">{{ cat.icon }} {{ cat.name }}:</span>
+              <span class="count-badge summary-cat-badge">{{ cat.count }}</span>
+            </div>
+            {% endif %}
+            {% endfor %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Boşta Personel Modal (Popover yerine Modal - scroll sorunu yok) -->
+  <div class="modal" id="idleModal" style="display: none;">
+    <div class="modalCard"
+      style="max-width: 500px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid var(--line); padding: 0; overflow: hidden; max-height: 90vh;">
+      <div
+        style="padding: 16px 20px; background: var(--bg); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0; color: var(--text); font-size: 16px; font-weight: 600;" id="idleModalTitle">Boşta Personel
+        </h3>
+        <button type="button" onclick="closeIdleModal()"
+          style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-light);">×</button>
+      </div>
+      <div id="idleModalBody" style="padding: 16px 20px; overflow-y: auto; max-height: calc(90vh - 80px);">
+        <div style="color: var(--text-light); font-size: 13px;">Yükleniyor...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kategori Detay Modal -->
+  <div class="modal" id="categoryDetailModal" style="display: none;">
+    <div class="modalCard"
+      style="max-width: 550px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid var(--line); padding: 0; overflow: hidden; max-height: 85vh;">
+      <div
+        style="padding: 16px 20px; background: var(--bg); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0; color: var(--text); font-size: 16px; font-weight: 600;" id="categoryDetailTitle">Personel
+          Listesi</h3>
+        <button type="button" onclick="closeCategoryDetailModal()"
+          style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-light);">×</button>
+      </div>
+      <div id="categoryDetailBody" style="padding: 16px 20px; overflow-y: auto; max-height: calc(85vh - 80px);">
+        <div style="color: var(--text-light); font-size: 13px; text-align: center;">Veriler yükleniyor...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kategori Yönetimi Modal -->
+  <div class="modal" id="categoryManagerModal" style="display: none;">
+    <div class="modalCard"
+      style="max-width: 500px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid var(--line); padding: 0; overflow: hidden; max-height: 85vh;">
+      <div
+        style="padding: 16px 20px; background: var(--bg); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0; color: var(--text); font-size: 16px; font-weight: 600;">📋 Menü Düzenleme</h3>
+        <button type="button" onclick="closeCategoryManagerModal()"
+          style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-light);">×</button>
+      </div>
+      <div style="padding: 16px 20px; overflow-y: auto; max-height: calc(85vh - 80px);">
+        <p style="color: var(--text-light); font-size: 13px; margin: 0 0 16px 0;">
+          Özet panelinde gösterilecek kategorileri buradan yönetebilirsiniz.
+        </p>
+        <div id="categoryManagerList" style="display: flex; flex-direction: column; gap: 8px;">
+          <!-- JS ile doldurulacak -->
+        </div>
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line);">
+          <button onclick="alert('Yeni kategori ekleme yakında gelecek')"
+            style="width: 100%; padding: 12px; border: 2px dashed var(--line); border-radius: 8px; background: transparent; color: var(--text-light); font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            ➕ Yeni Kategori Ekle
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="gridPlan" id="gridPlanContainer"
+    style="display: flex; gap: 0; align-items: stretch; width: 100%; min-height: calc(100vh - 200px); overflow-x: auto; transition: margin-top 0.4s ease-in-out;">
+    <!-- SOL: TABLO PANELİ -->
+    <div class="jobPanel"
+      style="flex: 1; min-width: 100%; display: flex; flex-direction: column; min-height: calc(100vh - 200px); overflow: visible;">
+      <div class="jobTableWrapper tablewrap"
+        style="flex: 1; min-height: 0; border-radius: 12px; overflow-x: auto; overflow-y: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 2px solid var(--border); max-height: calc(100vh - 220px);">
+        <table class="plan" style="border-collapse: separate; border-spacing: 0;">
+          <thead>
+            <tr style="background: var(--table-header-bg);">
+              <th class="st st1 sortable" data-sort="region"
+                style="font-weight: 600; color: var(--text-strong); font-size: 13px; text-transform: uppercase; letter-spacing: 0.3px; padding: 8px 6px; border-bottom: 2px solid var(--text-muted); border-right: 2px solid var(--text-muted); cursor: pointer; user-select: none; text-align: left; vertical-align: top;">
+                <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 6px;">
+                  İL
+                  <span class="sort-indicator" style="opacity: 0.5; font-size: 11px;">↕</span>
+                </div>
+                <select id="filterRegion" onchange="filterTable('region', this.value)" class="table-filter-input"
+                  style="width: 100%; padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border); font-size: 10px; background: #fff; height: 24px;">
+                  <option value="">Tümü</option>
+                  {% for city in cities %}
+                  <option value="{{ city }}">{{ city }}</option>
+                  {% endfor %}
+                </select>
+              </th>
+              <th class="st st2 sortable" data-sort="project_code"
+                style="font-weight: 600; color: var(--text-strong); font-size: 13px; text-transform: uppercase; letter-spacing: 0.3px; padding: 8px 6px; border-bottom: 2px solid var(--text-muted); border-right: 2px solid var(--text-muted); cursor: pointer; user-select: none; position: sticky; text-align: left; vertical-align: top;">
+                <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 6px;">
+                  PROJE
+                  <span class="sort-indicator" style="opacity: 0.5; font-size: 11px;">↕</span>
+                </div>
+                <select id="filterProject" onchange="filterTable('project', this.value)" class="table-filter-input"
+                  style="width: 100%; padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border); font-size: 10px; background: #fff; height: 24px;">
+                  <option value="">Tümü</option>
+                  {% for p in unique_projects_for_dropdown %}
+                  <option value="{{ p.project_code }}">{{ p.project_code }} - {{ p.project_name }}</option>
+                  {% endfor %}
+                </select>
+              </th>
+              <th class="st st3 sortable" data-sort="responsible"
+                style="font-weight: 600; color: var(--text-strong); font-size: 13px; text-transform: uppercase; letter-spacing: 0.3px; padding: 8px 6px; border-bottom: 2px solid var(--text-muted); border-right: 2px solid var(--text-muted); cursor: pointer; user-select: none; position: sticky; text-align: left; vertical-align: top;">
+                <div style="display: flex; align-items: center; gap: 4px; margin-bottom: 6px;">
+                  SORUMLU
+                  <span class="sort-indicator" style="opacity: 0.5; font-size: 11px;">↕</span>
+                </div>
+                <input type="text" id="filterResponsible" placeholder="Ara..."
+                  oninput="filterTable('responsible', this.value)" class="table-filter-input"
+                  style="width: 100%; padding: 4px 6px; border-radius: 4px; border: 1px solid var(--border); font-size: 10px; background: #fff; height: 24px;">
+              </th>
+
+              {% for d in days %}
+              {% set k = d.strftime("%Y-%m-%d") %}
+              <th class="daycol {% if k == today_iso %}todayHead{% endif %}" data-date="{{ k }}"
+                style="font-weight: 600; color: var(--text-strong); font-size: 13px; text-transform: uppercase; letter-spacing: 0.3px; padding: 14px 12px; border-bottom: 2px solid var(--text-muted); border-right: 2px solid var(--text-muted);">
+                {{ d.strftime("%d.%m.%Y") }}<br><span
+                  style="color: var(--text-muted); font-size: 12px; font-weight: 400; text-transform: none;">{{
+                  tr_days[loop.index0]
+                  }}</span>
+              </th>
+              {% endfor %}
+
+              <th class="vehcol"
+                style="font-weight: 600; color: var(--text-strong); font-size: 13px; text-transform: uppercase; letter-spacing: 0.3px; padding: 14px 12px; border-bottom: 2px solid var(--text-muted);">
+                Araç</th>
+            </tr>
+          </thead>
+
+          <tbody id="planTbody">
+            {% for p in projects %}
+            <tr data-project-id="{{ p.id }}" class="planRow" style="transition: background-color 0.15s;">
+              <td class="st st1 region" onclick="selectRowByProjectId('{{ p.id }}')"
+                style="cursor: pointer; font-weight: 600; color: var(--text-strong); background: var(--status-success-bg); padding: 12px; border-right: 2px solid var(--text-muted); border-bottom: 2px solid var(--text-muted);">
+                {{ p.region }}</td>
+              <td class="st st2 proj" data-bg-color="{{ code_colors.get(p.project_code, '#fef3c7') }}"
+                style="padding: 8px; border-right: 2px solid var(--text-muted); border-bottom: 2px solid var(--text-muted);">
+                <div style="display: flex; align-items: flex-start; gap: 6px; margin-bottom: 4px; flex-wrap: wrap;">
+                  <div class="pcode" style="font-weight: 600; color: var(--text-strong); font-size: 12px;">{{
+                    p.project_code }}</div>
+                  <div class="pname"
+                    style="color: var(--text-subtle); font-size: 12px; margin-top: 0; font-weight: 600;">
+                    {{
+                    p.project_name }}</div>
+                </div>
+                {% if p.karsi_firma_sorumlusu %}
+                <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 3px;">{{ p.karsi_firma_sorumlusu
+                  }}
+                </div>
+                {% endif %}
+                {% set sp_label = row_subproject_label.get(p.id) %}
+                {% if sp_label %}
+                <div class="psubproject" style="font-size: 11px; color: var(--text-strong); font-weight: 500;">{{
+                  sp_label
+                  }}</div>
+                {% endif %}
+              </td>
+
+              <td class="st st3 resp"
+                style="font-weight: 500; color: var(--status-warning-text); background: var(--status-warning-bg); padding: 10px 8px; border-right: 2px solid var(--text-muted); border-bottom: 2px solid var(--text-muted); text-align: left;">
+                <div class="respText">{{ p.responsible }}</div>
+              </td>
+
+              {% for d in days %}
+              {% set k = d.strftime("%Y-%m-%d") %}
+              {% set cell = cell_by_key.get((p.id, k)) %}
+              {% set filled = (cell and (cell.shift or cell.note or ass_map.get(cell.id) or cell.vehicle_info)) %}
+              {% set has_personnel = (cell and ass_map.get(cell.id)) %}
+
+              <td
+                class="cell daycol {% if filled %}filled{% endif %} {% if has_personnel %}filled-personnel{% endif %} {% if k == today_iso %}todayCell{% endif %} {% if cell and cell.important_note %}has-important-note{% endif %} {% if cell_grey.get((p.id, k)) %}grey-cell{% endif %} {% if cell and cell.status == 'cancelled' %}is-cancelled{% endif %}"
+                draggable="true" data-project-id="{{p.id}}" data-date="{{k}}" data-city="{{p.region}}"
+                data-project-code="{{p.project_code}}" data-shift="{{ cell.shift|e if cell and cell.shift else '' }}"
+                data-note="{{ cell.note|e if cell and cell.note else '' }}"
+                data-vehicle="{{ cell.vehicle_info|e if cell and cell.vehicle_info else '' }}"
+                data-team-id="{{ cell.team_id if cell and cell.team_id else 0 }}"
+                data-subproject-id="{{ cell.subproject_id if cell and cell.subproject_id else 0 }}"
+                data-cell-id="{{ cell.id if cell else 0 }}"
+                data-version="{{ cell.version if cell and cell.version else 1 }}"
+                data-status="{{ cell.status if cell else 'active' }}"
+                data-cancellation-reason="{{ cell.cancellation_reason|e if cell and cell.cancellation_reason else '' }}"
+                data-has-attach="{{ 1 if cell and (cell.lld_hhd_files or cell.lld_hhd_path or cell.tutanak_files or cell.tutanak_path) else 0 }}"
+                data-person-ids="{{ cell_person_ids.get(cell.id, []) | sort | join(',') if cell else '' }}" {% if cell
+                and cell.important_note %}data-important-note="{{ cell.important_note|e }}" {% endif %}
+                onclick="selectCell(this, '{{ week_start_iso }}')"
+                ondblclick="openCellEditor(this, '{{ week_start_iso }}')" onmouseenter="showCellTooltip(this, event)"
+                onmouseleave="hideCellTooltip()" ondragstart="cellDragStart(event)" ondragend="cellDragEnd(event)"
+                ondragover="cellDragOver(event)" ondragleave="cellDragLeave(event)" ondrop="cellDrop(event)"
+                style="padding: 6px 8px; min-height: 100px; transition: all 0.15s; border-right: 2px solid var(--text-muted); border-bottom: 2px solid var(--text-muted); position: relative;">
+
+                {% if not filled %}
+                <div class="cell-time"
+                  style="text-align: center; color: var(--border); font-size: 13px; font-weight: 400;">-
+                </div>
+                <div class="cell-people" style="display: none;"></div>
+                {% else %}
+                {% if cell and cell.shift and not ass_map.get(cell.id) %}
+                <div class="cell-time"
+                  style="font-weight: 600; color: var(--text-strong); font-size: 13px; margin-bottom: 3px;">{%
+                  if cell.shift %}{{ cell.shift }}{% else %}<span style="color: var(--text-muted);">Çalışma seç</span>{%
+                  endif %}
+                </div>
+                <div class="cell-people" style="color: var(--text-muted); font-size: 12px;">
+                  <span>Personel seç</span>
+                </div>
+                {% else %}
+                <div class="cell-time"
+                  style="font-weight: 600; color: var(--text-strong); font-size: 13px; margin-bottom: 3px;">{%
+                  if cell and cell.shift %}{{ cell.shift }}{% else %}<span style="color: var(--text-muted);">Çalışma
+                    seç</span>{%
+                  endif %}</div>
+                <div class="cell-people"
+                  style="color: var(--text-subtle); font-size: 12px; font-weight: 400; line-height: 1.5; overflow: visible; white-space: normal;">
+                  {% if cell and ass_map.get(cell.id) %}
+                  {% set people_list = ass_map[cell.id] %}
+                  {{ people_list | join("<br>") | safe }}
+                  {% else %}
+                  <span style="color: var(--text-muted);">Personel seç</span>
+                  {% endif %}
+                </div>
+                {% endif %}
+                {% endif %}
+
+                {%set ot_info = cell_overtime_info.get(cell.id) if cell else none %}
+                {% if ot_info and ot_info.has_overtime %}
+                <div class="cell-badge-stack">
+                  <div class="cell-badge overtime"
+                    title="Mesai: {{ ot_info.total_hours }} saat, {{ ot_info.person_count }} personel{% if ot_info.people_list %}&#010;{{ ot_info.people_list|join(', ') }}{% endif %}">
+                    ⏱
+                  </div>
+                </div>
+                {% endif %}
+
+                <div class="cell-note">{% if cell and cell.note %}{{ cell.note|e }}{% endif %}</div>
+              </td>
+              {% endfor %}
+
+              <td class="vehcol" data-project-id="{{ p.id }}"
+                style="padding: 12px; background: var(--bg-soft); border-bottom: 2px solid var(--text-muted);">
+                {% set veh = "" %}
+                {% for d in days %}
+                {% if not veh %}
+                {% set kk = d.strftime("%Y-%m-%d") %}
+                {% set c = cell_by_key.get((p.id, kk)) %}
+                {% if c and c.vehicle_info %}
+                {% set veh = c.vehicle_info.split(' ')[0] if c.vehicle_info else '' %}
+                {% endif %}
+                {% endif %}
+                {% endfor %}
+                <div class="cell-vehicle-display"
+                  style="color: var(--text-subtle); font-weight: 500; font-size: 13px; text-align: center;">{{ veh if
+                  veh
+                  else "-" }}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+      </div>
+    </div>
+</section>
+
+
+
+<div class="action-bar" style="display: none;">
+  <!-- Alt butonlar kaldırıldı, üst bara taşındı -->
+</div>
+
+
+<script>
+  // Yeni aksiyon fonksiyonları
+  function cancelSelectedCell() {
+    const selectedCell = document.querySelector('.cell.selectedCell');
+    if (!selectedCell) {
+      if (typeof showToast === 'function') showToast('Önce bir hücre seçin', 'warning');
+      else alert('Önce bir hücre seçin');
+      return;
+    }
+    const cellId = parseInt(selectedCell.getAttribute('data-cell-id') || '0', 10);
+    if (!cellId || cellId <= 0) {
+      if (typeof showToast === 'function') showToast('Bu hücre henüz kaydedilmemiş', 'warning');
+      else alert('Bu hücre henüz kaydedilmemiş');
+      return;
+    }
+    RealtimeFeatures.showCancelModal(cellId);
+  }
+
+  function moveSelectedCell() {
+    const selectedCell = document.querySelector('.cell.selectedCell');
+    if (!selectedCell) {
+      if (typeof showToast === 'function') showToast('Önce bir hücre seçin', 'warning');
+      else alert('Önce bir hücre seçin');
+      return;
+    }
+    const cellId = parseInt(selectedCell.getAttribute('data-cell-id') || '0', 10);
+    const currentDate = selectedCell.getAttribute('data-date') || '';
+    if (!cellId || cellId <= 0) {
+      if (typeof showToast === 'function') showToast('Bu hücre henüz kaydedilmemiş', 'warning');
+      else alert('Bu hücre henüz kaydedilmemiş');
+      return;
+    }
+    RealtimeFeatures.showMoveModal(cellId, currentDate);
+  }
+
+  function addOvertimeToSelected() {
+    const selectedCell = document.querySelector('.cell.selectedCell');
+    if (!selectedCell) {
+      if (typeof showToast === 'function') showToast('Önce bir hücre seçin', 'warning');
+      else alert('Önce bir hücre seçin');
+      return;
+    }
+    const cellId = parseInt(selectedCell.getAttribute('data-cell-id') || '0', 10);
+    const workDate = selectedCell.getAttribute('data-date') || '';
+    const teamId = parseInt(selectedCell.getAttribute('data-team-id') || '0', 10);
+
+    // Mesai için cell_id gerekli değil, work_date yeterli
+    RealtimeFeatures.showOvertimeModal({
+      cell_id: cellId,
+      work_date: workDate,
+      team_id: teamId
+    });
+  }
+
+  async function sendTableByEmail() {
+    // Tablo HTML'ini al
+    const tableWrap = document.querySelector('.tablewrap');
+    if (!tableWrap) {
+      if (typeof showToast === 'function') showToast('Tablo bulunamadı', 'error');
+      return;
+    }
+
+    const tableHtml = tableWrap.innerHTML;
+    const weekStart = '{{ week_start_iso }}';
+    const csrfToken = document.getElementById('csrfToken').value;
+
+    // Önce snapshot oluştur
+    try {
+      const snapshotRes = await fetch('/api/table/snapshot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          week_start: weekStart,
+          html_content: tableHtml,
+          csrf_token: csrfToken
+        })
+      });
+      let snapshotData;
+      try {
+        snapshotData = await snapshotRes.json();
+      } catch (e) {
+        if (typeof showToast === 'function') showToast('Sunucu yanıtı okunamadı. Yetkiniz olmayabilir.', 'error');
+        return;
+      }
+
+      if (!snapshotData.ok) {
+        const msg = snapshotData.message || snapshotData.error || 'Snapshot oluşturulamadı';
+        if (typeof showToast === 'function') showToast(msg, 'error');
+        return;
+      }
+
+      // Alıcı bilgilerini sor
+      const recipients = prompt('E-posta adreslerini virgülle ayırarak girin:');
+      if (!recipients) return;
+
+      const recipientList = recipients.split(',').map(e => e.trim()).filter(e => e);
+      if (!recipientList.length) {
+        if (typeof showToast === 'function') showToast('Geçerli e-posta adresi girin', 'warning');
+        return;
+      }
+
+      // Mail gönder
+      const sendRes = await fetch('/api/table/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          snapshot_id: snapshotData.id,
+          recipients: recipientList,
+          subject: 'Haftalık Plan Tablosu - ' + weekStart,
+          csrf_token: csrfToken
+        })
+      });
+      let sendData;
+      try {
+        sendData = await sendRes.json();
+      } catch (e) {
+        if (typeof showToast === 'function') showToast('Sunucu yanıtı okunamadı. Yetkiniz veya mail ayarları kontrol edin.', 'error');
+        return;
+      }
+
+      if (sendData.ok) {
+        if (typeof showToast === 'function') showToast('Tablo e-posta ile gönderildi', 'success');
+        else alert('Tablo e-posta ile gönderildi');
+      } else {
+        const msg = sendData.message || sendData.error || (sendData.errors && sendData.errors[0] && sendData.errors[0].error) || 'E-posta gönderilemedi';
+        if (typeof showToast === 'function') showToast(msg, 'error');
+        if (sendData.errors && sendData.errors.length) console.error('Email errors:', sendData.errors);
+      }
+    } catch (err) {
+      console.error('Email send error:', err);
+      if (typeof showToast === 'function') showToast('E-posta gönderimi başarısız: ' + (err.message || 'Bilinmeyen hata'), 'error');
+    }
+  }
+
+  // ============== EKİP BAZLI MAİL FONKSİYONLARI ==============
+
+  // Ekip mail modalını aç
+  window.openTeamEmailModal = async function () {
+    const modal = document.getElementById('teamEmailModal');
+    if (!modal) return;
+
+    modal.style.display = 'flex';
+
+    // Ekip listesini yükle
+    await loadTeamEmailList();
+  };
+
+  // Ekip mail modalını kapat
+  window.closeTeamEmailModal = function () {
+    const modal = document.getElementById('teamEmailModal');
+    if (!modal) return;
+    modal.style.display = 'none';
+  };
+
+  // Ekip listesini yükle
+  async function loadTeamEmailList() {
+    const select = document.getElementById('teamEmailSelect');
+    if (!select) return;
+
+    select.innerHTML = '<option value="">- Ekip seçin -</option>';
+
+    try {
+      const res = await fetch('/api/teams');
+      const data = await res.json();
+
+      if (data.ok && data.teams) {
+        data.teams.forEach(team => {
+          const option = document.createElement('option');
+          option.value = team.id;
+          option.textContent = team.name;
+          select.appendChild(option);
+        });
+      }
+    } catch (err) {
+      console.error('Ekip listesi yüklenemedi:', err);
+    }
+  }
+
+  // Ekip mail preview güncelle
+  window.updateTeamEmailPreview = async function () {
+    const select = document.getElementById('teamEmailSelect');
+    const preview = document.getElementById('teamEmailPreview');
+    const personnelDiv = document.getElementById('teamEmailPersonnel');
+    const sendBtn = document.getElementById('teamEmailSendBtn');
+
+    const teamId = select ? select.value : '';
+
+    if (!teamId) {
+      preview.style.display = 'none';
+      sendBtn.disabled = true;
+      sendBtn.style.opacity = '0.5';
+      return;
+    }
+
+    // Ekip personelini ve email adreslerini al
+    try {
+      const res = await fetch(`/api/team/${teamId}/personnel`);
+      const data = await res.json();
+
+      if (data.ok && data.personnel) {
+        const emails = data.personnel
+          .filter(p => p.email)
+          .map(p => `${p.name} (${p.email})`);
+
+        if (emails.length > 0) {
+          personnelDiv.innerHTML = emails.join(', ');
+          preview.style.display = 'block';
+          sendBtn.disabled = false;
+          sendBtn.style.opacity = '1';
+        } else {
+          personnelDiv.innerHTML = '<span style="color: var(--status-danger);">Bu ekipte email adresi olan personel yok</span>';
+          preview.style.display = 'block';
+          sendBtn.disabled = true;
+          sendBtn.style.opacity = '0.5';
+        }
+      }
+    } catch (err) {
+      console.error('Personel bilgisi yüklenemedi:', err);
+    }
+  };
+
+  // Ekip maili gönder
+  window.sendTeamEmail = async function () {
+    const select = document.getElementById('teamEmailSelect');
+    const teamId = select ? select.value : '';
+
+    if (!teamId) {
+      if (typeof showToast === 'function') showToast('Lütfen ekip seçin', 'warning');
+      return;
+    }
+
+    const weekStart = '{{ week_start_iso }}';
+    const csrfToken = document.getElementById('csrfToken').value;
+
+    try {
+      const res = await fetch('/api/table/send-team-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          week_start: weekStart,
+          team_id: parseInt(teamId),
+          csrf_token: csrfToken
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.ok) {
+        if (typeof showToast === 'function') showToast(`Mail ${data.recipient_count} personele gönderildi`, 'success');
+        closeTeamEmailModal();
+      } else {
+        if (typeof showToast === 'function') showToast(data.error || 'Mail gönderimi başarısız', 'error');
+      }
+    } catch (err) {
+      console.error('Team email send error:', err);
+      if (typeof showToast === 'function') showToast('Mail gönderimi başarısız', 'error');
+    }
+  };
+</script>
+
+</div>
+
+
+
+</div>
+
+<!-- MODAL: Hücre Detayı -->
+<div class="modal" id="cellModal">
+  <div class="modalCard cellModalCard"
+    style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid var(--line); max-height: calc(98vh - 100px); overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; padding: 8px; background: var(--card); margin-top: 0;">
+    <div class="rowline"
+      style="border-bottom: 1px solid var(--line); padding-bottom: 4px; margin-bottom: 4px; flex-shrink: 0; position: sticky; top: 0; z-index: 10; background: var(--card); padding-top: 0; margin-top: 0;">
+      <h3
+        style="margin:0; color: var(--text); font-size: 18px; font-weight: 600; display:flex; align-items:center; gap:6px;">
+        <span>İş Detayı</span>
+        <span id="cellModalAttachIndicator" class="attach-indicator" title="Ekli dosyalar var"
+          style="display:none; font-size:16px; color:var(--text);">📎</span>
+      </h3>
+      <div class="rowline" style="gap:6px;">
+        {% if session.get('role') != 'gözlemci' %}
+        <button id="btnCancelJob" class="btn" type="button" onclick="showCancelForm()"
+          style="background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; font-weight: 500; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; height: 32px; display: none;">İş
+          İptal Et</button>
+        <button class="btn" type="button" onclick="clearCell()"
+          style="background: var(--status-danger); color: white; font-weight: 500; padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; height: 32px;">Sil</button>
+        {% endif %}
+        <button class="btn" type="button" onclick="closeCellModal()"
+          style="background: var(--line-light); color: var(--text-light); font-weight: 500; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line); cursor: pointer; font-size: 12px; height: 32px;">Kapat</button>
+        {% if session.get('role') != 'gözlemci' %}
+        <button id="btnSaveCell" class="btn" type="button" onclick="saveCell()"
+          style="background: var(--text); color: white; font-weight: 500; padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; font-size: 12px; height: 32px;">Kaydet</button>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="cellModalLayout"
+      style="flex: 1; min-height: 0; overflow: visible; display: grid; grid-template-columns: minmax(0,1.35fr) minmax(320px,0.65fr); gap: 16px; align-items: start;">
+      <div class="cellFormStack" style="overflow: visible;">
+        <div style="display: flex; gap: 12px; margin-bottom: 4px; align-items: flex-end;">
+          <div
+            style="flex: 1; padding: 6px 10px; background: var(--bg); border-radius: 6px; color: var(--text-light); font-size: 12px; font-weight: 400; border: 1px solid var(--line); min-height: 32px; display: flex; align-items: center;"
+            id="editorInfo">Hücre seçilmedi.</div>
+          <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+            <label style="font-weight: 500; color: var(--text); font-size: 12px; margin: 0;">Ekip Adı (otomatik)</label>
+            <input id="mTeamName" placeholder="Otomatik oluşacak" readonly
+              style="padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); font-size: 12px; width: 100%; background: var(--bg); box-sizing: border-box; height: 32px; line-height: 1.4; color: var(--text);">
+          </div>
+        </div>
+
+        <form id="modalForm">
+          <div class="etopGrid" style="margin-top:4px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+
+            <label style="font-weight: 500; color: var(--text); font-size: 12px;">Çalışma Saati
+              <select id="mShift" onchange="loadAvailability()"
+                style="margin-top: 4px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); font-size: 12px; width: 100%; background: var(--card); color: var(--text); height: 32px;"
+                {% if session.get('role')=='gözlemci' %}disabled{% endif %}>
+                <option value="">(boş)</option>
+                <option value="08:30 - 18:00">08:30 - 18:00</option>
+                <option value="08:30 - 18:00 YOL">08:30 - 18:00 YOL</option>
+                <option value="00:00 - 06:00">00:00 - 06:00</option>
+                <option value="08:30 - 12:00">08:30 - 12:00</option>
+                <option value="13:00 - 18:00">13:00 - 18:00</option>
+              </select>
+            </label>
+
+
+            <label style="font-weight: 500; color: var(--text); font-size: 12px;">Araç
+              <div style="margin-top: 4px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                <select id="mVehicle"
+                  style="flex: 1; min-width: 200px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); font-size: 12px; width: 100%; background: var(--card); color: var(--text); height: 32px;"
+                  {% if session.get('role')=='gA zlemci' %}disabled{% endif %}>
+                  <option value="">-- Araç seç --</option>
+                </select>
+                <button id="vehicleToggleButton" class="btn" type="button"
+                  style="background: var(--line-light); color: var(--text-light); font-weight: 500; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); cursor: pointer; font-size: 11px; height: 32px; white-space: nowrap;"
+                  data-show-all="0" {% if session.get('role')=='gA zlemci' %}disabled{% endif %}>Tüm araçları
+                  gör</button>
+              </div>
+              <div id="vehicleHint" style="margin-top: 4px; font-size: 11px; color: var(--text-light);"></div>
+              <div id="teamVehicleHint" style="margin-top: 2px; font-size: 11px; color: var(--text);"></div>
+            </label>
+
+            <label style="font-weight: 500; color: var(--text); font-size: 12px;">Alt Proje
+              <select id="mSubProject"
+                style="margin-top: 4px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); font-size: 12px; width: 100%; background: var(--card); color: var(--text); height: 32px;"
+                {% if session.get('role')=='gözlemci' %}disabled{% endif %}>
+                <option value="0">-- Alt proje (yok) --</option>
+              </select>
+            </label>
+
+            <!-- Rota Başlangıç Noktası -->
+            <div
+              style="margin-top: 8px; padding: 8px; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 8px; border: 1px solid #bae6fd;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M12 8v4l2 2"></path>
+                </svg>
+                <span style="font-weight: 600; font-size: 11px; color: #0369a1;">Rota Başlangıç Noktası</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <label
+                  style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px; color: var(--text);">
+                  <input type="checkbox" id="mStartFromAnkara" checked onchange="toggleStartCitySelect()"
+                    style="width: 16px; height: 16px; cursor: pointer; accent-color: #0ea5e9;" {% if
+                    session.get('role')=='gözlemci' %}disabled{% endif %}>
+                  <span style="font-weight: 500;">Ankara'dan başla</span>
+                </label>
+                <select id="mStartCity"
+                  style="padding: 4px 8px; border-radius: 6px; border: 1px solid var(--line); font-size: 11px; background: var(--card); color: var(--text); height: 28px; min-width: 140px; display: none;"
+                  {% if session.get('role')=='gözlemci' %}disabled{% endif %}>
+                  <option value="">-- Başlangıç İli Seçin --</option>
+                  {% for city in tr_cities %}
+                  <option value="{{ city }}">{{ city }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div style="margin-top: 4px; font-size: 10px; color: #64748b;">
+                İşaretli değilse, seçilen il rota başlangıcı olarak kullanılır.
+              </div>
+            </div>
+
+
+            <div class="mesai-giris">
+              <div class="mesai-baslik">Mesai Girişi</div>
+              <div id="selectedPeopleList" style="display: flex; flex-direction: column;">
+              </div>
+              <button class="mesai-kaydet-btn" type="button" onclick="saveOvertimeOnly()">Mesai Kaydet</button>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:4px;">
+            <label style="font-weight: 500; color: var(--text); font-size: 12px;">ISDP Bilgisi
+              <input id="mISDP" placeholder="Örn: ISDP / DUID / Ticket no"
+                style="margin-top: 4px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); font-size: 12px; width: 100%; background: var(--card); color: var(--text); height: 32px;"
+                {% if session.get('role')=='gözlemci' %}readonly{% endif %}>
+            </label>
+
+            <label style="font-weight: 500; color: var(--text); font-size: 12px;">PO Bilgisi
+              <input id="mPO" placeholder="Örn: PO No / Malzeme durumu"
+                style="margin-top: 4px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); font-size: 12px; width: 100%; background: var(--card); color: var(--text); height: 32px;"
+                {% if session.get('role')=='gözlemci' %}readonly{% endif %}>
+            </label>
+          </div>
+
+          {% if session.get('role') != 'gözlemci' %}
+          <!-- Saha Kullanıcısı (Yarı Boyut) + Yanına Boşluk veya Detay -->
+          <div style="margin-top:4px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div style="margin-top:0;">
+              <label style="font-weight: 500; color: var(--text); font-size: 12px;">Saha Kullanıcısı (My Jobs)
+                <select id="mAssignedUser"
+                  style="margin-top: 4px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); font-size: 12px; width: 100%; background: var(--card); color: var(--text); height: 32px;">
+                  <option value="0">(atanmadı)</option>
+                  {% for u in field_users %}
+                  <option value="{{ u.id }}">{{ u.full_name or u.email }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <div class="hint" style="margin-top:4px; font-size: 11px;">Sadece saha kullanıcıları /me ekranında bu
+                işleri
+                görür.</div>
+            </div>
+            <!-- Boş veya başka bir şey gelirse buraya -->
+          </div>
+          {% endif %}
+
+          <div style="margin-top:4px;">
+            <label style="font-weight: 500; color: var(--text); font-size: 12px;">Detay
+              <textarea id="mNote" rows="2" placeholder="Örn: kabin kurulum, test..."
+                style="margin-top: 4px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); font-size: 12px; width: 100%; resize: vertical; background: var(--card); color: var(--text); min-height: 50px;"
+                {% if session.get('role')=='gözlemci' %}readonly{% endif %}></textarea>
+            </label>
+          </div>
+
+          <div style="margin-top:4px;">
+            <label style="font-weight: 500; color: var(--text); font-size: 12px;">İş Detay Maili
+              <textarea id="mJobMailBody" rows="2" placeholder="Mail metni (personellere gidecek)"
+                style="margin-top: 4px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); font-size: 12px; width: 100%; resize: vertical; background: var(--card); color: var(--text); min-height: 50px;"
+                {% if session.get('role')=='gözlemci' %}readonly{% endif %}></textarea>
+            </label>
+          </div>
+
+          <div style="margin-top:4px;">
+            <label style="font-weight: 500; color: var(--text); font-size: 12px;">Önemli Not
+              <textarea id="mImportantNote" rows="1" placeholder="Önemli bir not ekleyin..."
+                style="margin-top: 4px; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); font-size: 12px; width: 100%; resize: vertical; background: var(--card); color: var(--text); min-height: 40px;"
+                {% if session.get('role')=='gözlemci' %}readonly{% endif %}></textarea>
+            </label>
+          </div>
+        </form>
+
+        <!-- İPTAL FORMU (Hidden) -->
+        <div id="cancelFormSection"
+          style="display:none; margin-top:12px; padding:12px; background:#fef2f2; border:1px solid #fee2e2; border-radius:8px;">
+          <h4 style="margin:0 0 8px 0; color:#991b1b; font-size:14px; font-weight: 600;">İş İptal Et</h4>
+          <textarea id="cancelReason" placeholder="İptal nedeni (zorunlu)..."
+            style="width:100%; padding:8px; border:1px solid #fecaca; border-radius:6px; min-height:60px; font-size:12px; background: white; color: var(--text); font-family: inherit; resize: vertical;box-sizing: border-box;"></textarea>
+          <div style="margin-top:8px;">
+            <label style="font-size:12px; color:#7f1d1d; font-weight:500; display:block; margin-bottom:4px;">İptal
+              Dosyası (Opsiyonel)</label>
+            <input type="file" id="cancelFile" style="width:100%; font-size:12px; color: var(--text-light);">
+          </div>
+          <div style="display:flex; gap:8px; margin-top:12px;">
+            <button type="button" onclick="submitCancel()"
+              style="background:#dc2626; color:white; border:none; padding:6px 16px; border-radius:6px; font-size:12px; cursor:pointer; font-weight: 600;">İptal
+              Et</button>
+            <button type="button" onclick="hideCancelForm()"
+              style="background:white; color:#374151; border:1px solid #d1d5db; padding:6px 12px; border-radius:6px; font-size:12px; cursor:pointer; font-weight: 500;">Vazgeç</button>
+          </div>
+        </div>
+
+        <!-- İPTAL BİLGİSİ (Hidden) -->
+        <div id="cancellationInfoSection"
+          style="display:none; margin-top:12px; padding:12px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px;">
+          <h4
+            style="margin:0 0 8px 0; color:#b91c1c; font-size:14px; font-weight: 600; display:flex; align-items:center; gap:6px;">
+            <span>🚫 Bu iş iptal edildi</span>
+          </h4>
+          <div style="font-size:12px; color:#7f1d1d; line-height:1.6;">
+            <p style="margin:2px 0;"><strong>İptal Eden:</strong> <span id="canceledBy" style="color: #991b1b;"></span>
+            </p>
+            <p style="margin:2px 0;"><strong>Tarih:</strong> <span id="cancelDate" style="color: #991b1b;"></span></p>
+            <p style="margin:2px 0; background: rgba(255,255,255,0.5); padding: 4px; border-radius: 4px;">
+              <strong>Neden:</strong> <span id="cancelReasonDisplay" style="color: #991b1b;"></span>
+            </p>
+            <p style="margin:6px 0; display:none;" id="cancelFileContainer">
+              <strong>Dosya:</strong> <a id="cancelFileLink" href="#" target="_blank"
+                style="color:#0369a1; text-decoration:underline; font-weight: 600;">Dosyayı Görüntüle</a>
+            </p>
+          </div>
+          {% if session.get('role') != 'gözlemci' %}
+          <div style="margin-top:12px;">
+            <button type="button" onclick="removeCancellation()"
+              style="background:#059669; color:white; border:none; padding:6px 12px; border-radius:6px; font-size:12px; cursor:pointer; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+              <span>↩️</span> İptal Kaldır (Geri Yükle)
+            </button>
+          </div>
+          {% endif %}
+        </div>
+
+        <div style="margin-top:4px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+          <div class="attach-block">
+            <label style="font-weight: 600; color: var(--text); font-size: 12px;">LLD / HHD (PDF/DOC)</label>
+            <div class="dropzone" data-input="mLLDFile" style="padding: 4px 6px; min-height: auto;">
+              <input id="mLLDFile" type="file" accept=".pdf,.doc,.docx" multiple {% if session.get('role')=='gözlemci'
+                %}disabled{% endif %}>
+              <div class="dropzone-hint" style="font-size: 10px;">Dosya seç veya sürükle bırak</div>
+            </div>
+            <div class="attach-title" style="font-size: 10px; margin-top: 2px;">Yüklü dosyalar</div>
+            <div id="mLLDFileName" class="attach-list" style="min-height: 28px; padding: 4px 6px; font-size: 10px;">
+            </div>
+          </div>
+          <div class="attach-block">
+            <label style="font-weight: 600; color: var(--text); font-size: 12px;">Tutanak (Excel)</label>
+            <div class="dropzone" data-input="mTutanakFile" style="padding: 4px 6px; min-height: auto;">
+              <input id="mTutanakFile" type="file" accept=".xls,.xlsx" multiple {% if session.get('role')=='gözlemci'
+                %}disabled{% endif %}>
+              <div class="dropzone-hint" style="font-size: 10px;">Dosya seç veya sürükle bırak</div>
+            </div>
+            <div class="attach-title" style="font-size: 10px; margin-top: 2px;">Yüklü dosyalar</div>
+            <div id="mTutanakFileName" class="attach-list" style="min-height: 28px; padding: 4px 6px; font-size: 10px;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="personnelPanel"
+        style="padding: 8px; display: flex; flex-direction: column; max-height: 25vh; overflow: hidden;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom:4px;">
+          <div style="font-weight: 600; font-size: 13px; color: var(--text); margin:0;">Personel Bilgisi</div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <label class="filterOption" style="padding: 2px 6px;">
+              <input class="filterInput" type="checkbox" id="firmaFilterNetmon" onchange="renderPeopleComboBox()">
+              <span style="font-weight: 500; font-size: 11px; color: var(--text-light);">Netmon</span>
+            </label>
+            <label class="filterOption" style="padding: 2px 6px;">
+              <input class="filterInput" type="checkbox" id="showAssignedPeople" onchange="renderPeopleComboBox()">
+              <span style="font-weight: 500; font-size: 11px; color: var(--text-light);">Atama yapılanlar</span>
+            </label>
+          </div>
+        </div>
+        <input class="input" id="peopleSearch" placeholder="Personel ara..." oninput="filterPeopleComboBox()"
+          style="width: 100%; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--line); font-size: 12px; background: var(--card); color: var(--text); height: 32px;">
+        <select id="peopleSelect" multiple style="display: none;"></select>
+        <div id="peopleDropdown" class="peopleList"
+          style="position: static; background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: 6px; max-height: 100%; overflow-y: auto; overflow-x: hidden; z-index: 1000; display: flex; flex-direction: column; margin-top: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1); flex: 1;">
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Ekip Bilgisi -->
+<div class="modal" id="teamModal">
+  <div class="modalCard"
+    style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid var(--border); max-height: 85vh; overflow: auto;">
+    <div class="rowline" style="border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 20px;">
+      <h3 style="margin:0; color: var(--text-strong); font-size: 20px; font-weight: 600;">Ekip Bilgisi</h3>
+      <button class="btn" type="button" onclick="closeTeamModal()"
+        style="background: var(--bg-soft-2); color: var(--text-subtle); font-weight: 500; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 13px;">Kapat</button>
+    </div>
+    <div class="rowline" style="margin-top:10px; gap:8px; flex-wrap:wrap;">
+      <button class="btn" type="button" onclick="copyTeamReportTSV()"
+        style="background: var(--bg-soft-2); color: var(--text-subtle); font-weight: 500; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 13px;">Excel'e
+        Kopyala</button>
+      <button class="btn" type="button" onclick="copyTeamReportText()"
+        style="background: var(--bg-soft-2); color: var(--text-subtle); font-weight: 500; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 13px;">Metin
+        Kopyala</button>
+      <button class="btn" type="button" onclick="copyTeamReportTable()"
+        style="background: var(--bg-soft-2); color: var(--text-subtle); font-weight: 500; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 13px;">Tablo
+        Kopyala</button>
+      <button class="btn" type="button" onclick="downloadTeamReportImage()"
+        style="background: var(--text-strong); color: white; font-weight: 500; padding: 8px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px;">Görsel
+        (PNG)</button>
+    </div>
+    <div style="margin-top:8px; color: var(--text-muted); font-size: 12px; font-weight: 400;" id="teamCopyHint"></div>
+
+    <div
+      style="margin-top:12px; border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--bg-soft);">
+      <div style="font-weight: 600; font-size: 14px; color: var(--text-strong);">Ekip Aracı</div>
+      <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+        <select id="teamVehicleSelect"
+          style="flex: 1; min-width: 180px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 14px; background: #ffffff;"
+          {% if session.get('role')=='gAzlemci' %}disabled{% endif %}>
+          <option value="">-- Araç seçin --</option>
+        </select>
+      </div>
+      <div id="teamVehicleMeta" style="margin-top:6px; font-size:12px; color:var(--text-subtle);"></div>
+      <div id="teamVehicleCurrent" style="margin-top:4px; font-size:12px; color:var(--text-strong);"></div>
+    </div>
+    <div
+      style="margin-top:12px; border: 1px dashed var(--border); border-radius: 8px; padding: 12px; background: var(--bg-soft);">
+      <div style="font-weight: 600; font-size: 14px; color: var(--text-strong);">Tablo Stili</div>
+      <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+        <label style="font-size: 12px; color: var(--text-subtle); display:flex; flex-direction:column; gap:4px;">
+          Yazı tipi
+          <select id="teamTableFontFamily" onchange="handleTeamTableStyleChange()"
+            style="padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: white;">
+            <option value="Inter, system-ui, -apple-system, sans-serif">Varsayılan</option>
+            <option value="Segoe UI, system-ui, sans-serif">Segoe UI</option>
+            <option value="Tahoma, Arial, sans-serif">Tahoma</option>
+            <option value="Georgia, 'Times New Roman', serif">Georgia</option>
+            <option value="'Courier New', monospace">Courier</option>
+          </select>
+        </label>
+        <label style="font-size: 12px; color: var(--text-subtle); display:flex; flex-direction:column; gap:4px;">
+          Yazı boyutu (px)
+          <input id="teamTableFontSize" type="number" min="10" max="24" value="14"
+            onchange="handleTeamTableStyleChange()"
+            style="padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border); background: white;">
+        </label>
+        <label style="font-size: 12px; color: var(--text-subtle); display:flex; flex-direction:column; gap:4px;">
+          Yazı rengi
+          <input id="teamTableFontColor" type="color" value="#0f172a" onchange="handleTeamTableStyleChange()"
+            style="border:none; background: transparent; width: 40px; height: 32px;">
+        </label>
+        <label style="font-size: 12px; color: var(--text-subtle); display:flex; flex-direction:column; gap:4px;">
+          Başlık arka planı
+          <input id="teamTableHeaderBg" type="color" value="#f8fafc" onchange="handleTeamTableStyleChange()"
+            style="border:none; background: transparent; width: 40px; height: 32px;">
+        </label>
+        <label style="font-size: 12px; color: var(--text-subtle); display:flex; flex-direction:column; gap:4px;">
+          Satır arka planı
+          <input id="teamTableRowBg" type="color" value="#ffffff" onchange="handleTeamTableStyleChange()"
+            style="border:none; background: transparent; width: 40px; height: 32px;">
+        </label>
+        <label style="font-size: 12px; color: var(--text-subtle); display:flex; flex-direction:column; gap:4px;">
+          Kenar rengi
+          <input id="teamTableBorderColor" type="color" value="#e2e8f0" onchange="handleTeamTableStyleChange()"
+            style="border:none; background: transparent; width: 40px; height: 32px;">
+        </label>
+        <button class="btn tiny" type="button" onclick="resetTeamTableStyle()"
+          style="height: 32px; border: 1px solid var(--border); background: var(--bg-soft-2); color: var(--text-subtle); font-size: 12px; font-weight: 500; border-radius: 6px;">Sıfırla</button>
+      </div>
+    </div>
+
+    <div id="teamTableWrap" class="tablewrap"
+      style="max-height:360px; margin-top:10px; border-radius: 6px; overflow: auto; border: 1px solid var(--border);">
+      <table id="teamReportTable" class="simple" style="background: white;">
+        <thead>
+          <tr style="background: var(--bg-soft);">
+            <th
+              style="font-weight: 600; color: var(--text-strong); padding: 12px 10px; border-bottom: 1px solid var(--border);">
+              Ad Soyad
+            </th>
+            <th
+              style="font-weight: 600; color: var(--text-strong); padding: 12px 10px; border-bottom: 1px solid var(--border);">
+              Cep</th>
+            <th
+              style="font-weight: 600; color: var(--text-strong); padding: 12px 10px; border-bottom: 1px solid var(--border);">
+              Tarih
+            </th>
+            <th
+              style="font-weight: 600; color: var(--text-strong); padding: 12px 10px; border-bottom: 1px solid var(--border);">
+              Araç
+            </th>
+          </tr>
+        </thead>
+        <tbody id="teamTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Yayın Önizleme -->
+<div class="modal" id="publishPreviewModal">
+  <div class="modalCard"
+    style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid var(--border); max-width: 720px;">
+    <div class="rowline" style="border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 16px;">
+      <h3 id="publishPreviewTitle" style="margin:0; color: var(--text-strong); font-size: 20px; font-weight: 600;">Yayın
+        Önizleme
+      </h3>
+      <button class="btn" type="button" onclick="closePublishPreviewModal()"
+        style="background: var(--bg-soft-2); color: var(--text-subtle); font-weight: 500; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 13px;">Kapat</button>
+    </div>
+
+    <div id="publishPreviewBody" style="padding: 2px 2px;"></div>
+
+    <div class="rowline" style="margin-top:14px; justify-content:flex-end; gap:8px; flex-wrap:wrap;">
+      <button class="btn" type="button" onclick="closePublishPreviewModal()"
+        style="background: var(--bg-soft-2); color: var(--text-subtle); font-weight: 500; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 13px;">İptal</button>
+      <button class="btn" id="publishPreviewConfirmBtn" type="button" onclick="confirmPublishPreview()"
+        style="background:var(--text-strong); color:#fff; font-weight:600; padding:8px 14px; border-radius:6px; border:none; cursor:pointer; font-size:13px; height:36px; box-sizing:border-box; display:inline-flex; align-items:center; justify-content:center;">Onayla</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Ekip Olarak Yayınla -->
+<div class="modal" id="teamPublishModal">
+  <div class="modalCard"
+    style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid var(--border); max-width: 720px;">
+    <div class="rowline" style="border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 16px;">
+      <h3 style="margin:0; color: var(--text-strong); font-size: 20px; font-weight: 600;">Ekip Olarak Yayınla</h3>
+      <button class="btn" type="button" onclick="closeTeamPublishModal()"
+        style="background: var(--bg-soft-2); color: var(--text-subtle); font-weight: 500; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 13px;">Kapat</button>
+    </div>
+
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+      <label style="font-weight: 500; color: var(--text-strong); font-size: 14px; flex:1; min-width:260px;">Ekip
+        <select id="teamPublishSelect"
+          style="margin-top: 6px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 14px; width: 100%; background: #ffffff;"></select>
+      </label>
+      <button class="btn" id="teamPublishConfirmBtn" type="button" onclick="publishSelectedTeamWeek()" disabled
+        style="background:var(--text-strong); color:#fff; font-weight:600; padding:8px 14px; border-radius:6px; border:none; cursor:pointer; font-size:13px; height:36px; box-sizing:border-box; display:inline-flex; align-items:center; justify-content:center;">Onayla</button>
+    </div>
+
+    <div style="margin-top:12px; color:var(--text-muted); font-size:12px;" id="teamPublishHint"></div>
+
+    <div id="teamPublishPreview" style="margin-top:12px;"></div>
+
+    <div class="tablewrap"
+      style="max-height:360px; margin-top:12px; border-radius: 10px; overflow: auto; border: 1px solid var(--border); background:#fff;">
+      <div style="padding:12px 12px; font-weight:900; color:var(--text-strong); border-bottom:1px solid var(--border);">
+        Ekip Üyeleri
+      </div>
+      <div id="teamPublishMembers" style="padding:12px 12px;"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL: Ekip Bazlı Tablo Maili -->
+<div class="modal" id="teamEmailModal">
+  <div class="modalCard"
+    style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid var(--border); max-width: 500px;">
+    <div class="rowline" style="border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 16px;">
+      <h3 style="margin:0; color: var(--text-strong); font-size: 20px; font-weight: 600;">Ekip Bazlı Tablo Maili</h3>
+      <button class="btn" type="button" onclick="closeTeamEmailModal()"
+        style="background: var(--bg-soft-2); color: var(--text-subtle); font-weight: 500; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 13px;">Kapat</button>
+    </div>
+
+    <div style="margin-bottom: 16px;">
+      <p style="color: var(--text-muted); font-size: 13px; margin: 0 0 12px 0;">
+        Seçtiğiniz ekibin personellerine, o haftaki işlerini içeren otomatik bir tablo maili gönderilecektir.
+      </p>
+
+      <label style="font-weight: 500; color: var(--text-strong); font-size: 14px; display: block; margin-bottom: 8px;">
+        Ekip Seçin
+        <select id="teamEmailSelect"
+          style="margin-top: 6px; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 14px; width: 100%; background: #ffffff;"
+          onchange="updateTeamEmailPreview()">
+          <option value="">- Ekip seçin -</option>
+        </select>
+      </label>
+
+      <div id="teamEmailPreview"
+        style="margin-top: 12px; padding: 12px; background: var(--bg-soft); border-radius: 8px; display: none;">
+        <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">Mail gönderilecek personel:</div>
+        <div id="teamEmailPersonnel" style="font-size: 13px; color: var(--text-strong);"></div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 8px; justify-content: flex-end;">
+      <button class="btn" type="button" onclick="closeTeamEmailModal()"
+        style="background: var(--bg-soft-2); color: var(--text-subtle); font-weight: 500; padding: 10px 16px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 13px;">
+        İptal
+      </button>
+      <button class="btn" id="teamEmailSendBtn" type="button" onclick="sendTeamEmail()" disabled
+        style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; font-weight: 600; padding: 10px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; opacity: 0.5;">
+        📧 Mail Gönder
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<script type="application/json" id="vehicles-data-json">{{ vehicles_json|tojson | safe }}</script>
+<script type="text/javascript">
+  /* eslint-disable */
+  (function () {
+    try {
+      var vehiclesEl = document.getElementById('vehicles-data-json');
+      var vehiclesJson = vehiclesEl ? vehiclesEl.textContent.trim() : '[]';
+      var vehicles = vehiclesJson ? JSON.parse(vehiclesJson) : [];
+      window.PLAN_VEHICLES = Array.isArray(vehicles) ? vehicles : [];
+      window.PLAN_VEHICLE_BY_PLATE = {};
+      window.PLAN_VEHICLES.forEach(function (v) {
+        if (v && v.plate) {
+          window.PLAN_VEHICLE_BY_PLATE[v.plate] = v;
+        }
+      });
+    } catch (e) {
+      console.error('Error loading vehicles data:', e);
+      window.PLAN_VEHICLES = [];
+      window.PLAN_VEHICLE_BY_PLATE = {};
+    }
+  })();
+  /* eslint-enable */
+</script>
+
+<!-- MODAL: Personel Durumu (İzin/Ofis/Üretim) -->
+<div class="modal" id="statusModal">
+  <div class="modalCard"
+    style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid var(--border);">
+    <div class="rowline" style="border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 20px;">
+      <h3 style="margin:0; color: var(--text-strong); font-size: 20px; font-weight: 600;">Personel Durumu</h3>
+      <button class="btn" type="button" onclick="closeStatusModal()"
+        style="background: var(--bg-soft-2); color: var(--text-subtle); font-weight: 500; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 13px;">Kapat</button>
+    </div>
+
+    <div
+      style="padding: 10px 14px; background: #fffbeb; border-radius: 6px; margin-bottom: 20px; color: #92400e; font-size: 13px; font-weight: 400; border: 1px solid #fde68a;">
+      Seçili hücrenin günü için işlenir. Personel listesinden kişiyi seç -> burada işaretle.
+    </div>
+
+    <div class="rowline" style="margin-top:10px; gap:8px; flex-wrap:wrap;">
+      <div style="font-weight: 500; color: var(--text-strong); font-size: 14px;"><strong>Seçili Gün:</strong> <span
+          id="statusDayLabel" style="color: var(--text-subtle);">-</span></div>
+      <div style="font-weight: 500; color: var(--text-strong); font-size: 14px;"><strong>Seçili Personel:</strong> <span
+          id="statusPeopleLabel" style="color: var(--text-subtle);">0</span></div>
+    </div>
+
+    <div class="rowline" style="margin-top:12px; gap:8px; flex-wrap:wrap;">
+      <button class="btn" type="button" onclick="setStatusBulk('leave')"
+        style="background: var(--bg-soft-2); color: var(--text-subtle); font-weight: 500; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 13px;">İzinli</button>
+      <button class="btn" type="button" onclick="setStatusBulk('office')"
+        style="background: var(--bg-soft-2); color: var(--text-subtle); font-weight: 500; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 13px;">Ofis</button>
+      <button class="btn" type="button" onclick="setStatusBulk('production')"
+        style="background: var(--bg-soft-2); color: var(--text-subtle); font-weight: 500; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 13px;">Üretimde</button>
+      <button class="btn" type="button" onclick="setStatusBulk('available')"
+        style="background: var(--status-danger); color: white; font-weight: 500; padding: 8px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px;">Durumu
+        Temizle</button>
+    </div>
+
+
+    <input id="statusSearch" placeholder="Personel ara..."
+      style="margin-top:10px; padding: 10px 14px; border-radius: 6px; border: 1px solid var(--border); font-size: 14px; width: 100%; background: #ffffff;"
+      oninput="renderStatusPeopleList()">
+    <div id="statusPeopleList" class="statusGrid"></div>
+
+    <div style="margin-top:10px; color: var(--text-muted); font-size: 12px; font-weight: 400;">
+      Not: "Ofis" için backend'de izinli/üretim gibi kilit uygulanır.
+    </div>
+    <div class="rowline" style="margin-top:14px; justify-content:flex-end;">
+      <button class="btn" type="button" onclick="closeStatusModal()"
+        style="background: var(--text-strong); color: white; font-weight: 500; padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px;">Tamam</button>
+    </div>
+  </div>
+</div>
+
+<!-- JSON verilerini ayrı script tag'inde tanımla -->
+<script type="application/json" id="people-data-json">{{ people_json|tojson | safe }}</script>
+<script type="text/javascript">
+  /* eslint-disable */
+  (function () {
+    try {
+      var peopleEl = document.getElementById('people-data-json');
+      if (peopleEl) {
+        var peopleJson = peopleEl.textContent.trim();
+        window.ALL_PEOPLE = JSON.parse(peopleJson);
+        console.log('Loaded ALL_PEOPLE:', window.ALL_PEOPLE);
+      } else {
+        console.error('people-data-json element not found');
+        window.ALL_PEOPLE = [];
+      }
+    } catch (e) {
+      console.error('Error loading people data:', e);
+      window.ALL_PEOPLE = [];
+    }
+  })();
+  /* eslint-enable */
+</script>
+
+
+<!-- MODAL: Personel Görsel -->
+<div class="modal" id="personShotModal">
+  <div class="modalCard"
+    style="max-width:720px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid var(--border);">
+    <div class="rowline" style="border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 20px;">
+      <h3 style="margin:0; color: var(--text-strong); font-size: 20px; font-weight: 600;">Personel Plan Görseli</h3>
+      <button class="btn" type="button" onclick="closePersonShot()"
+        style="background: var(--bg-soft-2); color: var(--text-subtle); font-weight: 500; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 13px;">Kapat</button>
+    </div>
+    <div class="rowline" style="margin-top:10px; gap:8px; flex-wrap:wrap;">
+      <label class="lbl" style="font-weight: 500; color: var(--text-strong); font-size: 14px;">Personel
+        <select id="personShotSelect"
+          style="margin-top: 6px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 14px; background: #ffffff;"></select>
+      </label>
+      <button class="btn" type="button" onclick="loadPersonShot()"
+        style="background: var(--text-strong); color: white; font-weight: 500; padding: 8px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px;">Getir</button>
+      <button class="btn" type="button" onclick="downloadPersonShotImage()"
+        style="background: var(--text-strong); color: white; font-weight: 500; padding: 8px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px;">Görsel
+        (PNG)</button>
+    </div>
+    <div style="margin-top:8px; color: var(--text-muted); font-size: 12px; font-weight: 400;">Not: Bu görseli indirip
+      WhatsApp /
+      mail ile gönderebilirsin.</div>
+    <div id="personShotCard" class="shotCard" style="margin-top:12px;"></div>
+  </div>
+</div>
+
+<!-- İş Ekle Modal -->
+<div class="modal" id="addJobModal" style="display:none;">
+  <div class="modalBox"
+    style="max-width:520px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid var(--border);">
+    <div class="modalHead"
+      style="border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="margin:0; color: var(--text-strong); font-size: 20px; font-weight: 600;">İş Ekle</h3>
+      <button type="button" class="btn" onclick="closeAddJobModal()"
+        style="background: var(--bg-soft-2); color: var(--text-subtle); font-weight: 500; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 18px;">x</button>
+    </div>
+
+    <div class="grid2" style="margin-top:10px; gap: 16px;">
+      <label style="font-weight: 500; color: var(--text-strong); font-size: 14px;">Şehir (İl)
+        <select id="jobCity"
+          style="margin-top: 6px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 14px; width: 100%; background: #ffffff;">
+          <option value="">- İl seç -</option>
+          {% for city in cities %}
+          <option value="{{ city }}">{{ city }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label style="font-weight: 500; color: var(--text-strong); font-size: 14px;">Proje Şablonu
+        <select id="jobTemplateSelect" onchange="fillFromTemplate()"
+          style="margin-top: 6px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 14px; width: 100%; background: #ffffff;">
+          <option value="0">- Seç -</option>
+          {% for tp in template_projects %}
+          <option value="{{ tp.id }}">{{ tp.project_code }} - {{ tp.project_name }} ({{ tp.responsible }})</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label style="font-weight: 500; color: var(--text-strong); font-size: 14px;">Proje Kodu
+        <input id="jobProjectCode" placeholder="9025-006"
+          style="margin-top: 6px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 14px; width: 100%; background: #ffffff;" />
+      </label>
+
+      <label style="font-weight: 500; color: var(--text-strong); font-size: 14px;">Proje Adı
+        <input id="jobProjectName" placeholder="ZTEE..."
+          style="margin-top: 6px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 14px; width: 100%; background: #ffffff;" />
+      </label>
+
+      <label style="font-weight: 500; color: var(--text-strong); font-size: 14px;">Sorumlu
+        <input id="jobResponsible" placeholder="Gizem"
+          style="margin-top: 6px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 14px; width: 100%; background: #ffffff;" />
+      </label>
+    </div>
+
+    <div class="rowline" style="margin-top:12px; justify-content:flex-end; gap:8px;">
+      <button type="button" class="btn" onclick="closeAddJobModal()"
+        style="background: var(--bg-soft-2); color: var(--text-subtle); font-weight: 500; padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 13px;">İptal</button>
+      <button type="button" class="btn" onclick="createJobRow()"
+        style="background: var(--text-strong); color: white; font-weight: 500; padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px;">Ekle</button>
+    </div>
+  </div>
+</div>
+
+<!-- JSON verilerini ayrı script tag'inde tanımla (Jinja2 template syntax'ı linter hatası vermesin diye) -->
+<script type="application/json" id="app-data-projects">{{ template_projects_json | tojson | safe }}</script>
+<script type="application/json" id="app-data-cities">{{ cities | tojson | safe }}</script>
+<script type="application/json" id="app-data-today">{{ today_iso | tojson | safe }}</script>
+<script type="text/javascript">
+  /* eslint-disable */
+  (function () {
+    try {
+      // JSON'ı script tag'lerinden alıp parse et
+      var projectsEl = document.getElementById('app-data-projects');
+      var citiesEl = document.getElementById('app-data-cities');
+      var todayEl = document.getElementById('app-data-today');
+
+      var projectsJson = projectsEl ? projectsEl.textContent.trim() : '[]';
+      var citiesJson = citiesEl ? citiesEl.textContent.trim() : '[]';
+      var todayJson = todayEl ? todayEl.textContent.trim() : '""';
+
+      window.TEMPLATE_PROJECTS = JSON.parse(projectsJson);
+      window.CITIES = JSON.parse(citiesJson);
+      window.TODAY_ISO = JSON.parse(todayJson);
+
+      console.log('Loaded TEMPLATE_PROJECTS:', window.TEMPLATE_PROJECTS);
+      console.log('Loaded CITIES:', window.CITIES);
+    } catch (e) {
+      console.error('Error loading app data:', e);
+      window.TEMPLATE_PROJECTS = [];
+      window.CITIES = [];
+      window.TODAY_ISO = '';
+    }
+  })();
+  /* eslint-enable */
+</script>
+
+<!-- Cell Tooltip -->
+<div id="cellTooltip" class="cell-tooltip">
+  <div class="cell-tooltip-title" id="tooltipTitle">İş Detayı</div>
+  <div class="cell-tooltip-item">
+    <span class="cell-tooltip-label">Çalışma Saati:</span>
+    <span class="cell-tooltip-value" id="tooltipShift">-</span>
+  </div>
+  <div class="cell-tooltip-item">
+    <span class="cell-tooltip-label">Ekip:</span>
+    <span class="cell-tooltip-value" id="tooltipTeam">-</span>
+  </div>
+  <div class="cell-tooltip-item">
+    <span class="cell-tooltip-label">Personel:</span>
+    <div class="cell-tooltip-value cell-tooltip-people" id="tooltipPeople">-</div>
+  </div>
+  <div class="cell-tooltip-item">
+    <span class="cell-tooltip-label">Araç:</span>
+    <span class="cell-tooltip-value" id="tooltipVehicle">-</span>
+  </div>
+  <div class="cell-tooltip-item">
+    <span class="cell-tooltip-label">ISDP:</span>
+    <span class="cell-tooltip-value" id="tooltipISDP">-</span>
+  </div>
+  <div class="cell-tooltip-item">
+    <span class="cell-tooltip-label">PO:</span>
+    <span class="cell-tooltip-value" id="tooltipPO">-</span>
+  </div>
+  <div class="cell-tooltip-item">
+    <span class="cell-tooltip-label">Not:</span>
+    <div class="cell-tooltip-value cell-tooltip-pre" id="tooltipNote">-</div>
+  </div>
+  <div class="cell-tooltip-item" id="tooltipImportantNoteContainer" style="display: none;">
+    <span class="cell-tooltip-label">Önemli Not:</span>
+    <span class="cell-tooltip-value" id="tooltipImportantNote"
+      style="color: var(--status-danger); font-weight: 600;">-</span>
+  </div>
+</div>
+
+<input type="hidden" id="userRole" value="{{ session.get('role', '') }}">
+<script>
+  let tooltipTimeout = null;
+  let currentTooltipCell = null;
+
+  async function showCellTooltip(td, event) {
+    if (!td || !td.dataset.projectId || !td.dataset.date) return;
+
+    // Önceki timeout'u temizle
+    if (tooltipTimeout) {
+      clearTimeout(tooltipTimeout);
+      tooltipTimeout = null;
+    }
+
+    // Eğer aynı hücre üzerindeyse, tekrar başlatma
+    if (currentTooltipCell === td) return;
+    currentTooltipCell = td;
+
+    // 2 saniye bekle
+    tooltipTimeout = setTimeout(async () => {
+      const tooltip = document.getElementById('cellTooltip');
+      if (!tooltip || currentTooltipCell !== td) return;
+
+      tooltip.classList.add('show');
+
+      // Tooltip pozisyonunu ayarla
+      const rect = td.getBoundingClientRect();
+      const tooltipRect = tooltip.getBoundingClientRect();
+      let left = rect.right + 10;
+      let top = rect.top;
+
+      // Sağa sığmazsa sola koy
+      if (left + tooltipRect.width > window.innerWidth) {
+        left = rect.left - tooltipRect.width - 10;
+      }
+
+      // Aşağıya sığmazsa yukarı koy
+      if (top + tooltipRect.height > window.innerHeight) {
+        top = window.innerHeight - tooltipRect.height - 10;
+      }
+
+      tooltip.style.left = left + 'px';
+      tooltip.style.top = top + 'px';
+
+      // İçerişi yükle
+      const project_id = parseInt(td.dataset.projectId, 10);
+      const work_date = td.dataset.date;
+
+      // Başlık
+      document.getElementById('tooltipTitle').textContent = `${td.dataset.projectCode || 'Proje'} - ${work_date}`;
+
+      // API'den veri çek
+      try {
+        const res = await fetch(`/api/cell?project_id=${project_id}&date=${encodeURIComponent(work_date)}`);
+        const data = await res.json().catch(() => ({ exists: false }));
+
+        if (data.exists && data.cell) {
+          const cell = data.cell;
+
+          // Shift
+          const shiftEl = document.getElementById('tooltipShift');
+          if (shiftEl) {
+            shiftEl.textContent = cell.shift || '-';
+            shiftEl.className = cell.shift ? 'cell-tooltip-value' : 'cell-tooltip-value cell-tooltip-empty';
+          }
+
+          // Ekip
+          const teamEl = document.getElementById('tooltipTeam');
+          if (teamEl) {
+            const teamName = (cell.team_name || '').trim();
+            teamEl.textContent = teamName || '-';
+            teamEl.className = teamName ? 'cell-tooltip-value' : 'cell-tooltip-value cell-tooltip-empty';
+          }
+
+          // Personel
+          const peopleEl = document.getElementById('tooltipPeople');
+          if (peopleEl && data.assigned && data.assigned.length > 0) {
+            const pm = window.ALL_PEOPLE || [];
+            const peopleNames = data.assigned.map(id => {
+              const p = pm.find(p => p.id == id);
+              return p ? p.full_name : `#${id}`;
+            });
+            peopleEl.innerHTML = peopleNames.map(name => `<div>${escapeHtml(name)}</div>`).join('');
+            peopleEl.className = 'cell-tooltip-value cell-tooltip-people';
+          } else {
+            if (peopleEl) {
+              peopleEl.textContent = '-';
+              peopleEl.className = 'cell-tooltip-value cell-tooltip-empty';
+            }
+          }
+
+          // Araç
+          const vehicleEl = document.getElementById('tooltipVehicle');
+          if (vehicleEl) {
+            const vehicleInfo = (cell.vehicle_info || '').trim();
+            const plateOnly = vehicleInfo ? vehicleInfo.split(' ')[0] : '';
+            vehicleEl.textContent = plateOnly || '-';
+            vehicleEl.className = plateOnly ? 'cell-tooltip-value' : 'cell-tooltip-value cell-tooltip-empty';
+          }
+
+          // ISDP
+          const isdpEl = document.getElementById('tooltipISDP');
+          if (isdpEl) {
+            isdpEl.textContent = cell.isdp_info || '-';
+            isdpEl.className = cell.isdp_info ? 'cell-tooltip-value' : 'cell-tooltip-value cell-tooltip-empty';
+          }
+
+          // PO
+          const poEl = document.getElementById('tooltipPO');
+          if (poEl) {
+            poEl.textContent = cell.po_info || '-';
+            poEl.className = cell.po_info ? 'cell-tooltip-value' : 'cell-tooltip-value cell-tooltip-empty';
+          }
+
+          // Not
+          const noteEl = document.getElementById('tooltipNote');
+          if (noteEl) {
+            const noteText = (cell.note || '').toString();
+            if (noteText && noteText.trim()) {
+              noteEl.innerHTML = escapeHtml(noteText).replace(/\\n/g, '<br>');
+              noteEl.className = 'cell-tooltip-value cell-tooltip-pre';
+            } else {
+              noteEl.textContent = '-';
+              noteEl.className = 'cell-tooltip-value cell-tooltip-empty';
+            }
+          }
+
+          // İptal Nedeni
+          const cancelReasonEl = document.getElementById('tooltipCancelReason');
+          if (cell.status === 'cancelled') {
+            if (cancelReasonEl) {
+              const reason = cell.cancellation_reason || 'Neden belirtilmedi';
+              cancelReasonEl.innerHTML = `<span style="color:var(--status-danger); font-weight:600;">İPTAL NEDENİ:</span> ${escapeHtml(reason)}`;
+              cancelReasonEl.style.display = 'block';
+              cancelReasonEl.className = 'cell-tooltip-value';
+            }
+          } else {
+            if (cancelReasonEl) cancelReasonEl.style.display = 'none';
+          }
+
+          // Önemli Not
+
+          const importantNoteEl = document.getElementById('tooltipImportantNote');
+          const importantNoteContainer = document.getElementById('tooltipImportantNoteContainer');
+          if (importantNoteEl && importantNoteContainer) {
+            if (cell.important_note && cell.important_note.trim()) {
+              importantNoteEl.textContent = cell.important_note.trim();
+              importantNoteContainer.style.display = 'flex';
+            } else {
+              importantNoteContainer.style.display = 'none';
+            }
+          }
+        } else {
+          // Boş hücre
+          document.getElementById('tooltipShift').textContent = '-';
+          document.getElementById('tooltipTeam').textContent = '-';
+          document.getElementById('tooltipPeople').textContent = '-';
+          document.getElementById('tooltipVehicle').textContent = '-';
+          document.getElementById('tooltipISDP').textContent = '-';
+          document.getElementById('tooltipPO').textContent = '-';
+          document.getElementById('tooltipNote').textContent = '-';
+          const importantNoteContainer = document.getElementById('tooltipImportantNoteContainer');
+          if (importantNoteContainer) {
+            importantNoteContainer.style.display = 'none';
+          }
+        }
+      } catch (e) {
+        console.error('Tooltip yükleme hatası:', e);
+      }
+    }, 2000); // 2 saniye bekle
+  }
+
+  function hideCellTooltip() {
+    const tooltip = document.getElementById('cellTooltip');
+    if (tooltip) {
+      tooltip.classList.remove('show');
+    }
+    if (tooltipTimeout) {
+      clearTimeout(tooltipTimeout);
+      tooltipTimeout = null;
+    }
+    currentTooltipCell = null;
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // Window'a export et
+  window.showCellTooltip = showCellTooltip;
+  window.hideCellTooltip = hideCellTooltip;
+</script>
+
+<!-- MODAL: Mail Preview (shared ids used by static/app.js) -->
+<div class="modal" id="mailPreviewModal">
+  <div class="modalCard"
+    style="border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid var(--border); max-width: 980px;">
+    <div class="rowline" style="border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 12px;">
+      <h3 id="mailPreviewTitle" style="margin:0; color: var(--text-strong); font-size: 18px; font-weight: 600;">Mail
+        Önizleme</h3>
+      <div class="rowline" style="gap:8px;">
+        <button class="btn" type="button" onclick="copyMailPreviewHtml()"
+          style="background: var(--bg-soft-2); color: var(--text-subtle); font-weight: 500; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 13px;">HTML
+          Kopyala</button>
+        <button class="btn" type="button" onclick="closeMailPreview()"
+          style="background: var(--text-strong); color: white; font-weight: 500; padding: 8px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px;">Kapat</button>
+      </div>
+    </div>
+    <iframe id="mailPreviewFrame"
+      style="width:100%; height:70vh; border:1px solid var(--border); border-radius:8px; background:white;"></iframe>
+    <div style="margin-top:8px; color:var(--text-muted); font-size:12px;" id="mailPreviewHint"></div>
+  </div>
+</div>
+
+<script>
+  (() => {
+    const attachUpdateListener = () => {
+      const socket = window.__socket;
+      if (!socket) return;
+
+      socket.on('update_table', (data) => {
+        try {
+          // EditingStateManager yüklü mü kontrol et
+          if (window.EditingStateManager) {
+            // Düzenleme durumu kontrolü ile güvenli yenileme
+            if (!window.EditingStateManager.safeReload()) {
+              // Yenileme engelldendiyse, güncelleme bilgisini sıraya al
+              console.log('[Socket] Sayfa yenileme engellendi - düzenleme aktif');
+              if (data && data.project_id && data.work_date) {
+                window.EditingStateManager.queueCellUpdate(data);
+              } else {
+                // Genel güncelleme - pending olarak işaretle
+                window.EditingStateManager.queueCellUpdate({
+                  type: 'full_refresh',
+                  timestamp: Date.now()
+                });
+              }
+            }
+          } else {
+            // Fallback - modal açık mı kontrol et
+            const cellModal = document.getElementById('cellModal');
+            const dynamicModal = document.getElementById('dynamicModal');
+            const newJobRow = document.getElementById('newJobRow');
+            const editJobCity = document.getElementById('editJobCity');
+
+            const isEditing =
+              (cellModal && cellModal.classList.contains('open')) ||
+              (dynamicModal && dynamicModal.style.display !== 'none') ||
+              newJobRow ||
+              editJobCity;
+
+            if (!isEditing) {
+              if (typeof window.reloadWithScroll === 'function') {
+                window.reloadWithScroll();
+              } else {
+                // Scroll pozisyonunu kaydet
+                try {
+                  sessionStorage.setItem('planner_scroll_y', window.scrollY);
+                  const tableWrap = document.querySelector('#gridPlanContainer .tablewrap') || document.querySelector('.tablewrap');
+                  if (tableWrap) {
+                    sessionStorage.setItem('planner_table_scroll_top', tableWrap.scrollTop);
+                    sessionStorage.setItem('planner_table_scroll_left', tableWrap.scrollLeft);
+                  }
+                } catch (e) {
+                  console.error('Scroll position save error:', e);
+                }
+                location.reload();
+              }
+            } else {
+              console.log('[Socket] Sayfa yenileme engellendi - düzenleme aktif (fallback)');
+              // Kullanıcıya bilgi ver
+              if (typeof showToast === 'function') {
+                showToast('Bekleyen güncellemeler var. Düzenlemeyi bitirdiğinizde uygulanacak.', 'warning');
+              }
+            }
+          }
+        } catch (err) {
+          console.error('[Socket] update_table handler hatası:', err);
+        }
+      });
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', attachUpdateListener);
+    } else {
+      attachUpdateListener();
+    }
+  })();
+</script>
+
+<!-- Drag-drop ve hücre olayları için koruyucu stub'lar (app.js yüklenmese bile hata vermesin) -->
+<script>
+  window.selectCell = window.selectCell || function () { };
+  window.openCellEditor = window.openCellEditor || function (td, weekStartIso) {
+    if (window.selectCell) { window.selectCell(td, weekStartIso); }
+  };
+  window.cellDragStart = window.cellDragStart || function () { };
+  window.cellDragEnd = window.cellDragEnd || function () { };
+  window.cellDragOver = window.cellDragOver || function () { };
+  window.cellDragLeave = window.cellDragLeave || function () { };
+  window.cellDrop = window.cellDrop || function () { };
+</script>
+
+<script>
+  // Tablo sıralama fonksiyonu
+  (function () {
+    let currentSort = { column: null, direction: 'asc' };
+
+    function sortTable(column, direction) {
+      const tbody = document.getElementById('planTbody');
+      if (!tbody) return;
+
+      const rows = Array.from(tbody.querySelectorAll('tr.planRow'));
+      if (rows.length === 0) return;
+
+      rows.sort((a, b) => {
+        let aValue = '';
+        let bValue = '';
+
+        if (column === 'region') {
+          aValue = (a.querySelector('.region')?.textContent || '').trim();
+          bValue = (b.querySelector('.region')?.textContent || '').trim();
+        } else if (column === 'project_code') {
+          aValue = (a.querySelector('.pcode')?.textContent || '').trim();
+          bValue = (b.querySelector('.pcode')?.textContent || '').trim();
+        } else if (column === 'responsible') {
+          aValue = (a.querySelector('.respText')?.textContent || '').trim();
+          bValue = (b.querySelector('.respText')?.textContent || '').trim();
+        }
+
+        // Alfabetik karşılaştırma
+        const comparison = aValue.localeCompare(bValue, 'tr', { sensitivity: 'base' });
+        return direction === 'asc' ? comparison : -comparison;
+      });
+
+      // Satırları yeniden ekle
+      rows.forEach(row => tbody.appendChild(row));
+
+      // Sıralama göstergelerini güncelle
+      document.querySelectorAll('.sortable .sort-indicator').forEach(ind => {
+        ind.textContent = '↕';
+        ind.style.opacity = '0.5';
+      });
+
+      const activeHeader = document.querySelector(`.sortable[data-sort="${column}"] .sort-indicator`);
+      if (activeHeader) {
+        activeHeader.textContent = direction === 'asc' ? '↑' : '↓';
+        activeHeader.style.opacity = '1';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('.sortable').forEach(header => {
+        header.addEventListener('click', function (e) {
+          // Filtre inputlarına tıklandıysa sıralama yapma
+          if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT' || e.target.tagName === 'OPTION') {
+            return;
+          }
+
+          const column = this.dataset.sort;
+          if (!column) return;
+
+          // Aynı kolona tıklanırsa yönü değiştir
+          if (currentSort.column === column) {
+            currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+          } else {
+            currentSort.column = column;
+            currentSort.direction = 'asc';
+          }
+
+          sortTable(column, currentSort.direction);
+        });
+
+        // Hover efekti
+        header.addEventListener('mouseenter', function () {
+          if (this.dataset.sort !== currentSort.column) {
+            this.style.backgroundColor = '#f1f5f9';
+          }
+        });
+
+        header.addEventListener('mouseleave', function () {
+          if (this.dataset.sort !== currentSort.column) {
+            this.style.backgroundColor = '';
+          }
+        });
+      });
+    });
+  })();
+</script>
+
+<style>
+  /* ============================================
+   MODERN & ELEGANT PLAN PAGE STYLING
+   Göz yormayan renkler ve yumuşak animasyonlar
+   ============================================ */
+
+  /* Modal Animasyonları */
+  .modal {
+    animation: fadeIn 0.3s ease-out;
+    backdrop-filter: blur(8px);
+    background: rgba(15, 23, 42, 0.5);
+  }
+
+  .modal.open {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .modalCard {
+    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    transform-origin: center;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  /* Buton Animasyonları */
+  .btn {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+  }
+
+  .btn:hover::before {
+    width: 300px;
+    height: 300px;
+  }
+
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .btn:active {
+    transform: translateY(0);
+    transition: transform 0.1s;
+  }
+
+  /* Primary Butonlar - Yumuşak Mavi Tonları */
+  .btn[style*="background: var(--text-strong)"],
+  button.btn[style*="background: var(--text-strong)"] {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%) !important;
+    border: none !important;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+  }
+
+  .btn[style*="background: var(--text-strong)"]:hover,
+  button.btn[style*="background: var(--text-strong)"]:hover {
+    background: linear-gradient(135deg, #4338ca 0%, #5b21b6 100%) !important;
+    box-shadow: 0 4px 16px rgba(79, 70, 229, 0.4);
+  }
+
+  /* Danger Butonlar - Yumuşak Kırmızı Tonları */
+  .btn[style*="background: var(--status-danger)"],
+  button.btn[style*="background: var(--status-danger)"] {
+    background: linear-gradient(135deg, var(--status-danger) 0%, #f87171 100%) !important;
+    border: none !important;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+  }
+
+  .btn[style*="background: var(--status-danger)"]:hover,
+  button.btn[style*="background: var(--status-danger)"]:hover {
+    background: linear-gradient(135deg, var(--status-danger) 0%, var(--status-danger) 100%) !important;
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
+  }
+
+  /* Secondary Butonlar - Yumuşak Gri Tonları */
+  .btn[style*="background: var(--bg-soft-2)"],
+  button.btn[style*="background: var(--bg-soft-2)"],
+  a.btn[style*="background: var(--bg-soft-2)"] {
+    background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-soft-2) 100%) !important;
+    border: 1px solid var(--border) !important;
+    transition: all 0.25s ease;
+  }
+
+  .btn[style*="background: var(--bg-soft-2)"]:hover,
+  button.btn[style*="background: var(--bg-soft-2)"]:hover,
+  a.btn[style*="background: var(--bg-soft-2)"]:hover {
+    background: linear-gradient(135deg, var(--border) 0%, var(--border) 100%) !important;
+    border-color: var(--border) !important;
+    transform: translateY(-1px);
+  }
+
+  /* Input ve Select Animasyonları */
+  input[type="text"],
+  input[type="date"],
+  input[type="number"],
+  select,
+  textarea {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid var(--border) !important;
+  }
+
+  input[type="text"]:focus,
+  input[type="date"]:focus,
+  input[type="number"]:focus,
+  select:focus,
+  textarea:focus {
+    outline: none;
+    border-color: #6366f1 !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+    transform: translateY(-1px);
+  }
+
+  input[type="text"]:hover,
+  input[type="date"]:hover,
+  input[type="number"]:hover,
+  select:hover,
+  textarea:hover {
+    border-color: var(--text-muted) !important;
+  }
+
+  /* Card ve Container Animasyonları */
+  .card,
+  .cellModalCard {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .cellModalCard {
+    background: linear-gradient(135deg, #ffffff 0%, var(--bg-soft) 100%);
+    border: 1px solid var(--border);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12), 0 8px 24px rgba(0, 0, 0, 0.08) !important;
+  }
+
+  /* Top Bar - Yumuşak Gradient */
+  section.card>div[style*="background: #ffffff"] {
+    background: linear-gradient(135deg, #ffffff 0%, var(--bg-soft) 100%) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+    transition: box-shadow 0.3s ease;
+  }
+
+  section.card>div[style*="background: #ffffff"]:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+  }
+
+  /* Seçili İş Badge - Yumuşak Renkler */
+  #selectedLabel {
+    background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%) !important;
+    border: 1px solid #a5b4fc !important;
+    color: #4338ca !important;
+    font-weight: 600 !important;
+    transition: all 0.25s ease;
+    box-shadow: 0 2px 4px rgba(99, 102, 241, 0.1);
+  }
+
+  /* Hafta Başlığı - Yumuşak Mavi */
+  h2[style*="color: var(--status-info)"] {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    transition: all 0.3s ease;
+  }
+
+  /* Form Elemanları - Yumuşak Arka Planlar */
+  #editorInfo {
+    background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-soft-2) 100%) !important;
+    border: 1px solid var(--border) !important;
+    transition: all 0.25s ease;
+  }
+
+  #editorInfo:hover {
+    background: linear-gradient(135deg, var(--bg-soft-2) 0%, var(--border) 100%) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Personnel Panel - Yumuşak Gradient */
+  .personnelPanel {
+    background: linear-gradient(135deg, var(--bg-soft) 0%, #ffffff 100%) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+  }
+
+  .personnelPanel:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Dropzone Animasyonları */
+  .dropzone {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(135deg, #ffffff 0%, var(--bg-soft) 100%);
+    border: 2px dashed var(--border) !important;
+  }
+
+  .dropzone:hover {
+    border-color: var(--text-muted) !important;
+    background: linear-gradient(135deg, var(--bg-soft) 0%, var(--bg-soft-2) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .dropzone.dragover {
+    border-color: #6366f1 !important;
+    background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%) !important;
+    transform: scale(1.02);
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2);
+  }
+
+  /* Attach List Animasyonları */
+  .attach-list {
+    transition: all 0.25s ease;
+    background: linear-gradient(135deg, var(--bg-soft) 0%, #ffffff 100%) !important;
+  }
+
+  .attach-list:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  /* Checkbox ve Filter Option Animasyonları */
+  .filterOption {
+    transition: all 0.2s ease;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+
+  .filterOption:hover {
+    background: rgba(99, 102, 241, 0.05);
+    transform: translateX(2px);
+  }
+
+  .filterInput {
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .filterInput:hover {
+    transform: scale(1.1);
+  }
+
+  /* People List Animasyonları */
+  .peopleList {
+    transition: all 0.3s ease;
+  }
+
+  .peopleList>div {
+    transition: all 0.2s ease;
+    border-radius: 6px;
+    margin: 2px 0;
+  }
+
+  .peopleList>div:hover {
+    background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%) !important;
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+  }
+
+  /* Selected People Badge Animasyonları */
+  #selectedPeopleList>div {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideIn 0.3s ease-out;
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateX(-10px) scale(0.9);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0) scale(1);
+    }
+  }
+
+  #selectedPeopleList>div:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Summary Panel Animasyonları */
+  #personelOzetPanel {
+    animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .personnel-summary-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(135deg, var(--bg-soft) 0%, #ffffff 100%) !important;
+  }
+
+  .personnel-summary-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+    background: linear-gradient(135deg, #ffffff 0%, var(--bg-soft) 100%) !important;
+  }
+
+  /* Table Cell Animasyonları */
+  /* Hücre sağ üst mini rozet alanı (mesai vb.) */
+  .cell-badge-stack {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    z-index: 6;
+    pointer-events: none;
+  }
+
+  .cell-badge-stack .cell-badge {
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    border: 1px solid transparent;
+    background: var(--bg-soft);
+    color: var(--text-strong);
+  }
+
+  .cell-badge-stack .cell-badge.overtime {
+    background: rgba(234, 179, 8, 0.18);
+    border-color: rgba(234, 179, 8, 0.55);
+    color: #b45309;
+  }
+
+  @media (max-width: 768px) {
+    .cell-badge-stack {
+      top: 2px;
+      right: 2px;
+      gap: 3px;
+    }
+
+    .cell-badge-stack .cell-badge {
+      transform: scale(0.92);
+      transform-origin: top right;
+    }
+  }
+
+  .plan td.cell {
+    transition: all 0.2s ease;
+  }
+
+  .plan td.cell:hover {
+    transform: scale(1.02);
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Smooth Scroll */
+  * {
+    scroll-behavior: smooth;
+  }
+
+  /* Loading States */
+  @keyframes pulse {
+
+    0%,
+    100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  .loading {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Responsive Animasyonlar */
+  @media (max-width: 768px) {
+    .modalCard {
+      animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .btn:hover {
+      transform: none;
+    }
+  }
+
+  /* Smooth Transitions for All Interactive Elements */
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  label {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Modal Scroll Optimizasyonu - Tüm içerik görünsün */
+  #cellModal .cellModalCard {
+    max-height: 98vh !important;
+    overflow-y: visible !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 12px !important;
+  }
+
+  #cellModal .cellModalLayout {
+    overflow: visible !important;
+    max-height: none !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    gap: 8px !important;
+  }
+
+  #cellModal .cellFormStack {
+    overflow: visible !important;
+    gap: 6px !important;
+  }
+
+  #cellModal .personnelPanel {
+    overflow-y: visible !important;
+    overflow-x: visible !important;
+    max-height: none !important;
+    padding: 8px !important;
+    gap: 3px !important;
+  }
+
+  #cellModal #peopleDropdown {
+    max-height: none !important;
+    overflow-y: visible !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    padding: 4px !important;
+  }
+
+  /* Kompakt görünüm için spacing azaltma */
+  #cellModal .cellFormStack>* {
+    margin-top: 6px !important;
+  }
+
+  #cellModal .cellFormStack>*:first-child {
+    margin-top: 0 !important;
+  }
+
+  /* Input ve select yükseklikleri */
+  #cellModal input:not([type="file"]),
+  #cellModal select,
+  #cellModal textarea {
+    height: 32px !important;
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+  }
+
+  #cellModal textarea {
+    min-height: 40px !important;
+    height: auto !important;
+  }
+
+  /* Label font boyutları */
+  #cellModal label {
+    font-size: 12px !important;
+  }
+
+  /* Buton boyutları */
+  #cellModal .btn {
+    height: 32px !important;
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+  }
+</style>
+
+
+<!-- Dinamik Context Menu realtime.js tarafından oluşturulur -->
+
+<!-- Kompakt Bas-Konuş (PTT) Butonu - Sağ Alt Köşe -->
+<div id="pttContainer" style="
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+">
+  <!-- Alıcı Seçim Dropdown (hover'da görünür) -->
+  <div id="pttDropdown" style="
+    display: none;
+    background: #fff;
+    border-radius: 10px;
+    padding: 6px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    border: 1px solid var(--border);
+    min-width: 160px;
+    max-height: 250px;
+    overflow-y: auto;
+  ">
+    <button onclick="setPTTRecipient('broadcast', 0)"
+      style="display: flex; align-items: center; gap: 6px; width: 100%; padding: 8px 12px; background: #f0fdf4; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; color: var(--text-strong); text-align: left; margin-bottom: 4px;">
+      📢 Herkese Gönder
+    </button>
+    <div
+      style="font-size: 10px; color: var(--text-muted); padding: 4px 8px; border-top: 1px solid var(--border); margin-top: 4px;">
+      Online Kullanıcılar</div>
+    <div id="pttUserList" style="display: flex; flex-direction: column; gap: 2px;">
+      <div style="color: var(--text-muted); font-size: 11px; padding: 8px; text-align: center;">Yükleniyor...</div>
+    </div>
+  </div>
+
+
+  <!-- Ana PTT Butonu -->
+  <button id="pttButton" type="button" onclick="return false;" style="
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--status-danger) 0%, var(--status-danger) 100%);
+      color: #fff;
+      border: none;
+      cursor: not-allowed;
+      font-size: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
+      transition: all 0.2s ease;
+      opacity: 0.6;
+    " title="Şimdilik devre dışı">
+    🎤
+  </button>
+
+  <!-- Ses Geçmişi Butonu -->
+  <button id="voiceHistoryBtn" type="button" onclick="toggleVoiceHistory()" style="
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+    " title="📂 Ses Mesajları Geçmişi">📂</button>
+</div>
+
+<!-- Ses Geçmişi Paneli -->
+<div id="voiceHistoryPanel" style="
+  display: none;
+  position: fixed;
+  bottom: 130px;
+  right: 20px;
+  width: 280px;
+  max-height: 350px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  z-index: 9998;
+  overflow: hidden;
+">
+  <div
+    style="padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+    <span style="font-weight: 700; font-size: 14px; color: var(--text-strong);">📂 Ses Mesajları</span>
+    <button onclick="toggleVoiceHistory()"
+      style="background: none; border: none; font-size: 16px; cursor: pointer; color: var(--text-muted);">✕</button>
+  </div>
+  <div id="voiceHistoryList" style="padding: 8px; max-height: 280px; overflow-y: auto;">
+    <div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 20px;">Henüz ses mesajı yok
+    </div>
+  </div>
+</div>
+
+<script>
+  // PTT Dropdown toggle - kullanıcıları da yükle
+  window.togglePTTDropdown = async function (e) {
+    if (e) e.preventDefault();
+    const dropdown = document.getElementById('pttDropdown');
+    const isVisible = dropdown.style.display !== 'none';
+    dropdown.style.display = isVisible ? 'none' : 'block';
+
+    // Açılınca kullanıcıları yükle
+    if (!isVisible) {
+      await loadPTTUsers();
+    }
+  };
+
+  // Online kullanıcıları yükle
+  async function loadPTTUsers() {
+    const listEl = document.getElementById('pttUserList');
+    try {
+      const res = await fetch('/api/online_users?only_online=1');
+      const data = await res.json();
+
+      if (data.ok && data.items && data.items.length > 0) {
+        const onlineUsers = data.items.filter(u => u.is_online);
+        if (onlineUsers.length === 0) {
+          listEl.innerHTML = '<div style="color: var(--text-muted); font-size: 11px; padding: 8px; text-align: center;">Online kullanıcı yok</div>';
+          return;
+        }
+
+        listEl.innerHTML = onlineUsers.map(u => `
+          <button onclick="setPTTRecipient('user', ${u.id}, '${(u.name || 'Kullanıcı').replace(/'/g, "\\'")}')"
+            style="display: flex; align-items: center; gap: 6px; width: 100%; padding: 6px 10px; background: none; border: none; border-radius: 6px; cursor: pointer; font-size: 11px; color: var(--text-strong); text-align: left;">
+            <span style="width: 6px; height: 6px; background: var(--status-success); border-radius: 50%;"></span>
+            ${u.name || 'Kullanıcı'}
+          </button>
+        `).join('');
+      } else {
+        listEl.innerHTML = '<div style="color: var(--text-muted); font-size: 11px; padding: 8px; text-align: center;">Online kullanıcı yok</div>';
+      }
+    } catch (err) {
+      listEl.innerHTML = '<div style="color: var(--status-danger); font-size: 11px; padding: 8px;">Yüklenemedi</div>';
+    }
+  }
+
+  // PTT alıcı ayarla
+  window.currentPTTRecipient = { type: 'broadcast', id: 0, name: 'Herkese' };
+  window.setPTTRecipient = function (type, id, name) {
+    window.currentPTTRecipient = { type, id: id || 0, name: name || 'Herkese' };
+    document.getElementById('pttDropdown').style.display = 'none';
+    const btn = document.getElementById('pttButton');
+    btn.innerHTML = type === 'user' ? '👤' : '🎤';
+    showToast(type === 'user' ? `${name} kişisine gönderilecek` : 'Herkese gönderilecek', 'info');
+  };
+
+  // Dropdown'ı kapat (başka yere tıklanınca)
+  document.addEventListener('click', (e) => {
+    const container = document.getElementById('pttContainer');
+    if (container && !container.contains(e.target)) {
+      document.getElementById('pttDropdown').style.display = 'none';
+    }
+  });
+
+  // ================ SES GEÇMİŞİ ================
+
+  // Ses geçmişi panelini aç/kapat
+  window.toggleVoiceHistory = async function () {
+    const panel = document.getElementById('voiceHistoryPanel');
+    const isVisible = panel.style.display !== 'none';
+    panel.style.display = isVisible ? 'none' : 'block';
+
+    if (!isVisible) {
+      await loadVoiceHistory();
+    }
+  };
+
+  // Ses geçmişini yükle
+  async function loadVoiceHistory() {
+    const listEl = document.getElementById('voiceHistoryList');
+    listEl.innerHTML = '<div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 20px;">Yükleniyor...</div>';
+
+    try {
+      const res = await fetch('/api/voice/history');
+      const data = await res.json();
+
+      if (!data.ok || !data.messages || data.messages.length === 0) {
+        listEl.innerHTML = '<div style="color: var(--text-muted); font-size: 12px; text-align: center; padding: 20px;">Henüz ses mesajı yok</div>';
+        return;
+      }
+
+      // En yeni en üstte (API desc order döndürüyor)
+      const messages = data.messages;
+
+      listEl.innerHTML = messages.map(m => {
+        const date = new Date(m.created_at);
+        const timeStr = date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+        const dateStr = date.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' });
+        const isUnread = !m.is_heard;
+
+        return `
+        <div style="display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 8px; background: ${isUnread ? '#fef3c7' : 'var(--bg-soft)'}; margin-bottom: 6px; border: 1px solid ${isUnread ? '#fcd34d' : 'var(--border)'};">
+          ${isUnread ? '<span style="width: 8px; height: 8px; background: var(--status-warning); border-radius: 50%; flex-shrink: 0;"></span>' : ''}
+          <div style="flex: 1; min-width: 0;">
+            <div style="font-weight: 600; font-size: 12px; color: var(--text-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${m.from_user_name || 'Bilinmeyen'}</div>
+            <div style="font-size: 10px; color: var(--text-muted);">${dateStr} ${timeStr}</div>
+          </div>
+          <button onclick="playVoice(${m.id}, '${m.audio_url}')" 
+            style="width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--status-success) 0%, var(--status-success) 100%); color: #fff; border: none; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"
+            title="Oynat">▶</button>
+        </div>
+        `;
+      }).join('');
+
+      // Okunmamış sayısını güncelle
+      updateUnreadBadge(messages.filter(m => !m.is_heard).length);
+
+    } catch (err) {
+      console.error('Ses geçmişi yüklenemedi:', err);
+      listEl.innerHTML = '<div style="color: var(--status-danger); font-size: 12px; text-align: center; padding: 20px;">Yüklenemedi</div>';
+    }
+  }
+
+  // Ses oynat
+  window.playVoice = async function (voiceId, audioUrl) {
+    try {
+      console.log('Ses oynatma başlatılıyor:', { voiceId, audioUrl });
+
+      // URL kontrolü
+      if (!audioUrl) {
+        showToast('❌ Ses URL\'si bulunamadı', 'error');
+        return;
+      }
+
+      // Mevcut oynatıcıyı durdur
+      if (window.currentAudioPlayer) {
+        window.currentAudioPlayer.pause();
+        window.currentAudioPlayer.src = '';
+        window.currentAudioPlayer = null;
+      }
+
+      showToast('🔊 Ses yükleniyor...', 'info');
+
+      // Audio objesi oluştur
+      const audio = new Audio();
+      audio.preload = 'auto';
+      audio.volume = 1.0;
+      audio.crossOrigin = 'anonymous'; // CORS için
+
+      window.currentAudioPlayer = audio;
+
+      // Promise tabanlı oynatma
+      return new Promise((resolve, reject) => {
+        let hasPlayed = false;
+
+        // Yükleme hatası
+        audio.onerror = (e) => {
+          const errorCode = audio.error ? audio.error.code : 0;
+          const errorMessages = {
+            1: 'Yükleme iptal edildi',
+            2: 'Ağ hatası - sunucuya ulaşılamıyor',
+            3: 'Ses dosyası decode edilemedi - format desteklenmiyor olabilir',
+            4: 'Ses formatı desteklenmiyor'
+          };
+          const errorMsg = errorMessages[errorCode] || 'Bilinmeyen hata';
+          console.error('Audio error:', errorCode, errorMsg, audio.error);
+          showToast(`❌ Ses oynatılamadı: ${errorMsg}`, 'error');
+          window.currentAudioPlayer = null;
+          reject(new Error(errorMsg));
+        };
+
+        // Oynatma başladı
+        audio.onplay = () => {
+          if (!hasPlayed) {
+            hasPlayed = true;
+            console.log('Ses oynatma başladı');
+            showToast('🔊 Çalınıyor...', 'success');
+          }
+        };
+
+        // Ses bitti
+        audio.onended = () => {
+          console.log('Ses oynatma tamamlandı');
+          window.currentAudioPlayer = null;
+          loadVoiceHistory();
+          resolve();
+        };
+
+        // Audio yüklendiğinde oynat - önce src ayarla sonra oynat
+        audio.src = audioUrl;
+
+        // canplaythrough event'i beklemeden direkt play dene
+        // (modern tarayıcılar streaming destekliyor)
+        audio.play()
+          .then(async () => {
+            // Dinlendi olarak işaretle
+            if (voiceId) {
+              await markVoiceHeard(voiceId);
+            }
+          })
+          .catch(err => {
+            console.error('Play error:', err);
+            if (err.name === 'NotAllowedError') {
+              showToast('⚠️ Ses oynatmak için önce sayfaya tıklayın (tarayıcı izni)', 'warning');
+            } else {
+              showToast('Oynatma hatası: ' + err.message, 'error');
+            }
+            reject(err);
+          });
+      });
+
+    } catch (err) {
+      console.error('Ses oynatılamadı:', err);
+      showToast('Hata: ' + err.message, 'error');
+    }
+  };
+
+
+
+  // Sesi dinlendi olarak işaretle
+  async function markVoiceHeard(voiceId) {
+    try {
+      await fetch(`/api/voice/${voiceId}/heard`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csrf_token: document.getElementById('csrfToken')?.value || '' })
+      });
+    } catch (err) {
+      console.error('Dinlendi işaretlenemedi:', err);
+    }
+  }
+
+  // Okunmamış badge güncelle
+  function updateUnreadBadge(count) {
+    const btn = document.getElementById('voiceHistoryBtn');
+    if (!btn) return;
+
+    // Mevcut badge'i kaldır
+    let badge = btn.querySelector('.unread-badge');
+    if (badge) badge.remove();
+
+    if (count > 0) {
+      badge = document.createElement('span');
+      badge.className = 'unread-badge';
+      badge.style.cssText = 'position: absolute; top: -4px; right: -4px; background: #ef4444; color: #fff; font-size: 10px; font-weight: 700; min-width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 0 4px;';
+      badge.textContent = count > 9 ? '9+' : count;
+      btn.style.position = 'relative';
+      btn.appendChild(badge);
+    }
+  }
+
+  // Sayfa yüklendiğinde okunmamış sayısını kontrol et
+  setTimeout(async () => {
+    try {
+      const res = await fetch('/api/voice/history');
+      const data = await res.json();
+      if (data.ok && data.messages) {
+        const unreadCount = data.messages.filter(m => !m.is_heard).length;
+        updateUnreadBadge(unreadCount);
+      }
+    } catch (e) { }
+  }, 2000);
+</script>
+
+
+
+<!-- Tam Ekran Butonu - Fixed Position -->
+<button class="fullscreen-toggle-btn" id="fullscreenBtn" onclick="RealtimeFeatures.toggleFullscreen()"
+  title="Tam Ekran (F11)"
+  style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); cursor: pointer;">⛶</button>
+<!--
+  NOT: Bu script bloğu devre dışı bırakıldı.
+  Yeni PTT sistemi pttDropdown kullanıyor (satır ~2054 civarı).
+  Eski pttTargetMenu sistemi artık kullanılmıyor.
+-->
+
+<script>
+  // Ses Mesajları Geçmişi Fonksiyonları
+  let voiceHistoryOpen = false;
+  let voiceHistoryData = [];
+
+  function toggleVoiceHistory() {
+    const panel = document.getElementById('voiceHistoryPanel');
+    voiceHistoryOpen = !voiceHistoryOpen;
+    panel.style.display = voiceHistoryOpen ? 'block' : 'none';
+
+    if (voiceHistoryOpen) {
+      loadVoiceHistory();
+    }
+  }
+
+  async function loadVoiceHistory() {
+    const list = document.getElementById('voiceHistoryList');
+    list.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px;">Yükleniyor...</div>';
+
+    try {
+      const res = await fetch('/api/voice/history');
+      const data = await res.json();
+
+      if (data.ok && data.messages) {
+        voiceHistoryData = data.messages;
+        renderVoiceHistory();
+      } else {
+        list.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px;">Ses mesajı yok</div>';
+      }
+    } catch (err) {
+      console.error('Ses geçmişi yüklenemedi:', err);
+      list.innerHTML = '<div style="color: var(--status-danger); font-size: 13px; text-align: center; padding: 20px;">Yüklenemedi</div>';
+    }
+  }
+
+  function renderVoiceHistory() {
+    const list = document.getElementById('voiceHistoryList');
+
+    if (voiceHistoryData.length === 0) {
+      list.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px;">Henüz ses mesajı yok</div>';
+      return;
+    }
+
+    let html = '';
+    voiceHistoryData.forEach((msg, idx) => {
+      const date = new Date(msg.created_at);
+      const timeStr = date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+      const dateStr = date.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+      const duration = msg.duration ? `${Math.round(msg.duration)}s` : '';
+      const isHeard = msg.is_heard;
+
+      html += `
+<div
+  style="display: flex; align-items: center; gap: 10px; padding: 10px; background: ${isHeard ? 'var(--bg-soft)' : '#eff6ff'}; border-radius: 10px; margin-bottom: 8px; border: 1px solid ${isHeard ? 'var(--border)' : '#bfdbfe'};">
+  <button onclick="playVoiceMessage('${msg.audio_url}', ${msg.id})"
+    style="width: 40px; height: 40px; border-radius: 50%; background: ${isHeard ? 'var(--text-strong)' : 'var(--status-info)'}; color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;">
+    ▶
+  </button>
+  <div style="flex: 1; min-width: 0;">
+    <div
+      style="font-weight: 600; font-size: 13px; color: var(--text-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+      ${msg.from_user_name || 'Bilinmeyen'}
+      ${!isHeard ? '<span style="color: var(--status-info); font-size: 11px; margin-left: 4px;">●</span>' : ''}
+    </div>
+    <div style="font-size: 11px; color: var(--text-muted);">
+      ${dateStr} ${timeStr} ${duration ? '• ' + duration : ''}
+    </div>
+  </div>
+</div>
+`;
+    });
+
+    list.innerHTML = html;
+  }
+
+  // Ses mesajı oynat ve dinlendi olarak işaretle
+  async function playVoiceMessage(audioUrl, messageId) {
+    try {
+      console.log('playVoiceMessage:', { audioUrl, messageId });
+
+      if (!audioUrl) {
+        console.error('Audio URL boş');
+        showToast('Ses URL\'si bulunamadı', 'error');
+        return;
+      }
+
+      const audio = new Audio();
+      audio.preload = 'auto';
+      audio.volume = 1.0;
+      audio.src = audioUrl;
+
+      // Hata handler
+      audio.onerror = (e) => {
+        console.error('Audio yükleme hatası:', audio.error);
+        showToast('Ses dosyası yüklenemedi', 'error');
+      };
+
+      // Oynat
+      try {
+        await audio.play();
+        showToast('🔊 Çalınıyor...', 'success');
+
+        // Dinlendi olarak işaretle
+        if (messageId) {
+          await fetch(`/api/voice/${messageId}/heard`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ csrf_token: document.getElementById('csrfToken')?.value || '' })
+          });
+
+          // Ses bittiğinde listeyi yenile
+          audio.onended = () => loadVoiceHistory();
+        }
+      } catch (playErr) {
+        console.error('Play hatası:', playErr);
+        if (playErr.name === 'NotAllowedError') {
+          showToast('⚠️ Ses oynatmak için sayfaya tıklayın', 'warning');
+        } else {
+          showToast('Oynatma hatası: ' + playErr.message, 'error');
+        }
+      }
+    } catch (err) {
+      console.error('Ses çalınamadı:', err);
+      showToast('Hata: ' + err.message, 'error');
+    }
+  }
+
+  // Anlık ses mesajı bildirimi göster ve otomatik oynat
+  async function showIncomingVoice(fromName, audioUrl, duration) {
+    const notification = document.getElementById('voiceIncomingNotification');
+    const senderEl = document.getElementById('voiceIncomingSender');
+    const durationEl = document.getElementById('voiceIncomingDuration');
+
+    senderEl.textContent = `${fromName} ses mesajı gönderdi`;
+    durationEl.textContent = duration ? `Süre: ${Math.round(duration)}s` : '';
+
+    // Bildirimi göster ve animasyonlu yap
+    notification.style.display = 'block';
+    notification.classList.add('pulse-animation');
+
+    // Önce uyarı sesi çal (kısa notification sound)
+    try {
+      await playNotificationSound();
+    } catch (err) {
+      console.log('Bildirim sesi çalınamadı:', err);
+    }
+
+    // Sonra ses mesajını otomatik oynat
+    try {
+      const audio = new Audio(audioUrl);
+      audio.play();
+
+      audio.onended = () => {
+
+        setTimeout(() => {
+          notification.style.display = 'none';
+        }, 1000);
+      };
+    } catch (err) {
+      console.error('Ses çalınamadı:', err);
+    }
+
+    // 5 saniye sonra bildirimi kapat
+    setTimeout(() => {
+      notification.style.display = 'none';
+    }, 5000);
+  }
+
+  // Socket.IO ile gelen ses mesajlarını dinle
+  if (typeof RealtimeFeatures !== 'undefined' && RealtimeFeatures.state && RealtimeFeatures.state.socket) {
+    RealtimeFeatures.state.socket.on('voice_message', (data) => {
+      // Kendi mesajımız değilse oynat
+      const currentUserId = parseInt(document.querySelector('[data-current-user-id]')?.getAttribute('data-current-user-id') ||
+        '0');
+      if (data.from_user_id !== currentUserId) {
+        showIncomingVoice(data.from_user_name, data.audio_url, data.duration);
+
+        // Geçmiş açıksa yenile
+        if (voiceHistoryOpen) {
+          loadVoiceHistory();
+        }
+      }
+    });
+  }
+  // Bildirim sesi oluştur (Oscillator ile)
+  function playNotificationSound() {
+    return new Promise((resolve) => {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) {
+        resolve(); // Web Audio API desteklenmiyorsa geç
+        return;
+      }
+
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      // Hoş bir bildirim tonu ("ding")
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
+      osc.frequency.exponentialRampToValueAtTime(1046.5, ctx.currentTime + 0.1); // C6'ya çıkış
+
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.5);
+
+      setTimeout(resolve, 500);
+    });
+  }
+</script>
+
+<style>
+  @keyframes pulse-animation {
+    0% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+
+    50% {
+      transform: scale(1.05);
+      box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+    }
+
+    100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+  }
+
+  .pulse-animation {
+    animation: pulse-animation 1s infinite;
+  }
+
+  /* PTT Panel Hover */
+  #pttPanel:hover {
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+  }
+
+  /* PTT Butonu Kayıt Durumu */
+  #pttButton.recording {
+    background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%) !important;
+    animation: pttPulse 0.8s infinite;
+  }
+
+  @keyframes pttPulse {
+
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+    }
+
+    50% {
+      box-shadow: 0 0 0 12px rgba(239, 68, 68, 0);
+    }
+  }
+
+  /* Clickable Summary Rows */
+  .clickable-row:hover {
+    background: rgba(59, 130, 246, 0.08) !important;
+  }
+
+  .clickable-row:hover .count-badge {
+    transform: scale(1.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .clickable-row:active {
+    background: rgba(59, 130, 246, 0.15) !important;
+  }
+
+  .count-badge {
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  /* Dinamik kategori rengi (data-cat-color ile JS tarafından --cat-color atanır) */
+  .summary-row-cat-color .summary-cat-label {
+    color: var(--cat-color);
+  }
+  .summary-row-cat-color .summary-cat-badge {
+    font-weight: 700;
+    color: var(--cat-color);
+    padding: 2px 8px;
+    background: color-mix(in srgb, var(--cat-color) 20%, transparent);
+    border-radius: 10px;
+    min-width: 24px;
+    text-align: center;
+  }
+</style>
+
+
+
+<script>
+  // ========== PERSONEL DURUM ÖZETİ FONKSİYONLARI ==========
+
+  let statusTypes = [];
+  let idlePersonnel = [];
+  let selectedStatusPersons = new Set();
+
+  // Boşta personel modal aç (tıklama ile)
+  async function showIdlePopoverClick(el, workDate, event) {
+    if (event) event.stopPropagation();
+
+    const modal = document.getElementById('idleModal');
+    const title = document.getElementById('idleModalTitle');
+    const body = document.getElementById('idleModalBody');
+
+    // Tarih formatla
+    const dateObj = new Date(workDate);
+    const days = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+    const dateLabel = `${dateObj.getDate().toString().padStart(2, '0')}.${(dateObj.getMonth() + 1).toString().padStart(2, '0')} ${days[dateObj.getDay()]}`;
+
+    body.innerHTML = '<div style="color: var(--text-light); font-size: 13px; text-align: center; padding: 20px;">Yükleniyor...</div>';
+    modal.style.display = 'flex';
+
+    try {
+      const res = await fetch(`/api/personnel/idle?work_date=${workDate}`);
+      const data = await res.json();
+
+      if (data.ok) {
+        title.textContent = `Boşta Personel - ${dateLabel} (${data.idle_count} kişi)`;
+
+        if (data.idle_personnel.length === 0) {
+          body.innerHTML = '<div style="color: var(--text-light); font-size: 14px; text-align: center; padding: 30px;">Bu tarihte boşta personel yok</div>';
+        } else {
+          // Firmaya göre grupla
+          const byFirma = {};
+          data.idle_personnel.forEach(p => {
+            const firma = p.firma_name || 'Diğer';
+            if (!byFirma[firma]) byFirma[firma] = [];
+            byFirma[firma].push(p);
+          });
+
+          let html = '<div style="display: flex; flex-direction: column; gap: 16px;">';
+          for (const [firma, persons] of Object.entries(byFirma)) {
+            html += `<div>
+              <div style="font-weight: 700; color: var(--text); font-size: 13px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 2px solid var(--line); display: flex; justify-content: space-between;">
+                <span>${firma}</span>
+                <span style="background: #dbeafe; color: var(--status-info); padding: 2px 8px; border-radius: 10px; font-size: 11px;">${persons.length} kişi</span>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;">`;
+            persons.forEach(p => {
+              html += `<div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: var(--bg); border-radius: 6px; border: 1px solid var(--line);">
+                <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--status-online); flex-shrink: 0;"></div>
+                <div style="min-width: 0; flex: 1;">
+                  <div style="font-weight: 500; color: var(--text); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${p.full_name}</div>
+                  <div style="font-size: 10px; color: var(--text-light);">${p.seviye_name || ''}</div>
+                </div>
+              </div>`;
+            });
+            html += '</div></div>';
+          }
+          html += '</div>';
+          body.innerHTML = html;
+        }
+      }
+    } catch (err) {
+      body.innerHTML = '<div style="color: var(--status-danger); font-size: 13px; text-align: center; padding: 20px;">Veri yüklenemedi</div>';
+    }
+  }
+
+  function closeIdleModal() {
+    document.getElementById('idleModal').style.display = 'none';
+  }
+
+  // Dinamik kategori rengi: data-cat-color -> --cat-color
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.summary-row-cat-color[data-cat-color]').forEach(function (el) {
+      el.style.setProperty('--cat-color', el.getAttribute('data-cat-color'));
+    });
+  });
+
+  // Event Delegation - Tıklanabilir satırlar için
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.summary-row.clickable-row').forEach(row => {
+      row.addEventListener('click', function () {
+        const category = this.dataset.category;
+        const date = this.dataset.date;
+        const label = this.dataset.label;
+
+        // Parent card'dan summary verisini al
+        const card = this.closest('.personnel-summary-card');
+        if (!card) return;
+
+        let summary = {};
+        try {
+          summary = JSON.parse(card.dataset.summary || '{}');
+        } catch (e) {
+          summary = {};
+        }
+
+        // Kategori için isim listesini al
+        let names = [];
+
+        // Dinamik status kategorisi mi?
+        if (category.startsWith('status_')) {
+          const statusId = parseInt(category.replace('status_', ''));
+          const statusCat = (summary.status_categories || {})[statusId];
+          if (statusCat) {
+            names = statusCat.names || [];
+          }
+        } else {
+          // Sabit kategoriler
+          const categoryNameMap = {
+            'total': 'total_names',
+            'ana_kadro': 'ana_kadro_names',
+            'yardimci': 'yardimci_names',
+            'alt_yuklenici': 'alt_yuklenici_names'
+          };
+          const namesKey = categoryNameMap[category] || 'total_names';
+          names = summary[namesKey] || [];
+        }
+
+        showCategoryDetailModal(date, category, names, label);
+      });
+    });
+  });
+
+  // Kategori Detay Modal - Her kategoriye tıklandığında kişileri göster
+  function showCategoryDetailModal(workDate, category, names, categoryLabel) {
+    const modal = document.getElementById('categoryDetailModal');
+    const title = document.getElementById('categoryDetailTitle');
+    const body = document.getElementById('categoryDetailBody');
+
+    // Tarih formatla
+    const dateObj = new Date(workDate);
+    const days = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
+    const dateLabel = `${dateObj.getDate().toString().padStart(2, '0')}.${(dateObj.getMonth() + 1).toString().padStart(2, '0')} ${days[dateObj.getDay()]}`;
+
+    // Kategori rengi
+    const categoryColors = {
+      'total': { bg: '#dbeafe', text: '#1e40af', dot: '#3b82f6' },
+      'ana_kadro': { bg: '#e0f2fe', text: '#0369a1', dot: '#0ea5e9' },
+      'yardimci': { bg: '#fef3c7', text: '#92400e', dot: '#f59e0b' },
+      'alt_yuklenici': { bg: '#e0e7ff', text: '#4338ca', dot: '#6366f1' },
+      'izinli': { bg: '#cffafe', text: '#0e7490', dot: '#06b6d4' },
+      'raporlu': { bg: '#fee2e2', text: '#991b1b', dot: '#ef4444' },
+      'leave': { bg: '#fee2e2', text: '#991b1b', dot: '#ef4444' }
+    };
+    const colors = categoryColors[category] || categoryColors['total'];
+
+    title.textContent = `${categoryLabel} - ${dateLabel} (${names.length} kişi)`;
+
+    if (names.length === 0) {
+      body.innerHTML = `<div style="color: var(--text-light); font-size: 14px; text-align: center; padding: 30px;">Bu kategoride kimse yok</div>`;
+    } else {
+      let html = `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;">`;
+      names.forEach(name => {
+        html += `<div style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; background: ${colors.bg}; border-radius: 8px; border: 1px solid ${colors.bg};">
+          <div style="width: 10px; height: 10px; border-radius: 50%; background: ${colors.dot}; flex-shrink: 0;"></div>
+          <div style="font-weight: 500; color: ${colors.text}; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</div>
+        </div>`;
+      });
+      html += '</div>';
+      body.innerHTML = html;
+    }
+
+    modal.style.display = 'flex';
+  }
+
+  function closeCategoryDetailModal() {
+    document.getElementById('categoryDetailModal').style.display = 'none';
+  }
+
+  // Kategori Yönetimi Modal - Açma
+  function openCategoryManagerModal() {
+    const modal = document.getElementById('categoryManagerModal');
+    if (modal) {
+      renderCategoryList();
+      modal.style.display = 'flex';
+    }
+  }
+
+  function closeCategoryManagerModal() {
+    const modal = document.getElementById('categoryManagerModal');
+    if (modal) modal.style.display = 'none';
+  }
+
+  // JavaScript tarafında kullanmak için status types verisini al
+</script>
+<script type="application/json" id="data-status-types">{{ status_types_json| tojson | safe }}</script>
+<script>
+  // JavaScript tarafında kullanmak için status types verisini al
+  let allStatusTypes = [];
+  try {
+    const el = document.getElementById('data-status-types');
+    allStatusTypes = JSON.parse(el.textContent || '[]');
+  } catch (e) {
+    console.error('Status types parse error:', e);
+  }
+
+  // Kategori listesini render et
+  function renderCategoryList() {
+    const list = document.getElementById('categoryManagerList');
+    if (!list) return;
+
+    // 1. Sabit Sistem Kategorileri
+    const systemCategories = [
+      { id: 'total', name: 'Toplam Boşta', color: '#dbeafe', textColor: '#1e40af', fixed: true },
+      { id: 'ana_kadro', name: 'Ana Kadro', color: '#e0f2fe', textColor: '#0369a1', fixed: true },
+      { id: 'yardimci', name: 'Yardımcı', color: '#fef3c7', textColor: '#92400e', fixed: true },
+      { id: 'alt_yuklenici', name: 'Alt Yüklenici', color: '#e0e7ff', textColor: '#4338ca', fixed: true }
+    ];
+
+    let html = '';
+
+    // Sistem kategorilerini listele
+    systemCategories.forEach(cat => {
+      html += `<div
+  style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line);">
+  <div style="width: 24px; height: 24px; border-radius: 6px; background: ${cat.color};"></div>
+  <div style="flex: 1;">
+    <div style="font-weight: 600; color: var(--text); font-size: 14px;">${cat.name}</div>
+    <div style="font-size: 11px; color: var(--text-light);">Sistem kategorisi (Değiştirilemez)</div>
+  </div>
+  <div style="opacity: 0.5; font-size: 20px;">🔒</div>
+</div>`;
+    });
+
+    // Ara çizgi
+    html += '<div style="height: 1px; background: var(--line); margin: 8px 0;"></div>';
+    html += '<div style="font-size: 12px; font-weight: 600; color: var(--text-light); margin-bottom: 8px;">DURUM TİPLERİ</div>';
+
+    // 2. Dinamik Durum Tipleri (Veritabanından)
+    if (allStatusTypes.length === 0) {
+      html += '<div style="text-align: center; color: var(--text-light); padding: 10px; font-size: 13px;">Hiç durum tipi bulunamadı.</div>';
+    } else {
+      allStatusTypes.forEach(st => {
+        const isVisible = st.visible !== false; // Varsayılan true
+        const btnText = isVisible ? 'Görünüyor' : 'Gizli';
+        const btnClass = isVisible ? 'status-visible' : 'status-hidden';
+        const btnStyle = isVisible
+          ? 'background: #dcfce7; color: #166534; border: 1px solid #bbf7d0;'
+          : 'background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1;';
+
+        html += `<div
+  style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--line);">
+  <div
+    style="width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; background: ${st.color}20;">
+    ${st.icon}</div>
+  <div style="flex: 1;">
+    <div style="font-weight: 600; color: var(--text); font-size: 14px; color: ${st.color};">${st.name}</div>
+    <div style="font-size: 11px; color: var(--text-light);">Özel kategori</div>
+  </div>
+  <button onclick="toggleStatusVisibility(${st.id}, ${isVisible})"
+    style="padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px; ${btnStyle}">
+    ${isVisible ? '👁️' : '🚫'} ${btnText}
+  </button>
+</div>`;
+      });
+    }
+
+    list.innerHTML = html;
+  }
+
+  // Durum tipinin görünürlüğünü değiştir
+  async function toggleStatusVisibility(id, currentVisible) {
+    const newVisible = !currentVisible;
+    const csrfToken = document.getElementById('csrfToken').value; // Sayfada varsa
+
+    try {
+      // Button loadingstate (basitçe)
+      const list = document.getElementById('categoryManagerList');
+      list.style.opacity = '0.7';
+      list.style.pointerEvents = 'none';
+
+      const res = await fetch(`/api/personnel/status-types/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token() }}' // Jinja ile inject edebiliriz veya sayfadan alabiliriz
+        },
+        body: JSON.stringify({
+          visible_in_summary: newVisible,
+          csrf_token: '{{ csrf_token() }}'
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.ok) {
+        // Local listeyi güncelle
+        const stIndex = allStatusTypes.findIndex(s => s.id === id);
+        if (stIndex !== -1) {
+          allStatusTypes[stIndex].visible = newVisible;
+        }
+        renderCategoryList();
+
+        // Sayfayı yenilemeye gerek kalmadan arayüzü güncellemek istersek Reload gerekir
+        // çünkü özet paneli sunucu tarafında render edildi.
+        // Kullanıcı modalı kapatınca sayfayı yenilemeyi teklif edebiliriz veya otomatik yapabiliriz.
+        // Şimdilik basit olması için bir flag set edelim, modal kapanınca yenilesin.
+        window.shouldReloadOnModalClose = true;
+
+      } else {
+        alert(data.error || 'Güncelleme başarısız');
+      }
+    } catch (err) {
+      console.error('Visibility update error:', err);
+      alert('Bir hata oluştu');
+    } finally {
+      const list = document.getElementById('categoryManagerList');
+      if (list) {
+        list.style.opacity = '1';
+        list.style.pointerEvents = 'auto';
+      }
+    }
+  }
+
+  // categoryManagerModal kapanırken kontrol et
+  const originalCloseCategoryManagerModal = window.closeCategoryManagerModal || function () {
+    const modal = document.getElementById('categoryManagerModal');
+    if (modal) modal.style.display = 'none';
+  };
+
+  window.closeCategoryManagerModal = function () {
+    const modal = document.getElementById('categoryManagerModal');
+    if (modal) modal.style.display = 'none';
+
+    if (window.shouldReloadOnModalClose) {
+      window.location.reload();
+    }
+  }
+
+  // ===================== ROTA BAŞLANGIÇ NOKTASI =====================
+
+  // Ankara checkbox toggle - il seçim dropdown'unu göster/gizle
+  function toggleStartCitySelect() {
+    const checkbox = document.getElementById('mStartFromAnkara');
+    const citySelect = document.getElementById('mStartCity');
+
+    if (checkbox && citySelect) {
+      if (checkbox.checked) {
+        citySelect.style.display = 'none';
+        citySelect.value = ''; // Temizle
+      } else {
+        citySelect.style.display = 'block';
+      }
+    }
+  }
+
+  // Export to global scope
+  window.toggleStartCitySelect = toggleStartCitySelect;
+
+  // ===================== EKİP TOOLTIP SİSTEMİ =====================
+
+  // Ekip tooltip için global cache
+  window.TEAM_TOOLTIP_CACHE = {};
+  let currentTeamTooltip = null;
+  let teamTooltipTimer = null;
+
+  // Tooltip container oluştur (bir kez)
+  function ensureTeamTooltipContainer() {
+    let container = document.getElementById('teamTooltipContainer');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'teamTooltipContainer';
+      container.className = 'team-tooltip';
+      container.style.display = 'none';
+      document.body.appendChild(container);
+    }
+    return container;
+  }
+
+  // Tooltip göster
+  async function showTeamTooltip(element, teamId, displayName) {
+    if (!teamId || teamId <= 0) return;
+
+    // Timer'ı temizle
+    if (teamTooltipTimer) {
+      clearTimeout(teamTooltipTimer);
+      teamTooltipTimer = null;
+    }
+
+    const tooltip = ensureTeamTooltipContainer();
+    const rect = element.getBoundingClientRect();
+
+    // Pozisyon
+    tooltip.style.display = 'block';
+    tooltip.style.left = (rect.left + window.scrollX) + 'px';
+    tooltip.style.top = (rect.bottom + window.scrollY + 6) + 'px';
+
+    // Loading state
+    tooltip.innerHTML = `
+      <div class="team-tooltip-header">
+        <div class="team-tooltip-icon">👥</div>
+        <div class="team-tooltip-title">${escapeHtml(displayName || 'Ekip')}</div>
+      </div>
+      <div class="team-tooltip-loading">Yükleniyor...</div>
+    `;
+    tooltip.classList.add('visible');
+
+    // Cache'de varsa kullan
+    const cacheKey = `${teamId}`;
+    if (window.TEAM_TOOLTIP_CACHE[cacheKey]) {
+      renderTooltipContent(tooltip, window.TEAM_TOOLTIP_CACHE[cacheKey], displayName);
+      return;
+    }
+
+    // API'den al
+    try {
+      const weekStart = currentWeekStart || '';
+      const res = await fetch(`/api/team/${teamId}/tooltip?week_start=${encodeURIComponent(weekStart)}`);
+      const data = await res.json();
+
+      if (data.ok && data.members) {
+        window.TEAM_TOOLTIP_CACHE[cacheKey] = data;
+        renderTooltipContent(tooltip, data, displayName || data.display_name);
+      } else {
+        tooltip.querySelector('.team-tooltip-loading').innerHTML = '<span style="color: var(--status-warning);">Ekip üyesi bulunamadı</span>';
+      }
+    } catch (err) {
+      console.error('Team tooltip fetch error:', err);
+      tooltip.querySelector('.team-tooltip-loading').innerHTML = '<span style="color: var(--status-danger);">Yüklenemedi</span>';
+    }
+  }
+
+  function renderTooltipContent(tooltip, data, displayName) {
+    const members = data.members || [];
+    const count = members.length;
+
+    let membersHtml = '';
+    for (const name of members) {
+      membersHtml += `<div class="team-tooltip-member">${escapeHtml(name)}</div>`;
+    }
+
+    tooltip.innerHTML = `
+      <div class="team-tooltip-header">
+        <div class="team-tooltip-icon">👥</div>
+        <div class="team-tooltip-title">${escapeHtml(displayName || data.display_name || 'Ekip')}</div>
+        <div class="team-tooltip-count">${count} kişi</div>
+      </div>
+      <div class="team-tooltip-members">
+        ${membersHtml || '<div style="color: var(--muted); font-size: 12px;">Üye yok</div>'}
+      </div>
+    `;
+  }
+
+  // Tooltip gizle
+  function hideTeamTooltip() {
+    teamTooltipTimer = setTimeout(() => {
+      const tooltip = document.getElementById('teamTooltipContainer');
+      if (tooltip) {
+        tooltip.classList.remove('visible');
+        setTimeout(() => {
+          tooltip.style.display = 'none';
+        }, 200);
+      }
+    }, 150); // Kısa gecikme, tooltip'e geçiş için
+  }
+
+  // mTeamName inputuna tooltip özelliği ekle
+  function initTeamNameTooltip() {
+    const teamNameInput = document.getElementById('mTeamName');
+    if (!teamNameInput) return;
+
+    teamNameInput.classList.add('team-tooltip-target');
+
+    teamNameInput.addEventListener('mouseenter', function () {
+      const value = this.value.trim();
+      if (!value) return;
+
+      // Team ID'yi currentCell'den veya API'den al
+      const teamId = currentCell?.team_id || currentTeamId;
+      if (teamId && teamId > 0) {
+        showTeamTooltip(this, teamId, value);
+      }
+    });
+
+    teamNameInput.addEventListener('mouseleave', function () {
+      hideTeamTooltip();
+    });
+  }
+
+  // DOM yüklendiğinde init et
+  document.addEventListener('DOMContentLoaded', function () {
+    initTeamNameTooltip();
+  });
+
+  // Modal açıldığında da kontrol et (dinamik içerik için)
+  const originalOpenCellEditor = window.openCellEditor;
+  if (typeof originalOpenCellEditor === 'function') {
+    window.openCellEditor = async function (...args) {
+      const result = await originalOpenCellEditor.apply(this, args);
+      // Tooltip için team bilgisini bekle
+      setTimeout(initTeamNameTooltip, 100);
+      return result;
+    };
+  }
+
+  // ===================== HAFTALIK EKİP NUMARALAMA =====================
+
+  // Haftalık ekip haritasını yükle
+  window.WEEKLY_TEAM_NAMES = {};
+
+  async function loadWeeklyTeamNames() {
+    const weekStart = currentWeekStart;
+    if (!weekStart) return;
+
+    try {
+      const res = await fetch(`/api/weekly_team_names?week_start=${encodeURIComponent(weekStart)}`);
+      const data = await res.json();
+
+      if (data.ok && data.teams) {
+        window.WEEKLY_TEAM_NAMES = data.teams;
+        // Cache'e de ekle
+        for (const [teamId, info] of Object.entries(data.teams)) {
+          window.TEAM_TOOLTIP_CACHE[teamId] = {
+            display_name: info.display_name,
+            members: info.members,
+            member_count: info.member_count
+          };
+        }
+      }
+    } catch (err) {
+      console.error('Error loading weekly team names:', err);
+    }
+  }
+
+  // Dinamik ekip adını al
+  function getWeeklyTeamDisplayName(teamId) {
+    if (!teamId) return '';
+    const info = window.WEEKLY_TEAM_NAMES[String(teamId)];
+    return info ? info.display_name : null;
+  }
+
+  // Export functions
+  window.showTeamTooltip = showTeamTooltip;
+  window.hideTeamTooltip = hideTeamTooltip;
+  window.loadWeeklyTeamNames = loadWeeklyTeamNames;
+  window.getWeeklyTeamDisplayName = getWeeklyTeamDisplayName;
+</script>
+{% endblock %}

@@ -1,0 +1,427 @@
+{% extends "base.html" %}
+
+{% block content %}
+<input type="hidden" id="csrfToken" value="{{ csrf_token() }}">
+<div class="card">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <h1 style="font-size: 28px; font-weight: 900; margin: 0; color: var(--text-strong);">Kullanıcı Yönetimi</h1>
+    <a href="{{ url_for('auth.admin_user_add') }}" class="btn"
+      style="background-color: var(--status-info); color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+      <span>+</span> Kullanıcı Ekle
+    </a>
+  </div>
+
+  <!-- Sekmeler -->
+  <div class="tabs-nav" style="margin-bottom: 24px;">
+    <button class="tab-btn {% if active_tab != 'permissions' %}active{% endif %}"
+      onclick="switchAdminTab('users', this)">👥 Kullanıcılar</button>
+    <button class="tab-btn {% if active_tab == 'permissions' %}active{% endif %}"
+      onclick="switchAdminTab('permissions', this)">🔐 Rol İzinleri</button>
+  </div>
+
+  <!-- KULLANICILAR SEKMESİ -->
+  <div id="tab-users" class="admin-tab-content" style="{% if active_tab == 'permissions' %}display:none;{% endif %}">
+    <!-- Veritabanı Yönetimi Bölümü -->
+    <div class="card"
+      style="margin-bottom: 24px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 12px; padding: 20px;">
+      <h2 style="font-size: 20px; font-weight: 700; color: var(--text-strong); margin: 0 0 16px 0;">Veritabanı Yönetimi
+      </h2>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+        <button type="button" id="dbDownloadBtn" class="btn"
+          style="background: var(--status-success); color: white; font-weight: 600; padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-size: 14px;">
+          📥 Veritabanını İndir
+        </button>
+        <div style="position: relative; display: inline-block;">
+          <input type="file" id="dbRestoreFile" accept=".db" style="display: none;">
+          <button type="button" id="dbRestoreBtn" class="btn"
+            style="background: var(--status-info); color: white; font-weight: 600; padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-size: 14px;">
+            📤 Veritabanını Yükle
+          </button>
+        </div>
+        {% if is_kivanc %}
+        <a href="{{ url_for('planner.admin_db_view') }}" class="btn"
+          style="background: #8b5cf6; color: white; font-weight: 600; padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-size: 14px; text-decoration: none; display: inline-flex; align-items: center;">
+          👁️ Veritabanını Görüntüle
+        </a>
+        {% endif %}
+        <div id="dbStatus" style="color: var(--text-muted); font-size: 13px; font-weight: 500;"></div>
+      </div>
+      <div
+        style="margin-top: 12px; padding: 12px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; color: #92400e; font-size: 12px;">
+        <strong>⚠️ Uyarı:</strong> Veritabanını yüklerken mevcut veritabanı otomatik olarak yedeklenecektir. Bu işlem
+        geri
+        alınamaz, dikkatli olun!
+      </div>
+    </div>
+
+    <form method="get" class="filters" style="margin-bottom:14px; align-items:end;">
+      <label>Ara (ad/email)
+        <input name="q" value="{{ q or '' }}" placeholder="örn: ali / @netmon">
+      </label>
+      <button class="btn secondary" type="submit">Ara</button>
+    </form>
+
+    <div class="tablewrap"
+      style="border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+      <table class="simple">
+        <thead>
+          <tr>
+            <th>Ad Soyad</th>
+            <th>Email</th>
+            <th>Rol</th>
+            <th>Ekip</th>
+            <th>Admin</th>
+            <th>Durum</th>
+            <th>Online</th>
+            <th>Online Süre</th>
+            <th>Son Görülen</th>
+            <th>Oluşturulma</th>
+            <th style="text-align: center;">İşlem</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users %}
+          <tr>
+            <td><strong>{{ user.full_name or user.email }}</strong></td>
+            <td>{{ user.email or "-" }}</td>
+            <td>
+              {% if user.role == 'admin' %}
+              <span
+                style="background: #6366f1; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">{{
+                user.role|title }}</span>
+              {% elif user.role == 'planner' %}
+              <span
+                style="background: var(--status-info); color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Planlayıcı</span>
+              {% elif user.role == 'field' %}
+              <span
+                style="background: var(--status-success); color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Saha</span>
+              {% elif user.role == 'gözlemci' %}
+              <span
+                style="background: #8b5cf6; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">{{
+                user.role|title }}</span>
+              {% else %}
+              <span
+                style="background: var(--status-info); color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">{{
+                user.role|title }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% set tname = '' %}
+              {% if teams %}
+              {% for t in teams %}
+              {% if user.team_id == t.id %}
+              {% set tname = t.name %}
+              {% endif %}
+              {% endfor %}
+              {% endif %}
+              {{ tname or '-' }}
+            </td>
+            <td>
+              {% if user.is_admin %}
+              <span
+                style="background: var(--status-success); color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Admin</span>
+              {% else %}
+              <span
+                style="background: var(--text-muted); color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Kullanıcı</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if user.is_active %}
+              <span
+                style="background: var(--status-success); color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Aktif</span>
+              {% else %}
+              <span
+                style="background: var(--status-danger); color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500;">Pasif</span>
+              {% endif %}
+            </td>
+            {% set is_online = user.last_seen and online_cutoff and user.last_seen >= online_cutoff %}
+            <td>
+              {% if is_online %}
+              <span
+                style="display:inline-flex; align-items:center; gap:8px; background:#dcfce7; color:#166534; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 800;">
+                <span
+                  style="width:8px; height:8px; border-radius:999px; background:var(--status-success); display:inline-block;"></span>
+                ONLINE
+              </span>
+              {% else %}
+              <span
+                style="display:inline-flex; align-items:center; gap:8px; background:var(--bg-soft-2); color:var(--text-subtle); padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 800;">
+                <span
+                  style="width:8px; height:8px; border-radius:999px; background:var(--text-muted); display:inline-block;"></span>
+                OFFLINE
+              </span>
+              {% endif %}
+            </td>
+            <td style="color:var(--text-subtle); font-size: 13px;">
+              {% if is_online and user.online_since and now %}
+              {% set sec = (now - user.online_since).total_seconds() %}
+              {% set minutes = (sec // 60) | int %}
+              {{ minutes }} dk
+              {% else %}
+              -
+              {% endif %}
+            </td>
+            <td style="color:var(--text-subtle); font-size: 13px;">
+              {{ user.last_seen.strftime('%d.%m.%Y %H:%M') if user.last_seen else '-' }}
+            </td>
+            <td style="color: var(--text-muted); font-size: 14px;">{{ user.created_at.strftime('%d.%m.%Y') if
+              user.created_at else
+              '-' }}</td>
+            <td style="text-align: center;">
+              <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
+                <a href="{{ url_for('auth.admin_user_edit', user_id=user.id) }}" class="btn tiny"
+                  style="background-color: var(--status-info); color: white; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-weight: 500; font-size: 12px;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                  </svg>
+                  Düzenle
+                </a>
+                {% if is_kivanc %}
+                <form method="post" action="{{ url_for('auth.admin_user_delete', user_id=user.id) }}"
+                  onsubmit="return confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')"
+                  style="margin: 0; display: inline;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn danger tiny" type="submit"
+                    style="background-color: var(--status-danger); color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: 500; font-size: 12px; cursor: pointer; transition: background-color 0.2s;"
+                    onmouseover="this.style.backgroundColor='#dc2626'"
+                    onmouseout="this.style.backgroundColor='#ef4444'">Sil</button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+          {% if not users %}
+          <tr>
+            <td colspan="11" style="padding: 40px; text-align: center; color: var(--text-muted); font-size: 14px;">
+              Henüz kullanıcı eklenmemiş.
+            </td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ROL İZİNLERİ SEKMESİ -->
+  <div id="tab-permissions" class="admin-tab-content"
+    style="{% if active_tab != 'permissions' %}display:none;{% endif %}">
+    <div class="card"
+      style="background: var(--bg-soft); border: 1px solid var(--border); border-radius: 12px; padding: 20px;">
+      <h2 style="font-size: 20px; font-weight: 700; color: var(--text-strong); margin: 0 0 16px 0;">🔐 Rol Bazlı İzin
+        Yönetimi</h2>
+      <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
+        Bu bölümden her rolün hangi sayfalara erişebileceğini belirleyebilirsiniz.
+      </p>
+
+      <form method="post" action="{{ url_for('auth.admin_permissions_update') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div style="overflow-x: auto;">
+          <table class="simple" style="min-width: 700px;">
+            <thead>
+              <tr>
+                <th style="text-align: left;">Rol</th>
+                <th style="text-align: center;">📊 Proje Raporları</th>
+                <th style="text-align: center;">👥 Kullanıcılar</th>
+                <th style="text-align: center;">✅ Görev Yönetimi</th>
+                <th style="text-align: center;">📅 Planlama</th>
+                <th style="text-align: center;">💬 Sohbet</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% set roles = ['admin', 'planner', 'field', 'user', 'gözlemci'] %}
+              {% set permissions = ['reports_analytics', 'admin_users', 'tasks_management', 'planner', 'chat'] %}
+              {% for role in roles %}
+              <tr>
+                <td>
+                  <strong>
+                    {% if role == 'admin' %}
+                    <span
+                      style="background: #6366f1; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px;">Admin</span>
+                    {% elif role == 'planner' %}
+                    <span
+                      style="background: var(--status-info); color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px;">Planlayıcı</span>
+                    {% elif role == 'field' %}
+                    <span
+                      style="background: var(--status-success); color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px;">Saha</span>
+                    {% elif role == 'gözlemci' %}
+                    <span
+                      style="background: #8b5cf6; color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px;">Gözlemci</span>
+                    {% else %}
+                    <span
+                      style="background: var(--status-info); color: white; padding: 4px 10px; border-radius: 6px; font-size: 12px;">Kullanıcı</span>
+                    {% endif %}
+                  </strong>
+                </td>
+                {% for perm_key in permissions %}
+                {% set perm = permissions_dict.get(role, {}).get(perm_key, false) %}
+                <td style="text-align: center;">
+                  <input type="checkbox" name="perm_{{ role }}_{{ perm_key }}" value="1" {% if perm %}checked{% endif %}
+                    style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--status-success);">
+                </td>
+                {% endfor %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div style="margin-top: 20px; display: flex; gap: 12px;">
+          <button type="submit" class="btn"
+            style="background: var(--status-success); color: white; font-weight: 600; padding: 12px 24px; border-radius: 8px; border: none; cursor: pointer;">
+            💾 İzinleri Kaydet
+          </button>
+          <a href="{{ url_for('auth.admin_users') }}" class="btn secondary"
+            style="background: var(--bg); color: var(--text); font-weight: 600; padding: 12px 24px; border-radius: 8px; border: 1px solid var(--line); text-decoration: none;">
+            🔄 Varsayılanları Geri Yükle
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if session.get('is_admin') %}
+  <script>
+    (function () {
+      const downloadBtn = document.getElementById('dbDownloadBtn');
+      const restoreBtn = document.getElementById('dbRestoreBtn');
+      const restoreFile = document.getElementById('dbRestoreFile');
+      const statusEl = document.getElementById('dbStatus');
+      const csrfToken = (document.getElementById('csrfTokenGlobal') || {}).value || '';
+
+      // Veritabanını indir
+      if (downloadBtn) {
+        downloadBtn.addEventListener('click', async () => {
+          if (statusEl) statusEl.textContent = 'İndiriliyor...';
+          downloadBtn.disabled = true;
+
+          try {
+            const res = await fetch('/admin/db/backup');
+            if (!res.ok) {
+              const data = await res.json().catch(() => ({}));
+              if (statusEl) statusEl.textContent = data.error || 'İndirme hatası';
+              downloadBtn.disabled = false;
+              return;
+            }
+
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const contentDisposition = res.headers.get('Content-Disposition');
+            let filename = 'planner_backup.db';
+            if (contentDisposition) {
+              const match = contentDisposition.match(/filename="?([^"]+)"?/);
+              if (match) filename = match[1];
+            }
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+
+            if (statusEl) statusEl.textContent = '✓ Veritabanı indirildi';
+            setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3000);
+          } catch (e) {
+            if (statusEl) statusEl.textContent = 'İndirme hatası: ' + e.message;
+          } finally {
+            downloadBtn.disabled = false;
+          }
+        });
+      }
+
+      // Veritabanını yükle
+      if (restoreBtn && restoreFile) {
+        restoreBtn.addEventListener('click', () => {
+          restoreFile.click();
+        });
+
+        restoreFile.addEventListener('change', async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          if (!file.name.toLowerCase().endsWith('.db')) {
+            if (statusEl) statusEl.textContent = '❌ Sadece .db dosyaları yüklenebilir';
+            restoreFile.value = '';
+            return;
+          }
+
+          if (!confirm('⚠️ DİKKAT: Bu işlem mevcut veritabanını değiştirecektir. Devam etmek istediğinize emin misiniz?')) {
+            restoreFile.value = '';
+            return;
+          }
+
+          if (statusEl) statusEl.textContent = 'Yükleniyor...';
+          restoreBtn.disabled = true;
+
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('csrf_token', csrfToken);
+
+          try {
+            const res = await fetch('/admin/db/restore', {
+              method: 'POST',
+              body: formData
+            });
+
+            const data = await res.json().catch(() => ({ ok: false, error: 'Yanıt alınamadı' }));
+
+            if (!res.ok || !data.ok) {
+              if (statusEl) statusEl.textContent = '❌ ' + (data.error || 'Yükleme hatası');
+              restoreFile.value = '';
+              restoreBtn.disabled = false;
+              return;
+            }
+
+            if (statusEl) statusEl.textContent = '✓ Veritabanı başarıyla yüklendi. Sayfa yenileniyor...';
+
+            // 2 saniye sonra sayfayı yenile
+            setTimeout(() => {
+              window.location.reload();
+            }, 2000);
+
+          } catch (e) {
+            if (statusEl) statusEl.textContent = '❌ Yükleme hatası: ' + e.message;
+            restoreFile.value = '';
+            restoreBtn.disabled = false;
+          }
+        });
+      }
+    })();
+  </script>
+  {% endif %}
+
+  <!-- Tab Switch Script -->
+  <script>
+    function switchAdminTab(tabName, btn) {
+      // Update button states
+      document.querySelectorAll('.tabs-nav .tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      // Show/hide content
+      document.querySelectorAll('.admin-tab-content').forEach(content => {
+        content.style.display = 'none';
+      });
+      document.getElementById('tab-' + tabName).style.display = 'block';
+
+      // Update URL without reload
+      const url = new URL(window.location);
+      if (tabName === 'permissions') {
+        url.searchParams.set('tab', 'permissions');
+      } else {
+        url.searchParams.delete('tab');
+      }
+      history.replaceState({}, '', url);
+    }
+
+    // Check URL param on load
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('tab') === 'permissions') {
+        const btn = document.querySelector('.tab-btn[onclick*="permissions"]');
+        if (btn) switchAdminTab('permissions', btn);
+      }
+    })();
+  </script>
+
+  {% endblock %}

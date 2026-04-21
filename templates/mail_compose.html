@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card" style="max-width: 1280px; margin: 0 auto;">
+  <div class="rowline" style="justify-content: space-between; gap:12px; flex-wrap:wrap;">
+    <div>
+      <h2 style="margin:0;">Toplu Mail Gönder</h2>
+      <div style="margin-top:4px; color:var(--text-subtle); font-size:13px;">Ekip seç, iş seç, önizle ve gönder.</div>
+    </div>
+    <div class="rowline" style="gap:8px;">
+      <a class="btn ghost" href="{{ url_for('planner.mail_page') }}">Mail</a>
+      <a class="btn ghost" href="{{ url_for('planner.mail_log_page') }}">Mail Log</a>
+      {% if session.get('is_admin') %}
+      <a class="btn ghost" href="{{ url_for('admin.mail_settings_page') }}">Ayarlar</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div style="margin-top:14px; display:grid; grid-template-columns: 320px 1fr 420px; gap:12px;">
+    <!-- Teams -->
+    <div class="card" style="padding:12px; border:1px solid var(--border); border-radius:12px;">
+      <div style="font-weight:800; color:var(--text-strong);">Ekipler</div>
+      <div style="margin-top:8px; display:flex; gap:8px;">
+        <input id="teamSearch" class="input" placeholder="Ara..." style="flex:1;">
+        <button class="btn secondary" type="button" onclick="loadTeams()">Yenile</button>
+      </div>
+      <div class="hint" style="margin-top:6px;">Ekip satırındaki mail listesini düzenleyip kaydedebilirsin.</div>
+      <div id="teamsList" style="margin-top:10px; max-height:66vh; overflow:auto; border-top:1px solid var(--border); padding-top:10px;"></div>
+    </div>
+
+    <!-- Jobs -->
+    <div class="card" style="padding:12px; border:1px solid var(--border); border-radius:12px;">
+      <div style="font-weight:800; color:var(--text-strong);">İş Seçimi</div>
+      <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
+        <label style="font-weight:700; font-size:12px;">Başlangıç
+          <input id="fStart" class="input" type="date" value="{{ start }}">
+        </label>
+        <label style="font-weight:700; font-size:12px;">Bitiş
+          <input id="fEnd" class="input" type="date" value="{{ end }}">
+        </label>
+        <label style="font-weight:700; font-size:12px;">İl
+          <select id="fCity" class="input">
+            <option value="">(hepsi)</option>
+            {% for c in cities %}
+              <option value="{{ c }}">{{ c }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label style="font-weight:700; font-size:12px;">Proje
+          <select id="fProject" class="input" style="min-width:220px;">
+            <option value="0">(hepsi)</option>
+            {% for p in projects %}
+              <option value="{{ p.id }}">{{ p.region }} | {{ p.project_code }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label style="font-weight:700; font-size:12px;">Durum
+          <select id="fStatus" class="input" style="min-width:140px;">
+            <option value="">(hepsi)</option>
+            <option value="pending">Beklemede</option>
+            <option value="completed">Tamamlandı</option>
+            <option value="problem">Sorun</option>
+          </select>
+        </label>
+        <label style="font-weight:700; font-size:12px;">Ara
+          <input id="fQ" class="input" placeholder="Proje kod/ad">
+        </label>
+        <button class="btn" type="button" onclick="loadJobs()" style="background:var(--text-strong); color:white; border:none;">Ara</button>
+      </div>
+
+      <div class="rowline" style="justify-content:space-between; margin-top:10px; gap:8px; flex-wrap:wrap;">
+        <div class="hint" id="jobsHint">0 iş</div>
+        <div class="rowline" style="gap:8px;">
+          <button class="btn secondary" type="button" onclick="selectAllJobs(true)">Tümünü Seç</button>
+          <button class="btn secondary" type="button" onclick="selectAllJobs(false)">Seçimi Kaldır</button>
+        </div>
+      </div>
+
+      <div style="margin-top:10px; overflow:auto; max-height:60vh;">
+        <table class="simple" style="width:100%; background:white;">
+          <thead>
+            <tr>
+              <th style="width:40px;"></th>
+              <th>Tarih</th><th>İl</th><th>Proje</th><th>Ekip</th><th>Durum</th><th>Personel</th>
+            </tr>
+          </thead>
+          <tbody id="jobsTbody">
+            <tr><td colspan="7" style="color:var(--text-muted); padding:10px;">Arama yapın.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Compose -->
+    <div class="card" style="padding:12px; border:1px solid var(--border); border-radius:12px;">
+      <div style="font-weight:800; color:var(--text-strong);">Önizleme / Gönder</div>
+      <div class="hint" style="margin-top:8px;">Mail içeriği otomatik oluşturulur (şablon özelliği kaldırıldı).</div>
+
+      <div class="rowline" style="margin-top:12px; gap:8px; flex-wrap:wrap;">
+        <button class="btn secondary" type="button" onclick="previewBulk()">Önizle</button>
+        <button class="btn" type="button" onclick="sendBulk()" style="background:var(--status-success); color:white; border:none;">Gönder</button>
+        <div id="sendStatus" class="hint"></div>
+      </div>
+
+      <div id="sendResults" style="margin-top:10px;"></div>
+    </div>
+  </div>
+</section>
+
+<div class="modal" id="bulkPreviewModal">
+  <div class="modalCard" style="max-width:1100px;">
+    <div class="rowline" style="border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 10px;">
+      <h3 style="margin:0;">Toplu Mail Önizleme</h3>
+      <button class="btn" type="button" onclick="closeBulkPreview()">Kapat</button>
+    </div>
+    <div class="rowline" style="gap:10px; flex-wrap:wrap;">
+      <label>Ekip
+        <select id="previewTeamSelect" class="input" onchange="renderPreviewTeam()"></select>
+      </label>
+      <div class="hint" id="previewHint"></div>
+    </div>
+    <iframe id="previewFrame" style="width:100%; height:70vh; border:1px solid var(--border); border-radius:10px; margin-top:10px;"></iframe>
+  </div>
+</div>
+
+<script>
+  const state = {
+    teams: [],
+    jobs: [],
+    previewItems: []
+  };
+
+  function esc(s){ return String(s||'').replace(/</g,'&lt;'); }
+
+  async function loadTeams(){
+    const list = document.getElementById('teamsList');
+    if(list) list.innerHTML = 'Yükleniyor...';
+    const res = await fetch('/api/teams');
+    const data = await res.json().catch(()=>({ok:false}));
+    if(!res.ok || !data.ok){
+      if(list) list.innerHTML = '<div class="hint">Ekip listesi alınamadı.</div>';
+      return;
+    }
+    state.teams = data.teams || [];
+    renderTeams();
+  }
+
+  function renderTeams(){
+    const q = (document.getElementById('teamSearch')?.value || '').trim().toLowerCase();
+    const list = document.getElementById('teamsList');
+    if(!list) return;
+    const items = state.teams.filter(t => !q || String(t.name||'').toLowerCase().includes(q));
+    if(!items.length){
+      list.innerHTML = '<div class="hint">Ekip yok.</div>';
+      return;
+    }
+    list.innerHTML = items.map(t => {
+      const emailsStr = (t.emails || []).join(', ');
+      const dis = t.active === false ? 'opacity:0.6;' : '';
+      return `
+        <div style="border:1px solid var(--border); border-radius:10px; padding:10px; margin-bottom:8px; background:white; ${dis}">
+          <label style="display:flex; gap:8px; align-items:center; font-weight:900;">
+            <input type="checkbox" class="teamChk" data-team-id="${t.id}">
+            <span>${esc(t.name)}</span>
+          </label>
+          <div style="margin-top:8px;">
+            <input class="input teamEmails" data-team-id="${t.id}" placeholder="mail1@..., mail2@..." value="${esc(emailsStr)}">
+          </div>
+          <div class="rowline" style="justify-content:space-between; margin-top:8px; gap:8px;">
+            <div class="hint">${(t.emails||[]).length} adres</div>
+            <button class="btn secondary" type="button" onclick="saveTeamEmails(${t.id})">Kaydet</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function saveTeamEmails(teamId){
+    const inp = document.querySelector(`.teamEmails[data-team-id="${teamId}"]`);
+    const emails = (inp?.value || '').trim();
+    const res = await fetch('/api/teams/save_emails', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ team_id: teamId, emails })
+    });
+    const data = await res.json().catch(()=>({ok:false}));
+    if(!res.ok || !data.ok){
+      alert(data.error || 'Kaydetme hatası');
+      return;
+    }
+    // refresh local state
+    const t = state.teams.find(x => Number(x.id) === Number(teamId));
+    if(t) t.emails = data.emails || [];
+    renderTeams();
+  }
+
+  async function loadJobs(){
+    const start = document.getElementById('fStart')?.value || '';
+    const end = document.getElementById('fEnd')?.value || '';
+    const city = document.getElementById('fCity')?.value || '';
+    const project_id = document.getElementById('fProject')?.value || '0';
+    const status = document.getElementById('fStatus')?.value || '';
+    const q = document.getElementById('fQ')?.value || '';
+    const qs = new URLSearchParams({ start, end, city, project_id, status, q, limit:'250' }).toString();
+    const tbody = document.getElementById('jobsTbody');
+    if(tbody) tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text-muted); padding:10px;">Yükleniyor...</td></tr>`;
+    const res = await fetch('/api/jobs?' + qs);
+    const data = await res.json().catch(()=>({ok:false}));
+    if(!res.ok || !data.ok){
+      if(tbody) tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text-muted); padding:10px;">İş listesi alınamadı.</td></tr>`;
+      return;
+    }
+    state.jobs = data.jobs || [];
+    renderJobs();
+  }
+
+  function renderJobs(){
+    const tbody = document.getElementById('jobsTbody');
+    const hint = document.getElementById('jobsHint');
+    if(hint) hint.textContent = `${state.jobs.length} iş`;
+    if(!tbody) return;
+    if(!state.jobs.length){
+      tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text-muted); padding:10px;">Kayıt yok.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = state.jobs.map(j => `
+      <tr>
+        <td><input type="checkbox" class="jobChk" data-job-id="${j.id}"></td>
+        <td>${esc(j.work_date)}</td>
+        <td>${esc(j.city)}</td>
+        <td>${esc(j.project_code)}</td>
+        <td>${esc(j.team_name || '-')}</td>
+        <td>${esc(j.status)}</td>
+        <td>${esc(j.people)}</td>
+      </tr>
+    `).join('');
+  }
+
+  function selectAllJobs(on){
+    document.querySelectorAll('.jobChk').forEach(x => x.checked = !!on);
+  }
+
+  function selectedTeamIds(){
+    return Array.from(document.querySelectorAll('.teamChk')).filter(x => x.checked).map(x => Number(x.dataset.teamId||0)).filter(x=>x>0);
+  }
+  function selectedJobIds(){
+    return Array.from(document.querySelectorAll('.jobChk')).filter(x => x.checked).map(x => Number(x.dataset.jobId||0)).filter(x=>x>0);
+  }
+
+  function selectedTeamEmailsMap(teamIds){
+    const m = {};
+    for(const tid of teamIds){
+      const inp = document.querySelector(`.teamEmails[data-team-id="${tid}"]`);
+      const v = (inp?.value || '').trim();
+      if(v) m[String(tid)] = v;
+    }
+    return m;
+  }
+
+  function openBulkPreview(){
+    document.getElementById('bulkPreviewModal')?.classList.add('open');
+  }
+  function closeBulkPreview(){
+    document.getElementById('bulkPreviewModal')?.classList.remove('open');
+  }
+
+  function renderPreviewTeam(){
+    const sel = document.getElementById('previewTeamSelect');
+    const iframe = document.getElementById('previewFrame');
+    const hint = document.getElementById('previewHint');
+    const teamId = Number(sel?.value || 0) || 0;
+    const it = state.previewItems.find(x => Number(x.team_id) === teamId);
+    if(!it){
+      if(iframe) iframe.srcdoc = 'Önizleme yok.';
+      if(hint) hint.textContent = '';
+      return;
+    }
+    if(hint) hint.textContent = `${it.team_name} | ${it.jobs_included} iş | ${(it.recipients||[]).length} alıcı`;
+    if(iframe) iframe.srcdoc = it.html || '';
+  }
+
+  async function previewBulk(){
+    const teamIds = selectedTeamIds();
+    const jobIds = selectedJobIds();
+    if(!teamIds.length){ alert('Ekip seçin'); return; }
+    if(!jobIds.length){ alert('İş seçin'); return; }
+    const team_emails = selectedTeamEmailsMap(teamIds);
+    const res = await fetch('/api/mail/preview_bulk', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ team_ids: teamIds, job_ids: jobIds, team_emails })
+    });
+    const data = await res.json().catch(()=>({ok:false}));
+    if(!res.ok || !data.ok){
+      alert(data.error || 'Önizleme hatası');
+      return;
+    }
+    state.previewItems = (data.items || []).filter(x => x.ok);
+    const sel = document.getElementById('previewTeamSelect');
+    if(sel){
+      sel.innerHTML = '';
+      for(const it of state.previewItems){
+        const opt = document.createElement('option');
+        opt.value = it.team_id;
+        opt.textContent = `${it.team_name} (${it.jobs_included} iş)`;
+        sel.appendChild(opt);
+      }
+    }
+    openBulkPreview();
+    renderPreviewTeam();
+  }
+
+  async function sendBulk(){
+    const teamIds = selectedTeamIds();
+    const jobIds = selectedJobIds();
+    if(!teamIds.length){ alert('Ekip seçin'); return; }
+    if(!jobIds.length){ alert('İş seçin'); return; }
+    if(!confirm(`Gönderilsin mi?\nEkip: ${teamIds.length}\nİş: ${jobIds.length}`)) return;
+    const team_emails = selectedTeamEmailsMap(teamIds);
+    const status = document.getElementById('sendStatus');
+    const results = document.getElementById('sendResults');
+    if(status) status.textContent = 'Gönderiliyor...';
+    if(results) results.innerHTML = '';
+    const res = await fetch('/api/mail/send_bulk', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ team_ids: teamIds, job_ids: jobIds, team_emails })
+    });
+    const data = await res.json().catch(()=>({ok:false}));
+    if(!res.ok || !data.ok){
+      if(status) status.textContent = '';
+      alert(data.error || 'Gönderim hatası');
+      return;
+    }
+    if(status) status.textContent = data.ok ? 'Tamamlandı.' : 'Bazı gönderimler başarısız.';
+    if(results){
+      results.innerHTML = (data.results || []).map(r => {
+        const ok = !!r.ok;
+        const line = ok ? 'OK' : 'HATA';
+        const fail = (r.failed || []).map(x => `<div style="color:var(--status-danger); font-size:12px;">${esc(x.to)}: ${esc(x.error)}</div>`).join('');
+        return `
+          <div style="border:1px solid var(--border); border-radius:10px; padding:10px; margin-top:8px; background:white;">
+            <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+              <div style="font-weight:900; color:var(--text-strong);">${esc(r.team_name || '')}</div>
+              <div style="font-weight:900; color:${ok ? 'var(--status-success)' : 'var(--status-danger)'};">${line}</div>
+            </div>
+            <div class="hint" style="margin-top:6px;">Gönderilen: ${(r.sent||[]).length} / Alıcı: ${(r.recipients||[]).length} | İş: ${r.jobs_included || 0}</div>
+            ${fail}
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  document.getElementById('teamSearch')?.addEventListener('input', renderTeams);
+  loadTeams();
+</script>
+{% endblock %}

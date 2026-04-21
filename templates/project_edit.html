@@ -1,0 +1,384 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card" style="padding: 28px; margin-bottom: 24px;">
+  <div
+    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 2px solid var(--line);">
+    <h2 style="margin: 0; font-size: 26px; font-weight: 700; color: var(--text);">Proje Düzenle</h2>
+    <a class="btn secondary" href="{{ url_for('planner.projects_page') }}"
+      style="height: 40px; padding: 10px 20px; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-weight: 500;">
+      <span>←</span> Geri
+    </a>
+  </div>
+
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div
+      style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-bottom: 28px;">
+      <label style="display: flex; flex-direction: column; gap: 10px;">
+        <span style="font-weight: 600; font-size: 14px; color: var(--text); margin-bottom: 2px;">Proje Kodu</span>
+        <input name="project_code" value="{{ p.project_code }}" required
+          style="padding: 12px 16px; border-radius: 8px; border: 1px solid var(--line); font-size: 14px; background: var(--card); color: var(--text); height: 44px; transition: all 0.2s;">
+      </label>
+
+      <label style="display: flex; flex-direction: column; gap: 10px;">
+        <span style="font-weight: 600; font-size: 14px; color: var(--text); margin-bottom: 2px;">Proje Adı</span>
+        <input name="project_name" value="{{ p.project_name }}" required
+          style="padding: 12px 16px; border-radius: 8px; border: 1px solid var(--line); font-size: 14px; background: var(--card); color: var(--text); height: 44px; transition: all 0.2s;">
+      </label>
+
+      <label style="display: flex; flex-direction: column; gap: 10px;">
+        <span style="font-weight: 600; font-size: 14px; color: var(--text); margin-bottom: 2px;">Sorumlu</span>
+        <select name="responsible" required
+          style="padding: 12px 16px; border-radius: 8px; border: 1px solid var(--line); font-size: 14px; background: var(--card); color: var(--text); height: 44px; cursor: pointer; transition: all 0.2s;">
+          <option value="">-- Seçiniz --</option>
+          {% for u in users %}
+          <option value="{{ u.full_name or u.username }}" {% if (u.full_name or u.username)==p.responsible %}selected{%
+            endif %}>{{ u.full_name or u.username }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label style="display: flex; flex-direction: column; gap: 10px;">
+        <span style="font-weight: 600; font-size: 14px; color: var(--text); margin-bottom: 2px;">Karşı Firma
+          Sorumlusu</span>
+        <input name="karsi_firma_sorumlusu" value="{{ p.karsi_firma_sorumlusu or '' }}"
+          style="padding: 12px 16px; border-radius: 8px; border: 1px solid var(--line); font-size: 14px; background: var(--card); color: var(--text); height: 44px; transition: all 0.2s;">
+      </label>
+
+      <label style="display: flex; flex-direction: column; gap: 10px;">
+        <span style="font-weight: 600; font-size: 14px; color: var(--text); margin-bottom: 2px;">Durum</span>
+        <select name="is_active"
+          style="padding: 12px 16px; border-radius: 8px; border: 1px solid var(--line); font-size: 14px; background: var(--card); color: var(--text); height: 44px; cursor: pointer; transition: all 0.2s;">
+          <option value="1" {% if p.is_active %}selected{% endif %}>Aktif</option>
+          <option value="0" {% if not p.is_active %}selected{% endif %}>Pasif</option>
+        </select>
+      </label>
+    </div>
+
+    <div
+      style="display: flex; gap: 12px; justify-content: flex-end; padding-top: 20px; border-top: 1px solid var(--line);">
+      <button class="btn" type="submit"
+        style="height: 44px; padding: 12px 28px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; min-width: 140px; font-size: 14px;">Kaydet</button>
+    </div>
+  </form>
+</section>
+
+<section class="card" style="padding: 28px;">
+  <div style="margin-bottom: 28px; padding-bottom: 20px; border-bottom: 2px solid var(--line);">
+    <h2 style="margin: 0; font-size: 26px; font-weight: 700; color: var(--text);">Alt Projeler</h2>
+  </div>
+
+  <div
+    style="background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+    <form method="post" action="{{ url_for('planner.subproject_add', project_id=p.id) }}"
+      style="display: flex; flex-direction: column; gap: 20px;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div style="display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: end;">
+        <label style="display: flex; flex-direction: column; gap: 10px;">
+          <span style="font-weight: 600; font-size: 14px; color: var(--text); margin-bottom: 2px;">Alt Proje Adı</span>
+          <input name="name" required placeholder="Ankara Alt Proje"
+            style="padding: 12px 16px; border-radius: 8px; border: 1px solid var(--line); font-size: 14px; background: var(--card); color: var(--text); height: 44px; transition: all 0.2s;">
+        </label>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <span
+            style="font-weight: 600; font-size: 14px; color: var(--text); opacity: 0; margin-bottom: 2px;">Ekle</span>
+          <button class="btn" type="submit"
+            style="height: 44px; padding: 12px 28px; font-weight: 600; white-space: nowrap; min-width: 120px; font-size: 14px;">Ekle</button>
+        </div>
+      </div>
+
+      <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; padding: 8px 0;">
+        <input type="checkbox" name="send_notify" value="1" checked
+          style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--primary);">
+        <span style="font-size: 14px; color: var(--text); font-weight: 500;">Alt proje eklendi maili gönder</span>
+      </label>
+    </form>
+
+    <div class="hint"
+      style="margin-top: 16px; padding: 14px 16px; background: var(--card); border-radius: 8px; border-left: 4px solid var(--primary); font-size: 13px; color: var(--text-light); line-height: 1.5;">
+      <strong style="color: var(--text); display: block; margin-bottom: 4px;">Bilgi:</strong>
+      <span>Yeni alt proje eklerken kod girilmezse proje kodu sonunda otomatik -00, -01 artan sıra atanır.</span>
+    </div>
+  </div>
+
+  <div id="subprojects-table" class="tablewrap projects-table"
+    style="border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; overflow-y: visible; box-shadow: 0 1px 3px rgba(0,0,0,0.05); scroll-margin-top: 20px;">
+    <table class="simple" style="margin: 0; width: 100%;">
+      <thead>
+        <tr>
+          <th style="padding: 12px 16px; font-weight: 600; font-size: 12px; text-transform: uppercase; color: var(--text-subtle); width: 120px;">Kod</th>
+          <th style="padding: 12px 16px; font-weight: 600; font-size: 12px; text-transform: uppercase; color: var(--text-subtle);">Alt Proje Adı</th>
+          <th style="padding: 12px 16px; font-weight: 600; font-size: 12px; text-transform: uppercase; color: var(--text-subtle); width: 100px;">Durum</th>
+          <th style="padding: 12px 16px; font-weight: 600; font-size: 12px; text-transform: uppercase; color: var(--text-subtle); text-align: right; width: 220px;">İşlem</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sp in (subprojects or []) %}
+        {% set used = (subproject_usage or {}).get(sp.id) %}
+        <tr style="border-bottom: 1px solid var(--line); transition: background-color 0.1s;">
+          <td style="padding: 12px 16px;">
+            <span style="font-family: monospace; font-size: 13px; font-weight: 600; color: var(--text-strong); background: var(--bg-soft); padding: 2px 6px; border-radius: 4px;">
+              {{ sp.code or "-" }}
+            </span>
+          </td>
+          <td style="padding: 12px 16px; font-weight: 500; color: var(--text);">
+            {{ sp.name }}
+          </td>
+          <td style="padding: 12px 16px;">
+            {% if sp.is_active %}
+            <span class="status-badge active" style="display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; background: var(--status-success-bg, #dcfce7); color: var(--status-success-text, #166534);">Aktif</span>
+            {% else %}
+            <span class="status-badge inactive" style="display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; background: var(--bg-soft); color: var(--text-light);">Pasif</span>
+            {% endif %}
+            {% if used %}
+            <div style="font-size: 10px; color: var(--text-light); margin-top: 2px;">(Kullanımda)</div>
+            {% endif %}
+          </td>
+          <td style="padding: 12px 16px; text-align: right;">
+            <div style="display: flex; gap: 6px; justify-content: flex-end; align-items: center;">
+              
+              <!-- Active/Passive Form -->
+              <form method="post" action="{{ url_for('planner.subproject_toggle', project_id=p.id, subproject_id=sp.id) }}" style="margin: 0;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="is_active" value="{{ '0' if sp.is_active else '1' }}">
+                {% if sp.is_active %}
+                <button class="btn tiny secondary" type="submit" style="height: 28px; padding: 0 10px; font-size: 11px; border: 1px solid var(--line);">Pasif Yap</button>
+                {% else %}
+                <button class="btn tiny primary" type="submit" style="height: 28px; padding: 0 10px; font-size: 11px;">Aktif Yap</button>
+                {% endif %}
+              </form>
+
+              <!-- Edit Button -->
+              <button type="button" class="btn tiny secondary" style="height: 28px; padding: 0 10px; font-size: 11px; border: 1px solid var(--line);" data-edit-target="edit-row-{{ sp.id }}">Düzenle</button>
+
+              <!-- Delete Form -->
+              <form method="post" action="{{ url_for('planner.subproject_delete', project_id=p.id, subproject_id=sp.id) }}" style="margin: 0;" onsubmit="return confirm('Alt proje silinsin mi?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn tiny danger" type="submit" style="height: 28px; padding: 0 10px; font-size: 11px;" {% if used %}disabled title="Bu alt proje kullanıldığı için silinemez"{% endif %}>Sil</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+
+        <!-- Edit Row -->
+        <tr id="edit-row-{{ sp.id }}" class="edit-row" style="display: none; background: var(--bg-soft);">
+          <td colspan="4" style="padding: 12px 16px; border-bottom: 1px solid var(--line);">
+             <form method="post" action="{{ url_for('planner.subproject_edit', project_id=p.id) }}" style="display: flex; gap: 8px; align-items: center;">
+                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                 <input type="hidden" name="subproject_id" value="{{ sp.id }}">
+                 
+                 <span style="font-size: 13px; font-weight: 500; color: var(--text-subtle);">Adı Düzenle:</span>
+                 <input name="name" value="{{ sp.name }}" required style="flex: 1; max-width: 300px; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line); font-size: 13px;">
+                 
+                 <button type="submit" class="btn tiny primary" style="height: 30px;">Kaydet</button>
+                 <button type="button" class="btn tiny secondary" style="height: 30px;" data-close-target="edit-row-{{ sp.id }}">İptal</button>
+             </form>
+          </td>
+        </tr>
+        {% endfor %}
+
+        {% if not subprojects %}
+        <tr>
+          <td colspan="4" style="padding: 40px; text-align: center; color: var(--text-light); font-size: 14px;">
+            Henüz alt proje eklenmemiş.
+          </td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="hint"
+    style="margin-top: 20px; padding: 14px 16px; background: var(--bg); border-radius: 8px; border-left: 4px solid var(--status-warning); font-size: 13px; color: var(--text-light); line-height: 1.5;">
+    <strong style="color: var(--text); display: block; margin-bottom: 4px;">Not:</strong>
+    <span>Alt proje işlerde kullanıldıysa silinemez; pasif yapın.</span>
+  </div>
+</section>
+
+<style>
+  /* Proje Düzenle Sayfası - Dark Mode ve Hover Efektleri */
+  input:focus,
+  select:focus {
+    outline: none;
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+  }
+
+  input:hover,
+  select:hover {
+    border-color: var(--line) !important;
+  }
+
+  .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .btn.tiny:hover {
+    transform: translateY(-1px);
+  }
+
+  table.simple tbody tr:hover {
+    background: var(--bg) !important;
+  }
+
+  /* Dark Mode Overrides */
+  .dark-mode input,
+  .dark-mode select,
+  .dark-mode input[style*="background: var(--card)"],
+  .dark-mode select[style*="background: var(--card)"] {
+    background: var(--card-dark) !important;
+    color: var(--text-dark) !important;
+    border-color: var(--border-dark) !important;
+  }
+
+  .dark-mode input::placeholder,
+  .dark-mode select::placeholder {
+    color: var(--text-secondary-dark) !important;
+    opacity: 0.6 !important;
+  }
+
+  .dark-mode .card,
+  .dark-mode section.card {
+    background: var(--card-dark) !important;
+    border-color: var(--border-dark) !important;
+  }
+
+  .dark-mode .tablewrap,
+  .dark-mode #subprojects-table {
+    background: var(--card-dark) !important;
+    border-color: var(--border-dark) !important;
+  }
+
+  .dark-mode table.simple thead th,
+  .dark-mode table.simple thead th[style*="color: var(--text)"] {
+    background: var(--bg-dark) !important;
+    color: var(--text-dark) !important;
+    border-color: var(--border-dark) !important;
+  }
+
+  .dark-mode table.simple tbody td,
+  .dark-mode table.simple tbody td[style*="color: var(--text-light)"] {
+    color: var(--text-secondary-dark) !important;
+    border-color: var(--border-dark) !important;
+  }
+
+  .dark-mode table.simple tbody tr {
+    background: var(--card-dark) !important;
+    border-color: var(--border-dark) !important;
+  }
+
+  .dark-mode table.simple tbody tr:hover {
+    background: var(--bg-dark) !important;
+  }
+
+  .dark-mode table.simple tbody tr.edit-row {
+    background: var(--bg-dark) !important;
+    border-color: var(--border-dark) !important;
+  }
+
+  .dark-mode .btn.secondary {
+    background: var(--line-dark) !important;
+    color: var(--text-dark) !important;
+    border-color: var(--border-dark) !important;
+  }
+
+  .dark-mode .btn.secondary:hover {
+    background: var(--border-dark) !important;
+  }
+
+  .dark-mode .btn.tiny[style*="background: var(--card)"] {
+    background: var(--card-dark) !important;
+    color: var(--text-dark) !important;
+    border-color: var(--border-dark) !important;
+  }
+
+  .dark-mode .btn.tiny[style*="background: var(--card)"]:hover {
+    background: var(--bg-dark) !important;
+  }
+
+  .dark-mode .hint {
+    background: var(--bg-dark) !important;
+    border-color: var(--border-dark) !important;
+    color: var(--text-secondary-dark) !important;
+  }
+
+  .dark-mode .hint strong {
+    color: var(--text-dark) !important;
+  }
+
+  .dark-mode div[style*="background: var(--bg)"] {
+    background: var(--bg-dark) !important;
+    border-color: var(--border-dark) !important;
+  }
+
+  .dark-mode div[style*="background: var(--card)"] {
+    background: var(--card-dark) !important;
+    border-color: var(--border-dark) !important;
+  }
+
+  .dark-mode button[style*="background: var(--status-success)"] {
+    background: var(--status-success) !important;
+    color: #fff !important;
+  }
+
+  .dark-mode button[style*="background: var(--status-success)"]:hover {
+    background: #15803d !important;
+  }
+
+  .dark-mode .btn.danger {
+    background: var(--status-danger) !important;
+    color: #fff !important;
+    border-color: var(--status-danger) !important;
+  }
+
+  .dark-mode .btn.danger:hover {
+    background: var(--status-danger) !important;
+    border-color: var(--status-danger) !important;
+  }
+</style>
+<script>
+  // Sayfa yüklendiğinde hash varsa o bölüme scroll et
+  if (window.location.hash === '#subprojects-table') {
+    setTimeout(() => {
+      const target = document.getElementById('subprojects-table');
+      if (target) {
+        // Tablonun üst kısmına scroll et, biraz yukarıdan başlasın
+        const yOffset = -80; // Üstten 80px boşluk bırak
+        const y = target.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        window.scrollTo({ top: y, behavior: 'smooth' });
+      }
+    }, 150);
+  }
+
+  document.addEventListener("click", (e) => {
+    const openBtn = e.target.closest(".btn[data-edit-target]");
+    if (openBtn) {
+      e.preventDefault();
+      const row = document.getElementById(openBtn.dataset.editTarget);
+      if (row) {
+        const isVisible = row.style.display !== "none" && row.style.display !== "";
+        row.style.display = isVisible ? "none" : "";
+        // Düzenleme satırı açıldığında görünür hale getir
+        if (!isVisible) {
+          setTimeout(() => {
+            row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }, 50);
+        }
+      }
+      return;
+    }
+    const closeBtn = e.target.closest(".btn[data-close-target]");
+    if (closeBtn) {
+      e.preventDefault();
+      const row = document.getElementById(closeBtn.dataset.closeTarget);
+      if (row) {
+        row.style.display = "none";
+      }
+    }
+  });
+</script>
+{% endblock %}

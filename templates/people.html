@@ -1,0 +1,792 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <!-- Sekmeler -->
+  <div style="margin-bottom: 16px; border-bottom: 2px solid var(--border);">
+    <div style="display: flex; gap: 4px;">
+      <button type="button" class="tab-btn active" onclick="showTab('personel')"
+        style="padding: 10px 20px; border: none; background: #f9e4cb; color: var(--text-strong); font-weight: 600; cursor: pointer; border-top-left-radius: 8px; border-top-right-radius: 8px;">Personel</button>
+      <button type="button" class="tab-btn" onclick="showTab('firma')"
+        style="padding: 10px 20px; border: none; background: var(--bg-soft-2); color: var(--text-muted); font-weight: 500; cursor: pointer; border-top-left-radius: 8px; border-top-right-radius: 8px;">Firma</button>
+      <button type="button" class="tab-btn" onclick="showTab('seviye')"
+        style="padding: 10px 20px; border: none; background: var(--bg-soft-2); color: var(--text-muted); font-weight: 500; cursor: pointer; border-top-left-radius: 8px; border-top-right-radius: 8px;">Seviye</button>
+    </div>
+  </div>
+
+  <!-- Personel Sekmesi -->
+  <div id="tab-personel" class="tab-content">
+    {% if session.get('role') != 'gözlemci' %}
+    <!-- Üst Bar: Sayaç + Form + Ekle + Excel -->
+    <div
+      style="margin-bottom: 16px; padding: 12px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 8px;">
+
+      <!-- Personel Ekleme Formu -->
+      <form method="post"
+        style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border);">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label style="flex: 0 1 160px; min-width: 140px; margin: 0;">
+          <span
+            style="font-size: 11px; font-weight: 600; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Ad
+            Soyad</span>
+          <input name="full_name" required
+            style="width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; height: 32px; box-sizing: border-box;">
+        </label>
+        <label style="flex: 0 1 120px; min-width: 100px; margin: 0;">
+          <span
+            style="font-size: 11px; font-weight: 600; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">TC</span>
+          <input name="tc_no"
+            style="width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; height: 32px; box-sizing: border-box;">
+        </label>
+        <label style="flex: 0 1 120px; min-width: 100px; margin: 0;">
+          <span
+            style="font-size: 11px; font-weight: 600; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Görev</span>
+          <input name="role"
+            style="width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; height: 32px; box-sizing: border-box;">
+        </label>
+        <label style="flex: 0 1 130px; min-width: 110px; margin: 0;">
+          <span
+            style="font-size: 11px; font-weight: 600; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Telefon</span>
+          <input name="phone"
+            style="width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; height: 32px; box-sizing: border-box;">
+        </label>
+        <label style="flex: 0 1 180px; min-width: 150px; margin: 0;">
+          <span
+            style="font-size: 11px; font-weight: 600; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Email</span>
+          <input name="email" type="email"
+            style="width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; height: 32px; box-sizing: border-box;">
+        </label>
+        <label style="flex: 0 1 110px; min-width: 90px; margin: 0;">
+          <span
+            style="font-size: 11px; font-weight: 600; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Durum</span>
+          <select name="durum"
+            style="width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; height: 32px; box-sizing: border-box; background: white;">
+            <option value="Aktif">Aktif</option>
+            <option value="Pasif">Pasif</option>
+          </select>
+        </label>
+        <label style="flex: 0 1 140px; min-width: 120px; margin: 0;">
+          <span
+            style="font-size: 11px; font-weight: 600; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Firma</span>
+          <select name="firma_id" required
+            style="width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; height: 32px; box-sizing: border-box; background: white;">
+            <option value="">-- Seçiniz --</option>
+            {% for f in firmalar %}
+            <option value="{{ f.id }}">{{ f.name }}</option>
+            {% endfor %}
+            {% if not firmalar %}
+            <option value="1">Netmon</option>
+            <option value="2">Final</option>
+            <option value="3">Hytech</option>
+            {% endif %}
+          </select>
+        </label>
+        <label style="flex: 0 1 140px; min-width: 120px; margin: 0;">
+          <span
+            style="font-size: 11px; font-weight: 600; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Seviye</span>
+          <select name="seviye_id"
+            style="width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; height: 32px; box-sizing: border-box; background: white;">
+            <option value="">-- Seçiniz --</option>
+            {% for s in seviyeler %}
+            <option value="{{ s.id }}">{{ s.name }}</option>
+            {% endfor %}
+            {% if not seviyeler %}
+            <option value="1">Ana kadro</option>
+            <option value="2">Yardımcı</option>
+            <option value="3">Alt yüklenici</option>
+            {% endif %}
+          </select>
+        </label>
+        <button class="btn" type="submit"
+          style="height: 32px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px;">Ekle</button>
+      </form>
+
+      <!-- Arama ve İşlemler -->
+      <form method="get"
+        style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center;">
+        <div style="font-weight: 600; color: var(--text-strong); font-size: 14px; white-space: nowrap;">
+          Toplam Personel: <span style="color: var(--status-info);">{{ people|length }}</span>
+        </div>
+        <label style="flex: 0 1 320px; min-width: 260px; margin: 0;">
+          <input type="text" id="peopleFilterInput" name="search" value="{{ search_query or '' }}"
+            placeholder="Ara: ad, telefon, email, görev, firma..."
+            style="width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; height: 32px; box-sizing: border-box;">
+        </label>
+        <button type="submit" class="btn"
+          style="height: 32px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px;">Ara</button>
+        {% if search_query %}
+        <a href="{{ url_for('planner.people_page') }}" class="btn secondary"
+          style="height: 32px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; font-size: 13px;">Temizle</a>
+        {% endif %}
+        {% if session.get('role') != 'gözlemci' and is_kivanc %}
+        <button type="button" class="btn" onclick="document.getElementById('addPersonModal').style.display='flex'"
+          style="height: 32px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px;">Ekle</button>
+        {% endif %}
+        <div style="font-size: 13px; color: var(--text-subtle); white-space: nowrap;" id="peopleFilterCounter">
+          Gösterilen: {{ people|length }}/{{ people|length }}
+        </div>
+        <a href="{{ url_for('planner.people_excel') }}" class="btn"
+          style="height: 32px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; background: var(--status-online); color: white; text-decoration: none; border-radius: 6px; font-weight: 500;">
+          📊 Excel
+        </a>
+      </form>
+    </div>
+
+    <div class="tablewrap people-table">
+      <table id="peopleTable" class="simple">
+        <thead>
+          <tr>
+            <th class="sortable" data-sort="full_name" style="cursor: pointer; user-select: none;">
+              <a href="?sort=full_name&order={% if sort_column == 'full_name' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
+                style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 6px;">
+                Ad Soyad
+                <span style="opacity: 0.5;">{% if sort_column == 'full_name' %}{% if sort_order == 'asc' %}↑{% else
+                  %}↓{% endif %}{% else %}↕{% endif %}</span>
+              </a>
+            </th>
+            <th width="120" class="sortable" data-sort="tc_no" style="cursor: pointer; user-select: none;">
+              <a href="?sort=tc_no&order={% if sort_column == 'tc_no' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
+                style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 6px;">
+                TC
+                <span style="opacity: 0.5;">{% if sort_column == 'tc_no' %}{% if sort_order == 'asc' %}↑{% else %}↓{%
+                  endif %}{% else %}↕{% endif %}</span>
+              </a>
+            </th>
+            <th width="130" class="sortable" data-sort="phone" style="cursor: pointer; user-select: none;">
+              <a href="?sort=phone&order={% if sort_column == 'phone' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
+                style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 6px;">
+                Telefon
+                <span style="opacity: 0.5;">{% if sort_column == 'phone' %}{% if sort_order == 'asc' %}↑{% else %}↓{%
+                  endif %}{% else %}↕{% endif %}</span>
+              </a>
+            </th>
+            <th width="180" class="sortable" data-sort="email" style="cursor: pointer; user-select: none;">
+              <a href="?sort=email&order={% if sort_column == 'email' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
+                style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 6px;">
+                Email
+                <span style="opacity: 0.5;">{% if sort_column == 'email' %}{% if sort_order == 'asc' %}↑{% else %}↓{%
+                  endif %}{% else %}↕{% endif %}</span>
+              </a>
+            </th>
+            <th width="120" class="sortable" data-sort="role" style="cursor: pointer; user-select: none;">
+              <a href="?sort=role&order={% if sort_column == 'role' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
+                style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 6px;">
+                Görev
+                <span style="opacity: 0.5;">{% if sort_column == 'role' %}{% if sort_order == 'asc' %}↑{% else %}↓{%
+                  endif %}{% else %}↕{% endif %}</span>
+              </a>
+            </th>
+            <th width="120" class="sortable" data-sort="firma" style="cursor: pointer; user-select: none;">
+              <a href="?sort=firma&order={% if sort_column == 'firma' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
+                style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 6px;">
+                Firma
+                <span style="opacity: 0.5;">{% if sort_column == 'firma' %}{% if sort_order == 'asc' %}↑{% else %}↓{%
+                  endif %}{% else %}↕{% endif %}</span>
+              </a>
+            </th>
+            <th width="120" class="sortable" data-sort="seviye" style="cursor: pointer; user-select: none;">
+              <a href="?sort=seviye&order={% if sort_column == 'seviye' and sort_order == 'asc' %}desc{% else %}asc{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
+                style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 6px;">
+                Seviye
+                <span style="opacity: 0.5;">{% if sort_column == 'seviye' %}{% if sort_order == 'asc' %}↑{% else %}↓{%
+                  endif %}{% else %}↕{% endif %}</span>
+              </a>
+            </th>
+            <th width="90" style="text-align: center;">Durum</th>
+            <th width="60" style="text-align: center;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in people %}
+          <tr data-person-id="{{ p.id }}" class="person-row">
+            <td style="font-weight: 500;">{{ p.full_name }}</td>
+            <td>{{ p.tc_no or "-" }}</td>
+            <td>{{ p.phone or "-" }}</td>
+            <td>{{ p.email or "-" }}</td>
+            <td>{{ p.role or "-" }}</td>
+            <td>{{ p.firma.name if p.firma else "-" }}</td>
+            <td>{{ p.seviye.name if p.seviye else "-" }}</td>
+            <td style="text-align: center;">
+              {% if p.durum == "Aktif" %}
+              <span class="status-badge active">Aktif</span>
+              {% else %}
+              <span class="status-badge inactive">Pasif</span>
+              {% endif %}
+            </td>
+            <td style="text-align: center; position: relative;">
+              {% if session.get('role') != 'gözlemci' and is_kivanc %}
+              <div class="actions-menu-container">
+                <button class="actions-btn" onclick="toggleActionsMenu('person{{ p.id }}')">
+                  ⋮
+                </button>
+                <div id="actionsMenu-person{{ p.id }}" class="actions-dropdown">
+                  <a href="{{ url_for('planner.person_edit', person_id=p.id) }}">
+                    ✏️ Düzenle
+                  </a>
+                  <form method="post" action="{{ url_for('planner.person_delete', person_id=p.id) }}"
+                    onsubmit="return confirm('Bu personeli silmek istediğinizden emin misiniz?');" style="margin: 0;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" style="color: var(--status-danger);">
+                      🗑️ Sil
+                    </button>
+                  </form>
+                </div>
+              </div>
+              {% else %}
+              <span style="color: var(--text-muted); font-size: 12px;">-</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+          {% if not people %}
+          <tr>
+            <td colspan="9" style="padding: 40px; text-align: center; color: var(--text-muted); font-size: 14px;">Henüz
+              personel eklenmemiş.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Firma Sekmesi -->
+  <div id="tab-firma" class="tab-content" style="display: none;">
+    <!-- Üst Bar: Sayaç + Form + Ekle -->
+    <div
+      style="margin-bottom: 16px; padding: 12px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 8px;">
+
+      <!-- Firma Ekleme Formu -->
+      <form method="post" action="{{ url_for('planner.firma_page') }}"
+        style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--border);">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label style="flex: 0 1 200px; min-width: 160px; margin: 0;">
+          <span
+            style="font-size: 11px; font-weight: 600; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Firma
+            Adı</span>
+          <input name="name" required
+            style="width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; height: 32px; box-sizing: border-box;">
+        </label>
+        <label style="flex: 0 1 120px; min-width: 100px; margin: 0;">
+          <span
+            style="font-size: 11px; font-weight: 600; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Cinsiyet</span>
+          <select name="gender"
+            style="width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; height: 32px; box-sizing: border-box; background: white;">
+            <option value="">-- Seçiniz --</option>
+            <option value="Erkek">Erkek</option>
+            <option value="Kadın">Kadın</option>
+          </select>
+        </label>
+        <label style="flex: 0 1 200px; min-width: 160px; margin: 0;">
+          <span
+            style="font-size: 11px; font-weight: 600; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Mail
+            Adresi</span>
+          <input name="email" type="email" placeholder="ornek@firma.com"
+            style="width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; height: 32px; box-sizing: border-box;">
+        </label>
+        <label style="flex: 0 1 160px; min-width: 130px; margin: 0;">
+          <span
+            style="font-size: 11px; font-weight: 600; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Mail
+            Atılacak Kişi</span>
+          <input name="mail_recipient_name" placeholder="Ad Soyad"
+            style="width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; height: 32px; box-sizing: border-box;">
+        </label>
+        <label style="flex: 0 1 100px; min-width: 80px; margin: 0;">
+          <span
+            style="font-size: 11px; font-weight: 600; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Durum</span>
+          <select name="is_active"
+            style="width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; height: 32px; box-sizing: border-box; background: white;">
+            <option value="1" selected>Aktif</option>
+            <option value="0">Pasif</option>
+          </select>
+        </label>
+        <button class="btn" type="submit"
+          style="height: 32px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px;">Ekle</button>
+      </form>
+
+      <!-- Sayaç -->
+      <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center;">
+        <div style="font-weight: 600; color: var(--text-strong); font-size: 14px; white-space: nowrap;">
+          Toplam Firma: <span style="color: var(--status-info);">{{ firmalar|length }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tablewrap firma-table">
+      <table class="simple">
+        <thead>
+          <tr>
+            <th class="sortable" data-sort="name" style="cursor: pointer; user-select: none;">
+              <a href="?sort=name&order={% if sort_column == 'name' and sort_order == 'asc' %}desc{% else %}asc{% endif %}&tab=firma"
+                style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 6px;">
+                Firma Adı
+                <span style="opacity: 0.5;">{% if sort_column == 'name' %}{% if sort_order == 'asc' %}↑{% else %}↓{%
+                  endif %}{% else %}↕{% endif %}</span>
+              </a>
+            </th>
+            <th width="100" class="sortable" data-sort="gender" style="cursor: pointer; user-select: none;">
+              <a href="?sort=gender&order={% if sort_column == 'gender' and sort_order == 'asc' %}desc{% else %}asc{% endif %}&tab=firma"
+                style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 6px;">
+                Cinsiyet
+                <span style="opacity: 0.5;">{% if sort_column == 'gender' %}{% if sort_order == 'asc' %}↑{% else %}↓{%
+                  endif %}{% else %}↕{% endif %}</span>
+              </a>
+            </th>
+            <th width="200" class="sortable" data-sort="email" style="cursor: pointer; user-select: none;">
+              <a href="?sort=email&order={% if sort_column == 'email' and sort_order == 'asc' %}desc{% else %}asc{% endif %}&tab=firma"
+                style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 6px;">
+                Mail Adresi
+                <span style="opacity: 0.5;">{% if sort_column == 'email' %}{% if sort_order == 'asc' %}↑{% else %}↓{%
+                  endif %}{% else %}↕{% endif %}</span>
+              </a>
+            </th>
+            <th width="150" class="sortable" data-sort="mail_recipient_name"
+              style="cursor: pointer; user-select: none;">
+              <a href="?sort=mail_recipient_name&order={% if sort_column == 'mail_recipient_name' and sort_order == 'asc' %}desc{% else %}asc{% endif %}&tab=firma"
+                style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 6px;">
+                Mail Atılacak Kişi
+                <span style="opacity: 0.5;">{% if sort_column == 'mail_recipient_name' %}{% if sort_order == 'asc' %}↑{%
+                  else %}↓{% endif %}{% else %}↕{% endif %}</span>
+              </a>
+            </th>
+            <th width="90" style="text-align: center;">Durum</th>
+            <th width="60" style="text-align: center;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in firmalar %}
+          <tr data-firma-id="{{ f.id }}" class="firma-row">
+            <td style="font-weight: 500;">{{ f.name }}</td>
+            <td>{{ f.gender or "-" }}</td>
+            <td>{{ f.email or "-" }}</td>
+            <td>{{ f.mail_recipient_name or "-" }}</td>
+            <td style="text-align: center;">
+              {% if f.is_active %}
+              <span class="status-badge active">Aktif</span>
+              {% else %}
+              <span class="status-badge inactive">Pasif</span>
+              {% endif %}
+            </td>
+            <td style="text-align: center; position: relative;">
+              {% if session.get('role') != 'gözlemci' %}
+              <div class="actions-menu-container">
+                <button class="actions-btn" onclick="toggleActionsMenu('firma{{ f.id }}')">
+                  ⋮
+                </button>
+                <div id="actionsMenu-firma{{ f.id }}" class="actions-dropdown">
+                  <a href="{{ url_for('planner.firma_edit', firma_id=f.id) }}">
+                    ✏️ Düzenle
+                  </a>
+                  <form method="post" action="{{ url_for('planner.firma_delete', firma_id=f.id) }}"
+                    onsubmit="return confirm('Firma silinsin mi?');" style="margin: 0;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" style="color: var(--status-danger);">
+                      🗑️ Sil
+                    </button>
+                  </form>
+                </div>
+              </div>
+              {% else %}
+              <span style="color: var(--text-muted); font-size: 12px;">-</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+          {% if not firmalar %}
+          <tr>
+            <td colspan="6" style="padding: 40px; text-align: center; color: var(--text-muted); font-size: 14px;">Henüz
+              firma eklenmemiş.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Seviye Sekmesi -->
+  <div id="tab-seviye" class="tab-content" style="display: none;">
+    <!-- Üst Bar: Sayaç + Form + Ekle -->
+    <div
+      style="margin-bottom: 16px; padding: 12px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 8px;">
+
+      <!-- Seviye Ekleme Formu -->
+      <form method="post" action="{{ url_for('planner.seviye_page') }}"
+        style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label style="flex: 0 1 200px; min-width: 160px; margin: 0;">
+          <span
+            style="font-size: 11px; font-weight: 600; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Seviye
+            Adı</span>
+          <input name="name" required
+            style="width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; height: 32px; box-sizing: border-box;">
+        </label>
+        <label style="flex: 0 1 100px; min-width: 80px; margin: 0;">
+          <span
+            style="font-size: 11px; font-weight: 600; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Durum</span>
+          <select name="is_active"
+            style="width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; height: 32px; box-sizing: border-box; background: white;">
+            <option value="1" selected>Aktif</option>
+            <option value="0">Pasif</option>
+          </select>
+        </label>
+        <button class="btn" type="submit"
+          style="height: 32px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px;">Ekle</button>
+      </form>
+    </div>
+
+    <div class="tablewrap seviye-table">
+      <table class="simple">
+        <thead>
+          <tr>
+            <th class="sortable" data-sort="name" style="cursor: pointer; user-select: none;">
+              <a href="?sort=name&order={% if sort_column == 'name' and sort_order == 'asc' %}desc{% else %}asc{% endif %}&tab=seviye"
+                style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 6px;">
+                Seviye Adı
+                <span style="opacity: 0.5;">{% if sort_column == 'name' %}{% if sort_order == 'asc' %}↑{% else %}↓{%
+                  endif %}{% else %}↕{% endif %}</span>
+              </a>
+            </th>
+            <th width="90" style="text-align: center;">Durum</th>
+            <th width="60" style="text-align: center;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in seviyeler %}
+          <tr data-seviye-id="{{ s.id }}" class="seviye-row">
+            <td style="font-weight: 500;">{{ s.name }}</td>
+            <td style="text-align: center;">
+              {% if s.is_active %}
+              <span class="status-badge active">Aktif</span>
+              {% else %}
+              <span class="status-badge inactive">Pasif</span>
+              {% endif %}
+            </td>
+            <td style="text-align: center; position: relative;">
+              <div class="actions-menu-container">
+                <button class="actions-btn" onclick="toggleActionsMenu('seviye{{ s.id }}')">
+                  ⋮
+                </button>
+                <div id="actionsMenu-seviye{{ s.id }}" class="actions-dropdown">
+                  <form method="post" action="{{ url_for('planner.seviye_delete', seviye_id=s.id) }}"
+                    onsubmit="return confirm('Seviye silinsin mi?');" style="margin: 0;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" style="color: var(--status-danger);">
+                      🗑️ Sil
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+          {% if not seviyeler %}
+          <tr>
+            <td colspan="3" style="padding: 40px; text-align: center; color: var(--text-muted); font-size: 14px;">Henüz
+              seviye eklenmemiş.</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Card Full Height */
+  section.card {
+    height: calc(100vh - 100px);
+    /* Sabit yükseklik, min-height değil */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Tab Content Full Height */
+  .tab-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* Tablo ve Genel Stil Güncellemeleri */
+  .tablewrap.people-table,
+  .tablewrap.firma-table,
+  .tablewrap.seviye-table {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: white;
+  }
+
+  /* Tablo kapsayıcısı scoll */
+  .tablewrap table {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .tablewrap thead {
+    flex: 0 0 auto;
+  }
+
+  .tablewrap tbody {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    display: block;
+  }
+
+  .tablewrap tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  /* Sütun genişliklerini korumak için */
+  .tablewrap thead {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  .simple thead th {
+    background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .simple tbody td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+    color: var(--text-base);
+    font-size: 13px;
+  }
+
+  .simple tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .simple tbody tr:hover {
+    background-color: var(--bg-soft);
+  }
+
+  /* Status Badge Modernizasyonu */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    line-height: 1;
+  }
+
+  .status-badge.active {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+  }
+
+  .status-badge.inactive {
+    background: linear-gradient(135deg, #94a3b8, #64748b);
+    color: white;
+  }
+
+  /* Dropdown Menu */
+  .actions-menu-container {
+    position: relative;
+  }
+
+  .actions-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .actions-btn:hover {
+    background: var(--bg-soft);
+    border-color: var(--border);
+    color: var(--text-strong);
+  }
+
+  .actions-dropdown {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    min-width: 150px;
+    overflow: hidden;
+    animation: fadeIn 0.1s ease;
+  }
+
+  .actions-dropdown button,
+  .actions-dropdown a {
+    width: 100%;
+    padding: 10px 14px;
+    text-align: left;
+    border: none;
+    background: white;
+    cursor: pointer;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-base);
+    text-decoration: none;
+    transition: background 0.1s;
+    font-family: inherit;
+    box-sizing: border-box;
+  }
+
+  .actions-dropdown button:hover,
+  .actions-dropdown a:hover {
+    background: var(--bg-soft);
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-5px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Tab Button Styles */
+  .tab-btn {
+    transition: all 0.2s ease;
+  }
+
+  .tab-btn:hover {
+    background: #f1f5f9 !important;
+  }
+</style>
+
+<script>
+  // Tab switching function
+  function showTab(tabName) {
+    // Tüm sekmeleri gizle
+    document.querySelectorAll('.tab-content').forEach(tab => {
+      tab.style.display = 'none';
+    });
+
+    // Tüm butonları pasif yap
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.style.background = '#f1f5f9';
+      btn.style.color = '#64748b';
+      btn.style.fontWeight = '500';
+    });
+
+    // Seçili sekmeyi göster
+    document.getElementById('tab-' + tabName).style.display = 'block';
+
+    // Seçili butonu aktif yap
+    if (event && event.target) {
+      event.target.style.background = '#f9e4cb';
+      event.target.style.color = '#0f172a';
+      event.target.style.fontWeight = '600';
+    }
+  }
+
+  // Actions menu toggle
+  function toggleActionsMenu(menuId) {
+    const menu = document.getElementById('actionsMenu-' + menuId);
+    if (menu) {
+      // Close all other menus first
+      document.querySelectorAll('.actions-dropdown').forEach(m => {
+        if (m.id !== 'actionsMenu-' + menuId) {
+          m.style.display = 'none';
+        }
+      });
+      menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    }
+  }
+
+  // Close menus when clicking outside
+  document.addEventListener('click', function (event) {
+    if (!event.target.closest('.actions-menu-container')) {
+      document.querySelectorAll('.actions-dropdown').forEach(menu => {
+        menu.style.display = 'none';
+      });
+    }
+  });
+
+  // People filter function
+  function updatePeopleFilterCounter(visible, total) {
+    const counter = document.getElementById("peopleFilterCounter");
+    if (!counter) return;
+    counter.textContent = `Gösterilen: ${visible}/${total}`;
+  }
+
+  function filterPeopleTable() {
+    const table = document.getElementById("peopleTable");
+    const input = document.getElementById("peopleFilterInput");
+    if (!table) return;
+    const query = (input?.value || "").trim().toLowerCase();
+    const tbody = table.tBodies[0];
+    if (!tbody) return;
+    const rows = Array.from(tbody.rows);
+    let visible = 0;
+    rows.forEach(row => {
+      const text = row.textContent.toLowerCase();
+      const matches = !query || text.includes(query);
+      row.style.display = matches ? "" : "none";
+      if (matches) visible++;
+    });
+    updatePeopleFilterCounter(visible, rows.length);
+  }
+
+  // Initialize filter
+  function initPeopleFilter() {
+    const input = document.getElementById("peopleFilterInput");
+    if (input) {
+      input.addEventListener("input", filterPeopleTable);
+    }
+    filterPeopleTable();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initPeopleFilter);
+  } else {
+    initPeopleFilter();
+  }
+
+  // Initialize tab from URL params
+  {% if request.args.get('tab') == 'firma' %}
+  showTab('firma');
+  {% elif request.args.get('tab') == 'seviye' %}
+  showTab('seviye');
+  {% endif %}
+</script>
+{% endblock %}

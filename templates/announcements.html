@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card" style="max-width: 1100px; margin: 0 auto;">
+  <div class="rowline" style="justify-content:space-between; gap:10px; flex-wrap:wrap;">
+    <div>
+      <h2 style="margin:0;">Duyurular</h2>
+      <div class="hint" style="margin-top:4px;">
+        {{ user.full_name or user.email }}
+        {% if unread_count %}
+          · {{ unread_count }} okunmadı
+        {% endif %}
+      </div>
+    </div>
+    <div class="rowline" style="gap:8px;">
+      <a class="btn secondary" href="{{ url_for('chat.chat_page') }}" style="text-decoration:none;">Sohbet</a>
+      {% if session.get('role') == 'field' %}
+        <a class="btn secondary" href="{{ url_for('planner.portal_home') }}" style="text-decoration:none;">Benim İşlerim</a>
+      {% else %}
+        <a class="btn secondary" href="{{ url_for('planner.plan_week') }}" style="text-decoration:none;">Plan</a>
+      {% endif %}
+      <a class="btn secondary" href="{{ url_for('auth.logout') }}" style="text-decoration:none;">Çıkış</a>
+    </div>
+  </div>
+</section>
+
+<section class="card" style="max-width: 1100px; margin: 12px auto 0;">
+  {% if not announcements %}
+    <div class="hint">Duyuru yok.</div>
+  {% endif %}
+
+  {% for a in announcements %}
+    <div class="jobCard"
+         data-ann-id="{{ a.id }}"
+         style="border-left-color: {{ 'var(--text-strong)' if (not a.is_read) else 'var(--border)' }}; background: {{ 'var(--bg-soft)' if (not a.is_read) else 'var(--surface)' }};">
+      <div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+        <div style="font-weight:900; color:var(--text-strong);">{{ a.title }}</div>
+        <div class="hint" style="white-space:nowrap;">
+          {% if a.created_at %}{{ a.created_at.strftime('%Y-%m-%d %H:%M') }}{% endif %}
+        </div>
+      </div>
+      <div class="hint" style="margin-top:6px;">
+        {% if a.created_by_name %}{{ a.created_by_name }} · {% endif %}
+        {% if a.audience_type == 'team' %}
+          Ekip duyurusu
+        {% elif a.audience_type == 'user' %}
+          Kişisel duyuru
+        {% else %}
+          Genel duyuru
+        {% endif %}
+      </div>
+      <div style="margin-top:10px; color:var(--text-strong); font-size:13px; white-space:pre-wrap;">{{ a.body }}</div>
+
+      {% if not a.is_read %}
+        <div style="margin-top:10px;">
+          <button class="btn tiny jsMarkRead" type="button">Okundu yap</button>
+        </div>
+      {% endif %}
+    </div>
+  {% endfor %}
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const csrfToken = (document.getElementById('csrfTokenGlobal') || {}).value || '';
+  document.querySelectorAll('.jsMarkRead').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const card = btn.closest('[data-ann-id]');
+      const id = card ? (card.getAttribute('data-ann-id') || '') : '';
+      if(!id) return;
+      btn.disabled = true;
+      try{
+        const res = await fetch(`/api/announcements/${encodeURIComponent(id)}/read`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ csrf_token: csrfToken })
+        });
+        const data = await res.json().catch(()=>({ok:false}));
+        if(!res.ok || !data.ok){
+          btn.disabled = false;
+          return;
+        }
+        btn.closest('div')?.remove();
+        if(card){
+          card.style.borderLeftColor = 'var(--border)';
+          card.style.background = 'var(--surface)';
+        }
+      }catch(_){
+        btn.disabled = false;
+      }
+    });
+  });
+});
+</script>
+{% endblock %}
+

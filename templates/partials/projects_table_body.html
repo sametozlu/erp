@@ -1,0 +1,147 @@
+{% for p in projects %}
+<tr data-project-id="{{ p.id }}" class="project-row">
+    <td>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <button type="button" class="subproject-toggle" data-project-id="{{ p.id }}"
+                style="{% if not p.subprojects %}visibility: hidden; pointer-events: none;{% endif %}"
+                onclick="toggleSubprojects({{ p.id }})">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M4 2 L8 6 L4 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+            </button>
+            <span style="font-family: monospace; font-size: 13px; font-weight: 600; color: var(--text-strong);">{{
+                p.project_code }}</span>
+        </div>
+    </td>
+    <td style="font-weight: 500;">{{ p.project_name }}</td>
+    <td>{{ p.responsible }}</td>
+    <td>{{ p.karsi_firma_sorumlusu or "-" }}</td>
+    <td style="max-width: 220px; font-size: 12px; color: var(--text-subtle); vertical-align: top;">
+        {% set proje_yorumlari = p.comments|selectattr('subproject_id', 'none')|list %}
+        {% if proje_yorumlari %}
+          {% set son_yorum = proje_yorumlari|last %}
+          <div style="white-space: pre-wrap; word-break: break-word; max-height: 4.5em; overflow: hidden; line-height: 1.35;" title="{{ (son_yorum.comment or '')|e }}">
+            {{ (son_yorum.comment or '')[:200] }}{% if (son_yorum.comment or '')|length > 200 %}...{% endif %}
+          </div>
+          {% if proje_yorumlari|length > 1 %}
+            <span style="font-size: 11px; color: var(--text-muted);">(+{{ proje_yorumlari|length - 1 }} yorum daha)</span>
+          {% endif %}
+        {% else %}
+        <span style="color: var(--text-muted);">-</span>
+        {% endif %}
+    </td>
+    <td style="text-align: center;">
+        {% if p.subprojects %}
+        <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <span class="status-badge info" title="Toplam Alt Proje">{{ p.subprojects|length }}</span>
+            {% set active_subprojects = p.subprojects|selectattr('is_active')|list %}
+            {% if active_subprojects|length > 0 %}
+            <span class="status-badge active" title="{{ active_subprojects|length }} Active Subprojects">
+                ✓ {{ active_subprojects|length }}
+            </span>
+            {% endif %}
+        </div>
+        {% else %}
+        <span style="color: var(--text-muted); font-size: 12px;">-</span>
+        {% endif %}
+    </td>
+    <td style="text-align: center;">
+        {% if p.is_active %}
+        <span class="status-badge active">Aktif</span>
+        {% else %}
+        <span class="status-badge inactive">Pasif</span>
+        {% endif %}
+    </td>
+    <td style="text-align: center; position: relative;">
+        <div class="actions-menu-container">
+            <button class="actions-btn" onclick="toggleActionsMenu({{ p.id }})">
+                ⋮
+            </button>
+            <div id="actionsMenu-{{ p.id }}" class="actions-dropdown">
+                {% if session.get('role') != 'gözlemci' %}
+                <button onclick="openAddCommentModal({{ p.id }}, null); toggleActionsMenu({{ p.id }});">
+                    💬 Yorum Ekle
+                </button>
+                <button onclick="openViewDetailsModal({{ p.id }}, null); toggleActionsMenu({{ p.id }});">
+                    👁️ Detay Gör
+                </button>
+                <a href="{{ url_for('planner.project_edit', project_id=p.id) }}">
+                    ✏️ Düzenle
+                </a>
+                <form method="post" action="{{ url_for('planner.project_delete', project_id=p.id) }}"
+                    onsubmit="return confirm('Proje silinsin mi?');" style="margin: 0;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" style="color: var(--status-danger);">
+                        🗑️ Sil
+                    </button>
+                </form>
+                {% else %}
+                <button onclick="openViewDetailsModal({{ p.id }}, null); toggleActionsMenu({{ p.id }});">
+                    👁️ Detay Gör
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </td>
+</tr>
+{% if p.subprojects %}
+<tr class="subprojects-row" data-project-id="{{ p.id }}" style="display: none;">
+    <td colspan="8">
+        <div style="display: flex; flex-direction: column; gap: 8px; max-width: 600px; margin-left: 36px;">
+            {% for sp in p.subprojects %}
+            <div
+                style="padding: 10px 14px; background: #fff; border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; gap: 12px;">
+                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span
+                            style="font-family: monospace; font-size: 12px; font-weight: 600; color: var(--text-strong); background: var(--bg-soft); padding: 2px 6px; border-radius: 4px;">{{
+                            sp.code or "-" }}</span>
+                        <span style="font-size: 13px; color: var(--text-base); font-weight: 500;">{{ sp.name }}</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    {% if sp.is_active %}
+                    <span class="status-badge active" style="font-size: 10px; padding: 2px 8px;">Aktif</span>
+                    {% else %}
+                    <span class="status-badge inactive" style="font-size: 10px; padding: 2px 8px;">Pasif</span>
+                    {% endif %}
+
+                    <div class="actions-menu-container">
+                        <button class="actions-btn" onclick="toggleActionsMenu('sp{{ sp.id }}')"
+                            style="width: 24px; height: 24px;">
+                            ⋮
+                        </button>
+                        <div id="actionsMenu-sp{{ sp.id }}" class="actions-dropdown">
+                            {% if session.get('role') != 'gözlemci' %}
+                            <button
+                                onclick="openAddCommentModal({{ p.id }}, {{ sp.id }}); toggleActionsMenu('sp{{ sp.id }}');">
+                                💬 Yorum Ekle
+                            </button>
+                            <button
+                                onclick="openViewDetailsModal({{ p.id }}, {{ sp.id }}); toggleActionsMenu('sp{{ sp.id }}');">
+                                👁️ Detay Gör
+                            </button>
+                            {% else %}
+                            <button
+                                onclick="openViewDetailsModal({{ p.id }}, {{ sp.id }}); toggleActionsMenu('sp{{ sp.id }}');">
+                                👁️ Detay Gör
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </td>
+</tr>
+{% endif %}
+{% endfor %}
+{% if not projects %}
+<tr>
+    <td colspan="8" style="padding: 40px; text-align: center; color: var(--text-muted); font-size: 14px;">Henüz
+        proje eklenmemiş.</td>
+</tr>
+{% endif %}
