@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Netmon ERP - Yönlendiriliyor</title>
+  <meta http-equiv="refresh" content="1; url=http://127.0.0.1:5000/login">
+  <style>
+    body { font-family: Arial, sans-serif; background: #f3f6fc; color: #1e293b; margin: 0; }
+    .wrap { max-width: 680px; margin: 80px auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; }
+    h1 { margin: 0 0 8px; font-size: 22px; }
+    p { margin: 8px 0; line-height: 1.5; }
+    a { color: #2563eb; text-decoration: none; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Netmon ERP</h1>
+    <p>Giriş ekranına yönlendiriliyorsun...</p>
+    <p>Otomatik açılmazsa şu linke bas:</p>
+    <p><a href="http://127.0.0.1:5000/login">http://127.0.0.1:5000/login</a></p>
+    <p>Alternatif: <a href="http://localhost:5000/login">http://localhost:5000/login</a></p>
+  </div>
+  <script>
+    setTimeout(function () {
+      window.location.href = "http://127.0.0.1:5000/login";
+    }, 400);
+  </script>
+</body>
+</html>
