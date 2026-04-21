@@ -11,8 +11,4 @@ services:
       - key: FLASK_ENV
         value: production
       - key: DB_URL
-        value: sqlite:////var/data/planner.db
-    disk:
-      name: stafff-data
-      mountPath: /var/data
-      sizeGB: 1
+        value: sqlite:///planner.db
