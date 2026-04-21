@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: stafff-erp
+    env: docker
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /login
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FLASK_ENV
+        value: production
+      - key: DB_URL
+        value: sqlite:////var/data/planner.db
+    disk:
+      name: stafff-data
+      mountPath: /var/data
+      sizeGB: 1

@@ -1,5 +1,15 @@
 # Synology Docker (Container Manager) Kurulum
 
+## Her bilgisayardan giriş (domain almadan)
+
+Bu projeyi ücretsiz olarak Render'a deploy ederek tek bir URL ile her bilgisayardan açabilirsin.
+
+1. [Render Dashboard](https://dashboard.render.com/) > **New +** > **Blueprint**
+2. GitHub repo olarak `sametozlu/erp` seç
+3. Render, repodaki `render.yaml` dosyasını otomatik algılar
+4. Deploy tamamlanınca URL: `https://stafff-erp.onrender.com`
+5. Giriş ekranı: `https://stafff-erp.onrender.com/login`
+
 ## 1) Dosyaları NAS'a kopyala
 Bu klasörü NAS üzerinde örnek olarak şuraya koy:
 `/volume1/docker/staff_planner`
