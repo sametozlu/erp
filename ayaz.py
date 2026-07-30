@@ -1,0 +1,2 @@
+print("Mert")
+print("Göktuğ")
